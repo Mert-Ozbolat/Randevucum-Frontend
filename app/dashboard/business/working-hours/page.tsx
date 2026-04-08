@@ -37,14 +37,15 @@ export default function WorkingHoursPage() {
       .get<{ data: { _id: string; workingHours?: WorkingHour[]; breakTimes?: BreakTime[] }[] }>('/business')
       .then((res) => {
         const list = res.data.data || [];
-        if (list[0]) {
-          setBusinessId(list[0]._id);
-          const wh =
-            list[0].workingHours?.length > 0
-              ? list[0].workingHours
+        const b = list[0];
+        if (b) {
+          setBusinessId(b._id);
+          const wh: WorkingHour[] =
+            b.workingHours && b.workingHours.length > 0
+              ? b.workingHours
               : DAYS.map((d) => ({ dayOfWeek: d, open: '09:00', close: '18:00', isClosed: d === 0 }));
           setHours(wh);
-          setBreakTimes(list[0].breakTimes?.length ? list[0].breakTimes : [{ start: '12:00', end: '13:00' }]);
+          setBreakTimes(b.breakTimes?.length ? b.breakTimes : [{ start: '12:00', end: '13:00' }]);
         }
       })
       .catch(() => setError('Yüklenemedi.'))

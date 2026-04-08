@@ -43,24 +43,24 @@ export default function BusinessDashboardPage() {
       .then((res) => {
         const list = res.data.data || [];
         setBusinesses(list);
-        if (list[0]) {
-          return Promise.all([
-            api.get<{ data: SubStatus }>(`/subscription/status/${list[0]._id}`),
-            api.get<{ data: Reservation[] }>(`/reservations/business/${list[0]._id}`),
-          ]);
-        }
-        return [];
+        const empty: [{ data: { data: SubStatus } }, { data: { data: Reservation[] } }] = [
+          { data: { data: { isActive: false, status: 'Yok' } } },
+          { data: { data: [] } },
+        ];
+        if (!list[0]) return empty;
+        return Promise.all([
+          api.get<{ data: SubStatus }>(`/subscription/status/${list[0]._id}`),
+          api.get<{ data: Reservation[] }>(`/reservations/business/${list[0]._id}`),
+        ]);
       })
       .then((results) => {
-        if (results.length >= 2) {
-          setSubscription(results[0].data.data);
-          const list = results[1].data.data || [];
-          setAllReservations(list);
-          const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
-          setTodayReservations(
-            list.filter((r: Reservation) => reservationLocalCalendarKey(String(r.date)) === todayStr)
-          );
-        }
+        setSubscription(results[0].data.data);
+        const list = results[1].data.data || [];
+        setAllReservations(list);
+        const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
+        setTodayReservations(
+          list.filter((r: Reservation) => reservationLocalCalendarKey(String(r.date)) === todayStr)
+        );
       })
       .catch(() => {})
       .finally(() => setLoading(false));

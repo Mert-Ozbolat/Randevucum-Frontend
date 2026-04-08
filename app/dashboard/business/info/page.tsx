@@ -119,7 +119,7 @@ function CreateBusinessForm({ onCreated }: { onCreated: (b: Business) => void })
         </div>
         <GoogleMapPinPicker
           value={form.location}
-          onChange={(loc) => setForm((f) => ({ ...f, location: loc }))}
+          onChange={(loc) => setForm((f) => ({ ...f, location: loc ?? f.location }))}
         />
         <Input label="Telefon" value={form.phone} onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))} />
         <Input label="E-posta" type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} />
@@ -321,7 +321,7 @@ export default function BusinessInfoPage() {
           />
           <GoogleMapPinPicker
             value={form.location}
-            onChange={(loc) => setForm((f) => ({ ...f, location: loc }))}
+            onChange={(loc) => setForm((f) => ({ ...f, location: loc ?? f.location }))}
           />
           <Input
             label="E-posta"
