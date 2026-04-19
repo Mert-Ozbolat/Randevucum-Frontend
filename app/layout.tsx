@@ -6,8 +6,8 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Web Rezervasyon | Randevu Platformu',
-  description: 'Kuaför, diş kliniği, güzellik merkezi ve restoranlar için randevu platformu',
+  title: 'Randevucum | Randevu ve işletme yönetimi',
+  description: 'Kuaför, klinik, güzellik merkezi ve daha fazlası için online randevu alın; işletmeler müşterilerini tek panelden yönetir.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

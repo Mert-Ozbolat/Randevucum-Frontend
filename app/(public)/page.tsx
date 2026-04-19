@@ -1,11 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, Calendar, Check, MessageCircle, Search, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
-import { HOME_FEATURED_AREAS, HOME_HERO_IMAGE } from '@/lib/homeFeaturedAreas';
+import { HOME_FEATURED_AREAS } from '@/lib/homeFeaturedAreas';
+import {
+  HOME_PLATFORM_SLIDES,
+  mapPaidSliderAdsToSlides,
+  mergeHeroSlides,
+  type PaidSliderAdApi,
+} from '@/lib/homeHeroSlides';
+import { HeroPromoCarousel } from '@/components/home/HeroPromoCarousel';
+import { HomeLiveStats } from '@/components/home/HomeLiveStats';
 import { BusinessCard } from '@/components/business/BusinessCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
@@ -28,6 +36,7 @@ interface Business {
 
 export default function HomePage() {
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [paidSliderAds, setPaidSliderAds] = useState<PaidSliderAdApi[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -39,9 +48,22 @@ export default function HomePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const featuredBusinesses = [...businesses]
-    .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0))
-    .slice(0, 6);
+  useEffect(() => {
+    api
+      .get<{ data: PaidSliderAdApi[] }>('/business/home-slider-ads')
+      .then((res) => setPaidSliderAds(res.data.data || []))
+      .catch(() => setPaidSliderAds([]));
+  }, []);
+
+  const featuredBusinesses = useMemo(
+    () => [...businesses].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 6),
+    [businesses]
+  );
+
+  const heroSlides = useMemo(
+    () => mergeHeroSlides(HOME_PLATFORM_SLIDES, mapPaidSliderAdsToSlides(paidSliderAds)),
+    [paidSliderAds]
+  );
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-20 pt-10 sm:px-6 lg:px-8 lg:pt-14">
@@ -86,30 +108,10 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+
+          <HomeLiveStats />
         </div>
-        <div className="relative mx-auto w-full max-w-md lg:mx-0 lg:max-w-none">
-          <div
-            className="absolute -inset-4 rounded-[2rem] bg-gradient-to-br from-primary-400/25 via-primary-200/20 to-amber-200/30 blur-2xl dark:from-primary-600/20 dark:via-primary-800/10 dark:to-amber-900/20"
-            aria-hidden
-          />
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.75rem] shadow-2xl shadow-neutral-900/10 ring-1 ring-black/5 dark:shadow-black/40 dark:ring-white/10 sm:aspect-[5/6] lg:aspect-[4/5]">
-            <Image
-              src={HOME_HERO_IMAGE}
-              alt=""
-              fill
-              priority
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 520px"
-            />
-            <div
-              className="absolute inset-0 bg-gradient-to-t from-neutral-900/50 via-transparent to-transparent"
-              aria-hidden
-            />
-            <p className="absolute bottom-5 left-5 right-5 text-sm font-medium text-white/95 drop-shadow-md">
-              Binlerce işletme tek platformda
-            </p>
-          </div>
-        </div>
+        <HeroPromoCarousel slides={heroSlides} />
       </section>
 
       {/* Öne çıkan alanlar — sadece 6 görsel kart */}

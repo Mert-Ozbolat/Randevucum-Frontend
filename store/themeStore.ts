@@ -3,7 +3,8 @@ import { persist } from 'zustand/middleware';
 
 type Theme = 'light' | 'dark';
 
-function applyTheme(theme: Theme) {
+/** `html` öğesine `dark` sınıfını uygular (persist / ilk yükleme sonrası). */
+export function applyThemeToDocument(theme: Theme) {
   if (typeof document === 'undefined') return;
   document.documentElement.classList.toggle('dark', theme === 'dark');
 }
@@ -13,17 +14,22 @@ export const useThemeStore = create<{ theme: Theme; setTheme: (t: Theme) => void
     (set) => ({
       theme: 'light',
       setTheme: (theme) => {
-        applyTheme(theme);
+        applyThemeToDocument(theme);
         set({ theme });
       },
     }),
-    { name: 'theme', skipHydration: true }
+    {
+      name: 'theme',
+      partialize: (state) => ({ theme: state.theme }),
+      skipHydration: true,
+    }
   )
 );
 
-export function initTheme() {
-  const stored = typeof localStorage !== 'undefined' ? localStorage.getItem('theme') as Theme | null : null;
-  const theme = stored === 'dark' || stored === 'light' ? stored : 'light';
-  applyTheme(theme);
-  useThemeStore.setState({ theme });
+/** localStorage’daki kayıtlı temayı okuyup DOM’a uygular (sayfa yenilemede koyu mod kalıcı olsun). */
+export function rehydrateThemeFromStorage(): Promise<void> {
+  const r = useThemeStore.persist.rehydrate();
+  return Promise.resolve(r).then(() => {
+    applyThemeToDocument(useThemeStore.getState().theme);
+  });
 }

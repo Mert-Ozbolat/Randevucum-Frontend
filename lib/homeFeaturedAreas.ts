@@ -47,6 +47,3 @@ export const HOME_FEATURED_AREAS: HomeFeaturedArea[] = [
       'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80',
   },
 ];
-
-export const HOME_HERO_IMAGE =
-  'https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1400&q=80';
