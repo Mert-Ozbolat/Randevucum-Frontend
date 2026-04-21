@@ -45,10 +45,6 @@ interface Staff {
   title?: string;
 }
 
-const DEFAULT_SLOT_START = 9 * 60;
-const DEFAULT_SLOT_END = 18 * 60;
-const SLOT_STEP = 30;
-
 interface Review {
   _id: string;
   businessId: string;
@@ -69,20 +65,20 @@ function buildSlotOptions(
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const options: SlotOption[] = [];
-  for (let m = DEFAULT_SLOT_START; m < DEFAULT_SLOT_END; m += SLOT_STEP) {
-    const h = Math.floor(m / 60);
-    const min = m % 60;
-    const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-    const isPast = isToday && m <= nowMinutes;
-    const available = availableSlots.includes(timeStr);
-    options.push({
-      time: timeStr,
-      status: isPast ? 'past' : available ? 'available' : 'full',
-      label: undefined,
+  // Mock “Dolu” üretmeyelim: sadece API’nin döndürdüğü gerçek müsait saatleri göster.
+  return (availableSlots || [])
+    .slice()
+    .sort((a, b) => a.localeCompare(b))
+    .map((timeStr) => {
+      const [hh, mm] = timeStr.split(':');
+      const m = Number(hh) * 60 + Number(mm);
+      const isPast = isToday && m <= nowMinutes;
+      return {
+        time: timeStr,
+        status: isPast ? 'past' : 'available',
+        label: undefined,
+      } satisfies SlotOption;
     });
-  }
-  return options;
 }
 
 export default function BusinessDetailPage() {

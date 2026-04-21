@@ -1,38 +1,106 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+'use client';
+
 import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 import { Check } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
+import { isBusinessOwner } from '@/lib/auth';
 
-const plans = [
-  {
-    name: 'Aylık',
-    price: '₺299',
-    period: '/ay',
-    description: 'Küçük işletmeler ve deneme için',
-    features: ['Sınırsız randevu', 'Hizmet ve personel yönetimi', 'Müşteri paneli', 'E-posta desteği'],
-    cta: 'Başla',
-    highlighted: false,
-  },
-  {
-    name: 'Yıllık',
-    price: '₺2.990',
-    period: '/yıl',
-    description: 'En çok tercih edilen',
-    features: ['Aylık planın tüm özellikleri', '2 ay ücretsiz', 'Öncelikli destek', 'Raporlama'],
-    cta: 'Seç',
-    highlighted: true,
-  },
-];
+type Business = {
+  _id: string;
+  hasPaidSubscription?: boolean;
+};
+
+type SubStatus = {
+  businessId: string;
+  startDate?: string;
+  endDate?: string;
+  isActive: boolean;
+  hasSubscription?: boolean;
+};
+
+const TRIAL_DAYS = 30;
 
 export default function PricingPage() {
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+
+  const [biz, setBiz] = useState<Business | null>(null);
+  const [sub, setSub] = useState<SubStatus | null>(null);
+
+  useEffect(() => {
+    if (!token || !isBusinessOwner(user)) return;
+    api
+      .get<{ data: Business[] }>('/business')
+      .then((res) => {
+        const b = (res.data.data || [])[0] || null;
+        setBiz(b);
+        return b ? api.get<{ data: SubStatus }>(`/subscription/status/${b._id}`) : null;
+      })
+      .then((r) => {
+        if (r) setSub(r.data.data);
+      })
+      .catch(() => {
+        setBiz(null);
+        setSub(null);
+      });
+  }, [token, user?.role]);
+
+  const isTrialActive = useMemo(() => {
+    if (!token || !isBusinessOwner(user)) return false;
+    if (!biz || biz.hasPaidSubscription) return false;
+    if (!sub?.isActive || !sub.endDate) return false;
+    // Trial: ilk kez paket almayan işletme için aktif abonelik bitiş tarihine kadar ücretsiz
+    return new Date(sub.endDate) >= new Date();
+  }, [token, user, biz, sub]);
+
+  const plans = useMemo(() => {
+    const starter = {
+      name: 'Başlangıç',
+      price: isTrialActive ? '₺0' : '₺499',
+      period: isTrialActive ? `/ ${TRIAL_DAYS} gün` : '/ay',
+      description: 'Randevu yönetimi için hızlı başlangıç',
+      features: [
+        'Sınırsız randevu',
+        'Hizmet ve personel yönetimi',
+        'Müşteri paneli',
+        'İşletme sayfası ve görünürlük',
+      ],
+      cta: isTrialActive ? 'Ücretsiz kullan' : 'Başla',
+      highlighted: false,
+    };
+
+    const pro = {
+      name: 'Pro',
+      price: isTrialActive ? '₺0' : '₺999',
+      period: isTrialActive ? `/ ${TRIAL_DAYS} gün` : '/ay',
+      description: 'Gelişmiş özellikler ve otomasyon',
+      features: [
+        'Başlangıç paketindeki her şey',
+        'Öncelikli destek',
+        'WhatsApp bildirimleri (müşteri hatırlatma)',
+        'Gelişmiş raporlama (yakında)',
+        '1 adet ana sayfa reklam hakkı',
+      ],
+      cta: isTrialActive ? 'Ücretsiz kullan' : 'Pro’ya geç',
+      highlighted: true,
+    };
+
+    return [starter, pro] as const;
+  }, [isTrialActive]);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-neutral-900 sm:text-4xl">Fiyatlar</h1>
-        <p className="mt-2 text-lg text-neutral-600">
+        <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 sm:text-4xl">Fiyatlar</h1>
+        <p className="mt-2 text-lg text-neutral-600 dark:text-neutral-300">
           İşletmeniz için uygun planı seçin. İstediğiniz zaman iptal edebilirsiniz.
         </p>
       </div>
-      <div className="mt-12 grid gap-8 md:grid-cols-2 md:max-w-4xl md:mx-auto">
+      <div className="mt-12 grid gap-8 md:mx-auto md:max-w-4xl md:grid-cols-2">
         {plans.map((plan) => (
           <Card
             key={plan.name}
@@ -44,14 +112,16 @@ export default function PricingPage() {
               </span>
             )}
             <div className="mb-4">
-              <h2 className="text-xl font-semibold text-neutral-900">{plan.name}</h2>
-              <p className="mt-1 text-sm text-neutral-600">{plan.description}</p>
-              <p className="mt-3 text-3xl font-bold text-neutral-900">
+              <h2 className="text-xl font-semibold text-neutral-900 dark:text-neutral-50">{plan.name}</h2>
+              <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">{plan.description}</p>
+              <p className="mt-3 text-3xl font-bold text-neutral-900 dark:text-neutral-50">
                 {plan.price}
-                <span className="text-base font-normal text-neutral-500">{plan.period}</span>
+                {plan.period ? (
+                  <span className="text-base font-normal text-neutral-500 dark:text-neutral-400">{plan.period}</span>
+                ) : null}
               </p>
             </div>
-            <ul className="space-y-2 text-sm text-neutral-700">
+            <ul className="space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
               {plan.features.map((f) => (
                 <li key={f} className="flex items-center gap-2">
                   <Check className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden /> {f}
@@ -63,7 +133,7 @@ export default function PricingPage() {
               className={`mt-6 block w-full rounded-lg py-2.5 text-center text-sm font-medium transition ${
                 plan.highlighted
                   ? 'bg-primary-500 text-white hover:bg-primary-600'
-                  : 'border-2 border-neutral-300 text-neutral-700 hover:border-primary-400'
+                  : 'border-2 border-neutral-300 bg-white text-neutral-700 hover:border-primary-400 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:border-primary-500'
               }`}
             >
               {plan.cta}

@@ -26,10 +26,6 @@ interface Business {
   name: string;
 }
 
-const DEFAULT_SLOT_START = 9 * 60;
-const DEFAULT_SLOT_END = 18 * 60;
-const SLOT_STEP = 30;
-
 function buildSlotOptions(
   availableSlots: string[],
   selectedDate: Date
@@ -40,19 +36,18 @@ function buildSlotOptions(
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
-  const options: SlotOption[] = [];
-  for (let m = DEFAULT_SLOT_START; m < DEFAULT_SLOT_END; m += SLOT_STEP) {
-    const h = Math.floor(m / 60);
-    const min = m % 60;
-    const timeStr = `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
-    const isPast = isToday && m <= nowMinutes;
-    const available = availableSlots.includes(timeStr);
-    options.push({
-      time: timeStr,
-      status: isPast ? 'past' : available ? 'available' : 'full',
+  return availableSlots
+    .slice()
+    .sort((a, b) => a.localeCompare(b))
+    .map((timeStr) => {
+      const [hh, mm] = timeStr.split(':');
+      const m = Number(hh) * 60 + Number(mm);
+      const isPast = isToday && m <= nowMinutes;
+      return {
+        time: timeStr,
+        status: isPast ? 'past' : 'available',
+      } satisfies SlotOption;
     });
-  }
-  return options;
 }
 
 export default function ReservePage() {

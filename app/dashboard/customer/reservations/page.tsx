@@ -42,13 +42,35 @@ function isPastReservation(r: CustomerReservationItem): boolean {
   }
 }
 
+function timeToMinutesSafe(t?: string | null): number {
+  const s = String(t || '');
+  const [hh, mm] = s.split(':');
+  const h = Number(hh);
+  const m = Number(mm);
+  if (Number.isNaN(h) || Number.isNaN(m)) return 0;
+  return h * 60 + m;
+}
+
 function sortReservations(list: CustomerReservationItem[]): CustomerReservationItem[] {
   return [...list].sort((a, b) => {
+    // En yeni en üstte: tarih DESC, sonra saat DESC
     const da = typeof a.date === 'string' ? a.date : String(a.date);
     const db = typeof b.date === 'string' ? b.date : String(b.date);
-    const dateCmp = da.localeCompare(db);
-    if (dateCmp !== 0) return dateCmp;
-    return (a.time || '').localeCompare(b.time || '');
+    const ta = (() => {
+      try {
+        return parseISO(da).getTime() + timeToMinutesSafe(a.time) * 60_000;
+      } catch {
+        return 0;
+      }
+    })();
+    const tb = (() => {
+      try {
+        return parseISO(db).getTime() + timeToMinutesSafe(b.time) * 60_000;
+      } catch {
+        return 0;
+      }
+    })();
+    return tb - ta;
   });
 }
 
@@ -83,6 +105,8 @@ export default function CustomerReservationsPage() {
   }, [reservations, tab]);
 
   const handleCancel = async (id: string) => {
+    const r = reservations.find((x) => x._id === id);
+    if (r && isPastReservation(r)) return;
     if (!confirm('Randevuyu iptal etmek istediğinize emin misiniz?')) return;
     try {
       await api.delete(`/reservations/${id}`);
@@ -196,7 +220,14 @@ export default function CustomerReservationsPage() {
       ) : (
         <ul className="space-y-4 animate-fade-in">
           {filtered.map((r) => (
-            <li key={r._id}>
+            <li
+              key={r._id}
+              className={
+                isPastReservation(r)
+                  ? 'pointer-events-none select-none opacity-50 grayscale'
+                  : ''
+              }
+            >
               <CustomerReservationCard reservation={r} onCancel={handleCancel} />
             </li>
           ))}

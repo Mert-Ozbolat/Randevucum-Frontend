@@ -17,11 +17,6 @@ import { HomeLiveStats } from '@/components/home/HomeLiveStats';
 import { BusinessCard } from '@/components/business/BusinessCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
-const TESTIMONIALS = [
-  { quote: 'Kuaförümü buradan buldum, çok kolaydı', author: 'Ayşe' },
-  { quote: '2 dakikada randevu aldım', author: 'Mehmet' },
-];
-
 interface Business {
   _id: string;
   name: string;
@@ -225,27 +220,6 @@ export default function HomePage() {
             </Link>
           </div>
         )}
-      </section>
-
-      {/* Yorumlar — kompakt */}
-      <section className="mt-20 rounded-3xl border border-neutral-200/90 bg-gradient-to-br from-neutral-50 to-white px-6 py-10 shadow-sm dark:border-neutral-700 dark:from-neutral-900/80 dark:to-neutral-900/40 sm:px-10 lg:mt-24">
-        <h2 className="flex items-center gap-2 text-xl font-bold text-neutral-900 dark:text-neutral-50 sm:text-2xl">
-          <MessageCircle className="h-6 w-6 shrink-0 text-primary-500" strokeWidth={1.75} aria-hidden />
-          Kullanıcı yorumları
-        </h2>
-        <div className="mt-6 grid gap-4 sm:grid-cols-2">
-          {TESTIMONIALS.map((t, i) => (
-            <blockquote
-              key={i}
-              className="rounded-2xl border border-neutral-200/80 bg-white/90 p-5 text-neutral-800 shadow-sm dark:border-neutral-600 dark:bg-neutral-800/60 dark:text-neutral-100"
-            >
-              <p className="text-sm font-medium leading-relaxed sm:text-base">&ldquo;{t.quote}&rdquo;</p>
-              <footer className="mt-2 text-xs font-semibold text-primary-600 dark:text-primary-400">
-                — {t.author}
-              </footer>
-            </blockquote>
-          ))}
-        </div>
       </section>
 
       {/* Nasıl çalışır — sıkı */}

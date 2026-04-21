@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { api, getApiErrorMessage } from '@/lib/api';
+import { api } from '@/lib/api';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { SUBSCRIPTION_STATUS } from '@/lib/constants';
@@ -19,7 +19,6 @@ export default function SubscriptionPage() {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubStatus | null>(null);
   const [loading, setLoading] = useState(true);
-  const [subscribing, setSubscribing] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -39,22 +38,6 @@ export default function SubscriptionPage() {
       .catch(() => setError('Yüklenemedi.'))
       .finally(() => setLoading(false));
   }, []);
-
-  const handleSubscribe = async () => {
-    if (!businessId) return;
-    setError('');
-    setSubscribing(true);
-    try {
-      const { data } = await api.post<{ data: SubStatus }>('/subscription/subscribe', {
-        businessId,
-      });
-      setSubscription(data.data);
-    } catch (err) {
-      setError(getApiErrorMessage(err));
-    } finally {
-      setSubscribing(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -94,27 +77,13 @@ export default function SubscriptionPage() {
         {!subscription?.isActive && businessId && (
           <div className="mt-4">
             <p className="mb-2 text-sm text-neutral-600">
-              Randevu alabilmek için aylık abonelik başlatın. Ödeme entegrasyonu (Stripe) için backend
-              yapılandırması gerekebilir.
+              Randevu alabilmek için aboneliğinizin aktif olması gerekir.
             </p>
-            <Button loading={subscribing} onClick={handleSubscribe}>
-              Abonelik Başlat (Demo)
-            </Button>
+            <Link href="/pricing" className="inline-block">
+              <Button variant="outline">Planları Görüntüle</Button>
+            </Link>
           </div>
         )}
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Stripe ile ödeme</CardTitle>
-        </CardHeader>
-        <p className="text-sm text-neutral-600">
-          Üretimde Stripe Checkout kullanmak için backend&apos;de bir &quot;create checkout
-          session&quot; endpoint&apos;i ekleyip bu sayfadan yönlendirme yapılabilir. Örnek: &quot;Ödeme
-          Yap&quot; butonu → API → Stripe Checkout URL → yönlendir.
-        </p>
-        <Link href="/pricing" className="mt-4 inline-block">
-          <Button variant="outline">Fiyatları Görüntüle</Button>
-        </Link>
       </Card>
     </div>
   );
