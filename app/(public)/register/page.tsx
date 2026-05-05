@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { setAuth } from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
@@ -15,6 +15,7 @@ type AccountType = 'customer' | 'business_owner';
 
 export default function RegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const setStoreAuth = useAuthStore((s) => s.setAuth);
   const [step, setStep] = useState<'type' | 'form'>('type');
   const [accountType, setAccountType] = useState<AccountType>('customer');
@@ -27,6 +28,16 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  useEffect(() => {
+    // Allow deep-linking to business registration from pricing/upgrade flows.
+    // Example: /register?type=business_owner&from=/pricing
+    const type = searchParams.get('type');
+    if (type === 'business_owner' || type === 'customer') {
+      setAccountType(type);
+      setStep('form');
+    }
+  }, [searchParams]);
 
   const handleSelectType = (type: AccountType) => {
     setAccountType(type);

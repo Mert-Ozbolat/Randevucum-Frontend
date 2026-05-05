@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { SUBSCRIPTION_STATUS } from '@/lib/constants';
+import { Check, CreditCard, ShieldCheck } from 'lucide-react';
 
 interface SubStatus {
   businessId: string;
@@ -137,21 +138,33 @@ export default function SubscriptionPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
-        Abonelik & Faturalandırma
-      </h1>
+    <div className="space-y-8">
+      <div className="rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 px-6 py-8 text-white shadow-soft sm:px-10">
+        <p className="text-sm font-medium text-primary-100">Faturalandırma</p>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Abonelik</h1>
+        <p className="mt-2 max-w-2xl text-sm text-primary-100">
+          Aboneliğiniz aktifse rezervasyon alabilirsiniz. Ödeme işlemi Stripe üzerinden güvenli şekilde tamamlanır.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3 text-xs text-primary-100">
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+            <ShieldCheck className="h-4 w-4" aria-hidden /> PCI uyumlu ödeme (Stripe)
+          </span>
+          <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+            <CreditCard className="h-4 w-4" aria-hidden /> Kart bilgileri bizde tutulmaz
+          </span>
+        </div>
+      </div>
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </div>
       )}
-      <Card>
+      <Card className="p-0">
         <CardHeader>
           <CardTitle>Mevcut durum</CardTitle>
         </CardHeader>
         {subscription && (
-          <div className="space-y-2">
+          <div className="space-y-2 px-6 pb-6">
             <p className="font-medium text-neutral-900 dark:text-neutral-100">
               Durum:{' '}
               <span className={subscription.isActive ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}>
@@ -168,34 +181,59 @@ export default function SubscriptionPage() {
           </div>
         )}
         {!subscription?.isActive && businessId && (
-          <div className="mt-4 space-y-3">
+          <div className="border-t border-neutral-200 px-6 py-6 dark:border-neutral-800">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               Randevu alabilmek için aboneliğinizin aktif olması gerekir.
             </p>
             {stripeConfig?.checkoutEnabled && (stripeConfig.plans?.length ?? 0) > 0 ? (
-              <div className="space-y-3">
-                <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                  Paket seçin; ödeme Stripe güvenli sayfasında tamamlanır. Birden fazla paket için Stripe’da her biri
-                  için ayrı fiyat (price_…) oluşturursunuz; gizli/yayın anahtar çifti tek kalır.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(stripeConfig.plans || []).map((p) => (
-                    <Button
-                      key={p.priceId}
-                      type="button"
-                      loading={checkoutLoadingPriceId === p.priceId}
-                      disabled={Boolean(checkoutLoadingPriceId)}
-                      onClick={() => void startStripeCheckout(p.priceId)}
-                    >
-                      Öde — {p.label}
-                    </Button>
-                  ))}
-                  <Link href="/pricing" className="inline-flex items-center">
-                    <Button type="button" variant="outline" disabled={Boolean(checkoutLoadingPriceId)}>
-                      Planları görüntüle
-                    </Button>
-                  </Link>
-                </div>
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                {(stripeConfig.plans || []).map((p) => (
+                  <div
+                    key={p.priceId}
+                    className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-card dark:border-neutral-800 dark:bg-neutral-950/40"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
+                        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                          Aylık abonelik • Online ödeme
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-primary-50 px-2 py-1 text-xs font-semibold text-primary-800 dark:bg-primary-950/50 dark:text-primary-50">
+                        Önerilen
+                      </span>
+                    </div>
+                    <ul className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
+                      {[
+                        'Rezervasyon almaya başla',
+                        'Personel & hizmet yönetimi',
+                        'İşletme paneli',
+                      ].map((x) => (
+                        <li key={x} className="flex items-center gap-2">
+                          <Check className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden /> {x}
+                        </li>
+                      ))}
+                    </ul>
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        loading={checkoutLoadingPriceId === p.priceId}
+                        disabled={Boolean(checkoutLoadingPriceId)}
+                        onClick={() => void startStripeCheckout(p.priceId)}
+                      >
+                        Paketi satın al
+                      </Button>
+                      <Link href="/pricing" className="inline-flex items-center">
+                        <Button type="button" variant="outline" disabled={Boolean(checkoutLoadingPriceId)}>
+                          Detayları gör
+                        </Button>
+                      </Link>
+                    </div>
+                    <p className="mt-3 text-xs text-neutral-500 dark:text-neutral-500">
+                      Ödeme Stripe sayfasında tamamlanır. İstediğiniz zaman iptal edebilirsiniz.
+                    </p>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="space-y-2">

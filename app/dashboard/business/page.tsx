@@ -97,16 +97,16 @@ export default function BusinessDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-neutral-900">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Dashboard</h1>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle>Bugünkü Randevular</CardTitle>
           </CardHeader>
-          <p className="text-3xl font-bold text-neutral-900">{todayReservations.length}</p>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">{todayReservations.length}</p>
           <Link
             href="/dashboard/business/reservations"
-            className="mt-2 text-sm font-medium text-primary-600 hover:underline"
+            className="mt-2 text-sm font-medium text-primary-600 hover:underline dark:text-primary-300"
           >
             Tümünü gör →
           </Link>
@@ -115,10 +115,10 @@ export default function BusinessDashboardPage() {
           <CardHeader>
             <CardTitle>Toplam Randevular</CardTitle>
           </CardHeader>
-          <p className="text-3xl font-bold text-neutral-900">{allReservations.length}</p>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">{allReservations.length}</p>
           <Link
             href="/dashboard/business/reservations"
-            className="mt-2 text-sm font-medium text-primary-600 hover:underline"
+            className="mt-2 text-sm font-medium text-primary-600 hover:underline dark:text-primary-300"
           >
             Takvime git →
           </Link>
@@ -131,13 +131,13 @@ export default function BusinessDashboardPage() {
             {subscription?.isActive ? 'Aktif' : subscription?.status || 'Yok'}
           </p>
           {subscription?.endDate && (
-            <p className="mt-1 text-sm text-neutral-500">
+            <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
               Bitiş: {new Date(subscription.endDate).toLocaleDateString('tr-TR')}
             </p>
           )}
           <Link
             href="/dashboard/business/subscription"
-            className="mt-2 text-sm font-medium text-primary-600 hover:underline"
+            className="mt-2 text-sm font-medium text-primary-600 hover:underline dark:text-primary-300"
           >
             Abonelik yönetimi →
           </Link>
@@ -146,10 +146,10 @@ export default function BusinessDashboardPage() {
           <CardHeader>
             <CardTitle>İşletme</CardTitle>
           </CardHeader>
-          <p className="font-medium text-neutral-900">{business.name}</p>
+          <p className="font-medium text-neutral-900 dark:text-neutral-100">{business.name}</p>
           <Link
             href="/dashboard/business/info"
-            className="mt-2 text-sm font-medium text-primary-600 hover:underline"
+            className="mt-2 text-sm font-medium text-primary-600 hover:underline dark:text-primary-300"
           >
             Bilgileri düzenle →
           </Link>
@@ -161,19 +161,19 @@ export default function BusinessDashboardPage() {
           <CardTitle>Bugünkü randevular</CardTitle>
         </CardHeader>
         {todayReservations.length === 0 ? (
-          <p className="text-sm text-neutral-500">Bugün randevu yok.</p>
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">Bugün randevu yok.</p>
         ) : (
           <ul className="space-y-2">
             {todayReservations.slice(0, 5).map((r) => (
               <li
                 key={r._id}
-                className="flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 px-4 py-2 text-sm"
+                className="flex items-center justify-between rounded-lg border border-neutral-100 bg-neutral-50 px-4 py-2 text-sm text-neutral-900 dark:border-neutral-800 dark:bg-neutral-900/40 dark:text-neutral-100"
               >
                 <span>
                   {r.time} — {r.serviceId?.name || 'Hizmet'} —{' '}
                   {r.customerId ? `${r.customerId.firstName} ${r.customerId.lastName}` : '-'}
                 </span>
-                <span className="text-neutral-500">{RESERVATION_STATUS[r.status] || r.status}</span>
+                <span className="text-neutral-500 dark:text-neutral-400">{RESERVATION_STATUS[r.status] || r.status}</span>
               </li>
             ))}
           </ul>

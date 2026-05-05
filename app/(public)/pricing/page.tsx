@@ -28,6 +28,7 @@ export default function PricingPage() {
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   const isOwner = Boolean(token && isBusinessOwner(user));
+  const isLoggedInCustomer = Boolean(token && user && !isBusinessOwner(user));
 
   const [biz, setBiz] = useState<Business | null>(null);
   const [sub, setSub] = useState<SubStatus | null>(null);
@@ -95,7 +96,7 @@ export default function PricingPage() {
 
   const ctaHref = useMemo(() => {
     if (isOwner) return '/dashboard/business/subscription';
-    return '/register?from=/pricing';
+    return '/register?type=business_owner&from=/pricing';
   }, [isOwner]);
 
   return (
@@ -106,6 +107,28 @@ export default function PricingPage() {
           İşletmeniz için uygun planı seçin. İstediğiniz zaman iptal edebilirsiniz.
         </p>
       </div>
+      {isLoggedInCustomer && (
+        <div className="mx-auto mt-8 max-w-3xl rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100">
+          <p className="font-semibold">İşletme paketi için işletme hesabı gerekir</p>
+          <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
+            Şu an bireysel (müşteri) hesabıyla giriş yaptınız. Paket satın almak ve işletme panelini kullanmak için işletme hesabı oluşturmalısınız.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Link
+              href="/register?type=business_owner&from=/pricing"
+              className="inline-flex items-center justify-center rounded-lg bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700"
+            >
+              İşletme hesabı oluştur
+            </Link>
+            <Link
+              href="/dashboard/customer/reservations"
+              className="inline-flex items-center justify-center rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-transparent dark:text-amber-100 dark:hover:bg-amber-900/20"
+            >
+              Müşteri paneline dön
+            </Link>
+          </div>
+        </div>
+      )}
       <div className="mt-12 grid gap-8 md:mx-auto md:max-w-4xl md:grid-cols-2">
         {plans.map((plan) => (
           <Card
