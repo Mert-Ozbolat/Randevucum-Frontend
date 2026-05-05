@@ -27,6 +27,7 @@ const TRIAL_DAYS = 30;
 export default function PricingPage() {
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
+  const isOwner = Boolean(token && isBusinessOwner(user));
 
   const [biz, setBiz] = useState<Business | null>(null);
   const [sub, setSub] = useState<SubStatus | null>(null);
@@ -92,6 +93,11 @@ export default function PricingPage() {
     return [starter, pro] as const;
   }, [isTrialActive]);
 
+  const ctaHref = useMemo(() => {
+    if (isOwner) return '/dashboard/business/subscription';
+    return '/register?from=/pricing';
+  }, [isOwner]);
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
       <div className="text-center">
@@ -129,7 +135,7 @@ export default function PricingPage() {
               ))}
             </ul>
             <Link
-              href={plan.highlighted ? '/register' : '/register'}
+              href={ctaHref}
               className={`mt-6 block w-full rounded-lg py-2.5 text-center text-sm font-medium transition ${
                 plan.highlighted
                   ? 'bg-primary-500 text-white hover:bg-primary-600'
