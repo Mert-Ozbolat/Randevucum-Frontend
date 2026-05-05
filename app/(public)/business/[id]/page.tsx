@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { api } from '@/lib/api';
 import { BUSINESS_TYPES, DAYS_OF_WEEK } from '@/lib/constants';
 import { BUSINESS_TYPE_LABELS } from '@/lib/businessCategories';
@@ -15,7 +16,8 @@ import { useAuthStore } from '@/store/authStore';
 import { format, startOfDay } from 'date-fns';
 import { api as apiLib, getApiErrorMessage } from '@/lib/api';
 import { useToast } from '@/components/ui/Toast';
-import { Clock, MapPin, Phone, Star } from 'lucide-react';
+import { formatServicePriceLabel } from '@/lib/servicePrice';
+import { Clock, Mail, MapPin, Phone, Star, Users, X } from 'lucide-react';
 
 interface Business {
   _id: string;
@@ -26,7 +28,9 @@ interface Business {
   email?: string;
   description?: string;
   imageUrl?: string | null;
-  rating?: number | null;
+  /** Sunucudan yorum ortalaması (mock değil) */
+  averageRating?: number | null;
+  reviewCount?: number | null;
   location?: { lat?: number; lng?: number };
   workingHours?: { dayOfWeek: number; open: string; close: string; isClosed: boolean }[];
 }
@@ -35,14 +39,48 @@ interface Service {
   _id: string;
   name: string;
   durationMinutes: number;
-  price?: number;
+  price?: number | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
   currency?: string;
+  /** Doluysa sadece bu personel; boşsa personel profilindeki hizmet listesi */
+  staffIds?: string[];
 }
 
 interface Staff {
   _id: string;
   name: string;
   title?: string;
+  imageUrl?: string;
+  phone?: string;
+  email?: string;
+  /** Boş veya yok = tüm hizmetler */
+  serviceIds?: (string | { _id: string })[];
+}
+
+function serviceIdFromRef(x: string | { _id: string }): string {
+  return typeof x === 'string' ? x : x._id;
+}
+
+function staffOffersService(member: Staff, service: Service | null | undefined): boolean {
+  if (!service) return true;
+  const assigned = service.staffIds;
+  if (assigned && assigned.length > 0) {
+    return assigned.some((id) => String(id) === member._id);
+  }
+  const ids = member.serviceIds;
+  if (!ids || ids.length === 0) return true;
+  return ids.some((x) => serviceIdFromRef(x) === service._id);
+}
+
+function staffInitials(name: string) {
+  return name
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase() || '?';
 }
 
 interface Review {
@@ -93,6 +131,7 @@ export default function BusinessDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -106,6 +145,21 @@ export default function BusinessDetailPage() {
   const [reviewRating, setReviewRating] = useState<number>(5);
   const [reviewComment, setReviewComment] = useState<string>('');
   const [postingReview, setPostingReview] = useState(false);
+  const [staffProfileModal, setStaffProfileModal] = useState<Staff | null>(null);
+
+  useEffect(() => {
+    if (!staffProfileModal) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setStaffProfileModal(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = prev;
+    };
+  }, [staffProfileModal]);
 
   useEffect(() => {
     Promise.all([
@@ -132,6 +186,14 @@ export default function BusinessDetailPage() {
   }, [id]);
 
   useEffect(() => {
+    setSelectedStaffId(null);
+  }, [selectedServiceId]);
+
+  useEffect(() => {
+    setSelectedTime(null);
+  }, [selectedStaffId]);
+
+  useEffect(() => {
     if (!selectedServiceId || !selectedDate) {
       setAvailableSlots([]);
       return;
@@ -140,14 +202,49 @@ export default function BusinessDetailPage() {
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     api
       .get<{ data: { slots: string[] } }>('/reservations/available-slots', {
-        params: { businessId: id, serviceId: selectedServiceId, date: dateStr },
+        params: {
+          businessId: id,
+          serviceId: selectedServiceId,
+          date: dateStr,
+          ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
+        },
       })
       .then((res) => setAvailableSlots(res.data.data?.slots || []))
       .catch(() => setAvailableSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [id, selectedServiceId, selectedDate]);
+  }, [id, selectedServiceId, selectedDate, selectedStaffId]);
 
   const selectedService = services.find((s) => s._id === selectedServiceId);
+  const selectedServicePriceLabel = selectedService ? formatServicePriceLabel(selectedService) : null;
+
+  const eligibleStaffForService = useMemo(() => {
+    if (!selectedService) return [];
+    return staff.filter((s) => staffOffersService(s, selectedService));
+  }, [staff, selectedService]);
+
+  const reservationStaffLabel =
+    eligibleStaffForService.length > 0
+      ? selectedStaffId
+        ? eligibleStaffForService.find((s) => s._id === selectedStaffId)?.name ?? ''
+        : 'Farketmez (müsait personel)'
+      : undefined;
+
+  const displayRating = useMemo(() => {
+    if (!business) return null;
+    if (reviews.length > 0) {
+      return reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
+    }
+    const ar = business.averageRating;
+    const rc = business.reviewCount ?? 0;
+    if (ar != null && Number.isFinite(ar) && rc > 0) return ar;
+    return null;
+  }, [reviews, business]);
+
+  const displayReviewCount = useMemo(() => {
+    if (reviews.length > 0) return reviews.length;
+    return business?.reviewCount ?? 0;
+  }, [reviews, business]);
+
   const slotOptions = selectedDate
     ? buildSlotOptions(availableSlots, selectedDate, false)
     : [];
@@ -169,6 +266,7 @@ export default function BusinessDetailPage() {
       await apiLib.post('/reservations', {
         businessId: id,
         serviceId: selectedServiceId,
+        ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
@@ -205,9 +303,12 @@ export default function BusinessDetailPage() {
       addToast('success', 'Yorumunuz kaydedildi.');
       setReviewComment('');
       setReviewRating(5);
-      // listeyi güncel tut
-      const res = await api.get<{ data: Review[] }>(`/reviews/business/${id}`);
-      setReviews(res.data.data || []);
+      const [revRes, bizRes] = await Promise.all([
+        api.get<{ data: Review[] }>(`/reviews/business/${id}`),
+        api.get<{ data: Business }>(`/business/${id}`),
+      ]);
+      setReviews(revRes.data.data || []);
+      setBusiness(bizRes.data.data);
     } catch (err) {
       addToast('error', getApiErrorMessage(err));
     } finally {
@@ -248,11 +349,6 @@ export default function BusinessDetailPage() {
   const mapsQueryEncoded = encodeURIComponent(mapsQuery);
   const mapsEmbedUrl = `https://www.google.com/maps?q=${mapsQueryEncoded}&output=embed`;
   const mapsSearchUrl = `https://www.google.com/maps/search/?api=1&query=${mapsQueryEncoded}`;
-  const avgRating =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-      : business.rating ?? 4.7;
-  const reviewCount = reviews.length;
 
   const stepProgress = selectedServiceId
     ? selectedDate
@@ -295,10 +391,16 @@ export default function BusinessDetailPage() {
           <div>
             <h1 className="flex flex-wrap items-center gap-2 text-xl font-bold text-neutral-900 dark:text-white sm:text-2xl">
               <span>{business.name}</span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-base font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
-                <Star className="h-4 w-4 fill-amber-400 text-amber-500" aria-hidden />
-                {avgRating.toFixed(1)}
-              </span>
+              {displayRating != null ? (
+                <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-0.5 text-base font-bold text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                  <Star className="h-4 w-4 fill-amber-400 text-amber-500" aria-hidden />
+                  {displayRating.toFixed(1)}
+                </span>
+              ) : (
+                <span className="rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-sm font-semibold text-neutral-500 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  Henüz puan yok
+                </span>
+              )}
             </h1>
             <p className="mt-1 text-primary-600 dark:text-primary-400">
               {BUSINESS_TYPE_LABELS[business.businessType] || BUSINESS_TYPES[business.businessType] || business.businessType}
@@ -430,17 +532,268 @@ export default function BusinessDetailPage() {
           </section>
         )}
 
-        {/* Yorum & Puan */}
-        <section className="mt-10">
+        {/* Personel — randevu bloklarından önce */}
+        {staff.length > 0 && (
+          <section className="mt-10">
+            <h2 className={sectionTitleClass}>Personel</h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              Ekibimizi tanıyın; randevu sırasında isteğe bağlı olarak seçebilirsiniz.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-3">
+              {staff.map((s) => (
+                <button
+                  key={s._id}
+                  type="button"
+                  onClick={() => setStaffProfileModal(s)}
+                  className="flex max-w-full cursor-pointer items-center gap-3 rounded-xl border border-neutral-200 bg-white py-2.5 pl-2.5 pr-4 text-left text-sm shadow-card transition hover:border-primary-300 hover:shadow-soft focus:outline-none focus:ring-2 focus:ring-primary-500/40 dark:border-neutral-700 dark:bg-neutral-800 dark:hover:border-primary-600"
+                  aria-haspopup="dialog"
+                >
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-600">
+                    {s.imageUrl ? (
+                      <Image
+                        src={s.imageUrl}
+                        alt=""
+                        width={48}
+                        height={48}
+                        className="h-full w-full object-cover"
+                        unoptimized
+                      />
+                    ) : (
+                      <span className="flex h-full w-full items-center justify-center text-xs font-semibold text-neutral-600 dark:text-neutral-200">
+                        {staffInitials(s.name)}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-medium text-neutral-800 dark:text-neutral-100">{s.name}</p>
+                    {s.title && (
+                      <p className="text-neutral-500 dark:text-neutral-400">{s.title}</p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Hizmetler + Randevu — tek akış */}
+        <section
+          id="randevu-al"
+          className="mt-12 overflow-hidden rounded-2xl border border-neutral-200 bg-white shadow-soft dark:border-neutral-700 dark:bg-neutral-800"
+        >
+          <div className="border-b border-neutral-200 bg-neutral-50/80 p-6 sm:p-8 dark:border-neutral-700 dark:bg-neutral-900/50">
+            <h2 className={sectionTitleClass}>Hizmetler</h2>
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+              Bir hizmet seçin; aşağıda personel, tarih ve saat adımlarına geçin.
+            </p>
+            {services.length === 0 ? (
+              <p className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-white p-8 text-center text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                Henüz hizmet tanımlanmamış.
+              </p>
+            ) : (
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {services.map((s) => {
+                  const priceLabel = formatServicePriceLabel(s);
+                  return (
+                    <div
+                      key={s._id}
+                      onClick={() => setSelectedServiceId(s._id)}
+                      className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border bg-white p-5 shadow-card transition hover:scale-[1.02] hover:shadow-soft dark:bg-neutral-800 ${
+                        selectedServiceId === s._id
+                          ? 'border-primary-500 ring-2 ring-primary-500 dark:border-primary-500'
+                          : 'border-neutral-200 hover:border-primary-300 dark:border-neutral-700'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <h3 className="font-bold text-neutral-900 dark:text-white">{s.name}</h3>
+                        <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{s.durationMinutes} dk</p>
+                        {priceLabel && (
+                          <p className="mt-1 text-sm font-semibold text-primary-600 dark:text-primary-400">
+                            {priceLabel}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant={selectedServiceId === s._id ? 'primary' : 'outline'}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedServiceId(s._id);
+                        }}
+                      >
+                        {selectedServiceId === s._id ? 'Seçildi' : 'Seç'}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-gradient-to-b from-white to-neutral-100 p-6 sm:p-8 dark:from-neutral-800 dark:to-neutral-900">
+          <h2 className={`${sectionTitleClass} text-base sm:text-lg`}>Randevu al</h2>
+          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+            Hizmet seçin, isteğe bağlı personel, tarih ve saat; birden fazla çalışan varsa aynı saatte kapasite kadar randevu açılır.
+          </p>
+
+          {/* Progress bar */}
+          <div className="mt-6 flex items-center gap-1">
+            {([1, 2, 3, 4] as const).map((step) => (
+              <div
+                key={step}
+                className={`h-2 flex-1 rounded-full transition ${
+                  step <= stepProgress ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-600'
+                }`}
+                aria-hidden
+              />
+            ))}
+          </div>
+          <div className="mt-2 flex justify-between text-xs font-medium text-neutral-500 dark:text-neutral-400">
+            <span>1. Hizmet</span>
+            <span>2. Tarih</span>
+            <span>3. Saat</span>
+            <span>4. Onay</span>
+          </div>
+
+          {!selectedServiceId && (
+            <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-100">
+              Önce bir hizmet seçin.
+            </p>
+          )}
+
+          {selectedServiceId && (
+            <>
+              <div className="mt-6">
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">1. Hizmet seçildi</p>
+                <p className="mt-1 text-neutral-600 dark:text-neutral-400">
+                  {selectedService?.name} · {selectedService?.durationMinutes} dk
+                  {selectedServicePriceLabel ? ` · ${selectedServicePriceLabel}` : ''}
+                </p>
+              </div>
+
+              {eligibleStaffForService.length > 0 && (
+                <div
+                  className="relative mt-8 overflow-hidden rounded-2xl border-2 border-primary-500 bg-gradient-to-br from-primary-50 via-white to-primary-50/80 p-5 shadow-[0_8px_30px_-8px_rgba(59,130,246,0.35)] dark:border-primary-500/70 dark:from-primary-950/80 dark:via-neutral-900 dark:to-primary-950/50 dark:shadow-[0_8px_30px_-8px_rgba(59,130,246,0.25)] sm:p-6"
+                  role="region"
+                  aria-labelledby="staff-picker-heading"
+                >
+                  <div
+                    className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary-400/20 blur-2xl dark:bg-primary-500/20"
+                    aria-hidden
+                  />
+                  <div className="relative flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+                    <div className="flex gap-3">
+                      <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-md dark:bg-primary-500">
+                        <Users className="h-6 w-6" strokeWidth={2} aria-hidden />
+                      </span>
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                          Randevu için
+                        </p>
+                        <h3
+                          id="staff-picker-heading"
+                          className="mt-0.5 text-lg font-bold leading-tight text-neutral-900 dark:text-white sm:text-xl"
+                        >
+                          Personel seçin{' '}
+                          <span className="font-semibold text-primary-700 dark:text-primary-300">
+                            (isteğe bağlı)
+                          </span>
+                        </h3>
+                        <p className="mt-2 max-w-xl text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+                          <strong className="text-neutral-900 dark:text-white">Farketmez</strong> derseniz müsait olan
+                          personelden biri atanır. Bir isim seçerseniz saat listesi{' '}
+                          <strong className="text-neutral-900 dark:text-white">yalnızca o kişinin</strong> uygun
+                          olduğu zamanları gösterir.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="relative mt-5 flex flex-wrap gap-2.5 border-t border-primary-200/80 pt-5 dark:border-primary-800/60">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStaffId(null)}
+                      className={`min-h-[46px] rounded-xl border-2 px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900 ${
+                        selectedStaffId === null
+                          ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
+                          : 'border-neutral-200 bg-white text-neutral-900 hover:border-primary-400 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:border-primary-500'
+                      }`}
+                    >
+                      Farketmez
+                    </button>
+                    {eligibleStaffForService.map((s) => (
+                      <button
+                        key={s._id}
+                        type="button"
+                        onClick={() => setSelectedStaffId(s._id)}
+                        className={`min-h-[46px] rounded-xl border-2 px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900 ${
+                          selectedStaffId === s._id
+                            ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
+                            : 'border-neutral-200 bg-white text-neutral-900 hover:border-primary-400 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:border-primary-500'
+                        }`}
+                      >
+                        {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">2. Tarih seçin</p>
+                <CalendarPicker
+                  selectedDate={selectedDate}
+                  onSelectDate={setSelectedDate}
+                  minDate={new Date()}
+                  daysCount={14}
+                />
+              </div>
+
+              {selectedDate && (
+                <div className="mt-8">
+                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                    3. Saat seçin — {format(selectedDate, 'd MMMM yyyy')}
+                  </p>
+                  <div className="mt-4">
+                    <TimeSlotGrid
+                      slots={slotOptions}
+                      selectedTime={selectedTime}
+                      onSelectTime={handleSlotSelect}
+                      loading={loadingSlots}
+                      isBusinessOwner={false}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {selectedTime && (
+                <p className="mt-6 text-sm font-medium text-primary-600 dark:text-primary-400">
+                  4. Saat seçildi: {selectedTime} — Onaylamak için saate tıklayın.
+                </p>
+              )}
+            </>
+          )}
+          </div>
+        </section>
+
+        {/* Yorum & Puan — en altta */}
+        <section className="mt-12 pb-4">
           <h2 className={sectionTitleClass}>Yorumlar ve puan</h2>
 
           <div className="mt-4 flex flex-wrap items-center gap-4 rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-700 dark:bg-neutral-800">
-            <div className="flex items-center gap-2">
-              <span className="flex items-center gap-1.5 text-2xl font-bold text-neutral-900 dark:text-white">
-                <Star className="h-7 w-7 fill-amber-400 text-amber-500" aria-hidden />
-                {avgRating.toFixed(1)}
+            <div className="flex flex-wrap items-center gap-2">
+              {displayRating != null ? (
+                <span className="flex items-center gap-1.5 text-2xl font-bold text-neutral-900 dark:text-white">
+                  <Star className="h-7 w-7 fill-amber-400 text-amber-500" aria-hidden />
+                  {displayRating.toFixed(1)}
+                </span>
+              ) : (
+                <span className="text-lg font-semibold text-neutral-500 dark:text-neutral-400">
+                  Henüz değerlendirme yok
+                </span>
+              )}
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                ({displayReviewCount} yorum)
               </span>
-              <span className="text-sm text-neutral-500 dark:text-neutral-400">({reviewCount} yorum)</span>
             </div>
           </div>
 
@@ -553,147 +906,98 @@ export default function BusinessDetailPage() {
           </div>
         </section>
 
-        {/* Hizmetler – kart tasarımı */}
-        <section className="mt-12">
-          <h2 className={sectionTitleClass}>Hizmetler</h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            Bir hizmet seçin, ardından tarih ve saat belirleyin.
-          </p>
-          {services.length === 0 ? (
-            <p className="mt-6 rounded-2xl border border-dashed border-neutral-300 bg-neutral-100 p-8 text-center text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-              Henüz hizmet tanımlanmamış.
-            </p>
-          ) : (
-            <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {services.map((s) => (
-                <div
-                  key={s._id}
-                  onClick={() => setSelectedServiceId(s._id)}
-                  className={`flex cursor-pointer items-center justify-between gap-4 rounded-2xl border bg-white p-5 shadow-card transition hover:scale-[1.02] hover:shadow-soft dark:bg-neutral-800 ${
-                    selectedServiceId === s._id
-                      ? 'border-primary-500 ring-2 ring-primary-500 dark:border-primary-500'
-                      : 'border-neutral-200 hover:border-primary-300 dark:border-neutral-700'
-                  }`}
-                >
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-neutral-900 dark:text-white">{s.name}</h3>
-                    <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{s.durationMinutes} dk</p>
-                    {s.price != null && (
-                      <p className="mt-1 text-sm font-semibold text-primary-600 dark:text-primary-400">
-                        {s.price} {s.currency || '₺'}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    size="sm"
-                    variant={selectedServiceId === s._id ? 'primary' : 'outline'}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setSelectedServiceId(s._id);
-                    }}
-                  >
-                    {selectedServiceId === s._id ? 'Seçildi' : 'Seç'}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+        {staffProfileModal && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="staff-profile-title"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm"
+              aria-label="Kapat"
+              onClick={() => setStaffProfileModal(null)}
+            />
+            <div className="relative z-10 w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft dark:border-neutral-600 dark:bg-neutral-900">
+              <button
+                type="button"
+                className="absolute right-3 top-3 rounded-lg p-2 text-neutral-500 transition hover:bg-neutral-100 hover:text-neutral-800 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                aria-label="Kapat"
+                onClick={() => setStaffProfileModal(null)}
+              >
+                <X className="h-5 w-5" aria-hidden />
+              </button>
 
-        {staff.length > 0 && (
-          <section className="mt-10">
-            <h2 className={sectionTitleClass}>Personel</h2>
-            <div className="mt-4 flex flex-wrap gap-3">
-              {staff.map((s) => (
-                <span
-                  key={s._id}
-                  className="rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm font-medium text-neutral-700 shadow-card transition hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
-                >
-                  {s.name}
-                  {s.title && <span className="text-neutral-500 dark:text-neutral-400"> · {s.title}</span>}
-                </span>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Randevu al – stepper (1 Hizmet → 2 Tarih → 3 Saat → 4 Onay) */}
-        <section id="randevu-al" className="mt-12 rounded-2xl border border-neutral-200 bg-gradient-to-b from-white to-neutral-100 p-8 shadow-soft dark:border-neutral-700 dark:from-neutral-800 dark:to-neutral-900">
-          <h2 className={sectionTitleClass}>Randevu al</h2>
-          <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
-            Hizmet seçin, tarih ve saat belirleyin, onaylayın.
-          </p>
-
-          {/* Progress bar */}
-          <div className="mt-6 flex items-center gap-1">
-            {([1, 2, 3, 4] as const).map((step) => (
-              <div
-                key={step}
-                className={`h-2 flex-1 rounded-full transition ${
-                  step <= stepProgress ? 'bg-primary-500' : 'bg-neutral-200 dark:bg-neutral-600'
-                }`}
-                aria-hidden
-              />
-            ))}
-          </div>
-          <div className="mt-2 flex justify-between text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            <span>1. Hizmet</span>
-            <span>2. Tarih</span>
-            <span>3. Saat</span>
-            <span>4. Onay</span>
-          </div>
-
-          {!selectedServiceId && (
-            <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-100">
-              Önce bir hizmet seçin.
-            </p>
-          )}
-
-          {selectedServiceId && (
-            <>
-              <div className="mt-6">
-                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">1. Hizmet seçildi</p>
-                <p className="mt-1 text-neutral-600 dark:text-neutral-400">
-                  {selectedService?.name} · {selectedService?.durationMinutes} dk
-                  {selectedService?.price != null && ` · ${selectedService.price} ${selectedService.currency || '₺'}`}
-                </p>
-              </div>
-
-              <div className="mt-6">
-                <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">2. Tarih seçin</p>
-                <CalendarPicker
-                  selectedDate={selectedDate}
-                  onSelectDate={setSelectedDate}
-                  minDate={new Date()}
-                  daysCount={14}
-                />
-              </div>
-
-              {selectedDate && (
-                <div className="mt-8">
-                  <p className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
-                    3. Saat seçin — {format(selectedDate, 'd MMMM yyyy')}
-                  </p>
-                  <div className="mt-4">
-                    <TimeSlotGrid
-                      slots={slotOptions}
-                      selectedTime={selectedTime}
-                      onSelectTime={handleSlotSelect}
-                      loading={loadingSlots}
-                      isBusinessOwner={false}
+              <div className="flex flex-col items-center pt-2 text-center">
+                <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-full border-4 border-primary-100 bg-neutral-200 dark:border-primary-900/50 dark:bg-neutral-700">
+                  {staffProfileModal.imageUrl ? (
+                    <Image
+                      src={staffProfileModal.imageUrl}
+                      alt=""
+                      width={112}
+                      height={112}
+                      className="h-full w-full object-cover"
+                      unoptimized
                     />
-                  </div>
+                  ) : (
+                    <span className="flex h-full w-full items-center justify-center text-2xl font-semibold text-neutral-600 dark:text-neutral-200">
+                      {staffInitials(staffProfileModal.name)}
+                    </span>
+                  )}
                 </div>
-              )}
+                <h3 id="staff-profile-title" className="mt-4 text-xl font-bold text-neutral-900 dark:text-neutral-50">
+                  {staffProfileModal.name}
+                </h3>
+                {staffProfileModal.title ? (
+                  <p className="mt-1 text-neutral-600 dark:text-neutral-400">{staffProfileModal.title}</p>
+                ) : (
+                  <p className="mt-1 text-sm text-neutral-400 dark:text-neutral-500">Ünvan belirtilmemiş</p>
+                )}
+              </div>
 
-              {selectedTime && (
-                <p className="mt-6 text-sm font-medium text-primary-600 dark:text-primary-400">
-                  4. Saat seçildi: {selectedTime} — Onaylamak için saate tıklayın.
-                </p>
-              )}
-            </>
-          )}
-        </section>
+              <div className="mt-6 space-y-3 rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-left dark:border-neutral-700 dark:bg-neutral-800/80">
+                {staffProfileModal.phone?.trim() ? (
+                  <a
+                    href={`tel:${staffProfileModal.phone.replace(/\s/g, '')}`}
+                    className="flex items-center gap-3 text-neutral-900 transition hover:text-primary-600 dark:text-neutral-100 dark:hover:text-primary-400"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                      <Phone className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 break-all font-medium">{staffProfileModal.phone}</span>
+                  </a>
+                ) : null}
+                {staffProfileModal.email?.trim() ? (
+                  <a
+                    href={`mailto:${staffProfileModal.email.trim()}`}
+                    className="flex items-center gap-3 text-neutral-900 transition hover:text-primary-600 dark:text-neutral-100 dark:hover:text-primary-400"
+                  >
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
+                      <Mail className="h-5 w-5" aria-hidden />
+                    </span>
+                    <span className="min-w-0 break-all font-medium">{staffProfileModal.email}</span>
+                  </a>
+                ) : null}
+                {!staffProfileModal.phone?.trim() && !staffProfileModal.email?.trim() && (
+                  <p className="text-center text-sm text-neutral-500 dark:text-neutral-400">
+                    Telefon veya e-posta bu profilde paylaşılmıyor.
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                fullWidth
+                className="mt-4"
+                onClick={() => setStaffProfileModal(null)}
+              >
+                Kapat
+              </Button>
+            </div>
+          </div>
+        )}
 
         <ReservationModal
           isOpen={modalOpen}
@@ -703,6 +1007,7 @@ export default function BusinessDetailPage() {
           }}
           businessName={business.name}
           serviceName={selectedService?.name ?? ''}
+          staffLabel={reservationStaffLabel}
           date={selectedDate ?? new Date()}
           time={selectedTime ?? ''}
           durationMinutes={selectedService?.durationMinutes}

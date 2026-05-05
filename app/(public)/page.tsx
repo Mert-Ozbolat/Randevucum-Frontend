@@ -24,6 +24,7 @@ interface Business {
   address?: { city?: string; district?: string };
   description?: string;
   imageUrl?: string | null;
+  averageRating?: number | null;
   rating?: number | null;
   reviewCount?: number | null;
   createdAt?: string;
@@ -51,7 +52,13 @@ export default function HomePage() {
   }, []);
 
   const featuredBusinesses = useMemo(
-    () => [...businesses].sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0)).slice(0, 6),
+    () =>
+      [...businesses]
+        .sort(
+          (a, b) =>
+            (b.averageRating ?? b.rating ?? 0) - (a.averageRating ?? a.rating ?? 0)
+        )
+        .slice(0, 6),
     [businesses]
   );
 
@@ -199,9 +206,11 @@ export default function HomePage() {
                 address={b.address}
                 description={b.description}
                 imageUrl={b.imageUrl}
-                rating={b.rating}
+                rating={b.averageRating ?? b.rating}
                 reviewCount={b.reviewCount}
-                isPopular={(b.rating ?? 0) >= 4.5}
+                isPopular={
+                  (b.averageRating ?? b.rating ?? 0) >= 4.5 && (b.reviewCount ?? 0) > 0
+                }
                 isNew={
                   !!b.createdAt && new Date(b.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
                 }

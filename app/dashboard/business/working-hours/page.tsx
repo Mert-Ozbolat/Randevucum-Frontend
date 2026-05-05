@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { DAYS_OF_WEEK } from '@/lib/constants';
 import { useToast } from '@/components/ui/Toast';
+import { dispatchBusinessSetupRefresh } from '@/lib/businessSetupRefresh';
 
 interface WorkingHour {
   dayOfWeek: number;
@@ -90,6 +91,7 @@ export default function WorkingHoursPage() {
     try {
       await api.put(`/business/${businessId}`, { workingHours: hours, breakTimes });
       addToast('success', 'Çalışma saatleri kaydedildi.');
+      dispatchBusinessSetupRefresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -108,9 +110,11 @@ export default function WorkingHoursPage() {
   if (!businessId) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-neutral-900">Çalışma Saatleri</h1>
+        <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Çalışma Saatleri</h1>
         <Card className="p-8 text-center">
-          <p className="text-neutral-500">Henüz işletme eklenmemiş. Önce bir işletme oluşturun.</p>
+          <p className="text-neutral-500 dark:text-neutral-400">
+            Henüz işletme eklenmemiş. Önce bir işletme oluşturun.
+          </p>
         </Card>
       </div>
     );
@@ -118,21 +122,21 @@ export default function WorkingHoursPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-neutral-900">Çalışma Saatleri</h1>
-      <p className="text-sm text-neutral-600">
+      <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Çalışma Saatleri</h1>
+      <p className="text-sm text-neutral-600 dark:text-neutral-300">
         Çalışma saatleri ve mola/engelleme zamanlarınız randevu müsaitliklerini belirler.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
             {error}
           </div>
         )}
 
         <Card className="p-6">
-          <h2 className="font-semibold text-neutral-900">Haftalık çalışma saatleri</h2>
-          <p className="mt-1 text-sm text-neutral-500">
+          <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Haftalık çalışma saatleri</h2>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Her gün için açılış/kapanış saatini girin veya &quot;Kapalı&quot; işaretleyin.
           </p>
           <div className="mt-4 space-y-4">
@@ -141,9 +145,9 @@ export default function WorkingHoursPage() {
               return (
                 <div
                   key={d}
-                  className="flex flex-wrap items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4"
+                  className="flex flex-wrap items-center gap-4 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-600 dark:bg-neutral-800/50"
                 >
-                  <div className="w-28 font-medium text-neutral-700">
+                  <div className="w-28 font-medium text-neutral-700 dark:text-neutral-200">
                     {DAYS_OF_WEEK[d] ?? `Gün ${d}`}
                   </div>
                   <label className="flex items-center gap-2">
@@ -151,9 +155,9 @@ export default function WorkingHoursPage() {
                       type="checkbox"
                       checked={!!h.isClosed}
                       onChange={(e) => updateDay(d, 'isClosed', e.target.checked)}
-                      className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+                      className="rounded border-neutral-300 text-primary-600 focus:ring-primary-500 dark:border-neutral-500 dark:bg-neutral-900"
                     />
-                    <span className="text-sm text-neutral-600">Kapalı</span>
+                    <span className="text-sm text-neutral-600 dark:text-neutral-300">Kapalı</span>
                   </label>
                   {!h.isClosed && (
                     <>
@@ -179,15 +183,15 @@ export default function WorkingHoursPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="font-semibold text-neutral-900">Mola / engelleme zamanları</h2>
-          <p className="mt-1 text-sm text-neutral-500">
+          <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Mola / engelleme zamanları</h2>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Öğle arası veya randevu alınmayacak saat aralıklarını ekleyin.
           </p>
           <div className="mt-4 space-y-3">
             {breakTimes.map((bt, i) => (
               <div
                 key={i}
-                className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3"
+                className="flex flex-wrap items-center gap-3 rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-600 dark:bg-neutral-900/60"
               >
                 <Input
                   type="time"

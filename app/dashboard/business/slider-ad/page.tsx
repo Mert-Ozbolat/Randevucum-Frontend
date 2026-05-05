@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -32,6 +33,7 @@ export default function SliderAdPage() {
   const [headline, setHeadline] = useState('');
   const [subline, setSubline] = useState('');
   const [imageUrl, setImageUrl] = useState('');
+  const [fileUploading, setFileUploading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () => {
@@ -65,7 +67,7 @@ export default function SliderAdPage() {
   const now = new Date();
   const hasActiveSlot = !!(paidUntil && paidUntil > now);
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith('image/')) return;
     if (file.size > MAX_FILE_BYTES) {
@@ -73,12 +75,23 @@ export default function SliderAdPage() {
       return;
     }
     setError('');
-    const reader = new FileReader();
-    reader.onload = () => {
-      const r = reader.result;
-      if (typeof r === 'string') setImageUrl(r);
-    };
-    reader.readAsDataURL(file);
+    if (!isImageKitReady()) {
+      setError(
+        'ImageKit yapılandırması eksik. NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ve NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ekleyin.'
+      );
+      e.target.value = '';
+      return;
+    }
+    setFileUploading(true);
+    try {
+      const url = await uploadFileToImageKit(file, { folder: '/home-slider-promo' });
+      setImageUrl(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Görsel yüklenemedi.');
+    } finally {
+      setFileUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -260,7 +273,8 @@ export default function SliderAdPage() {
                   type="button"
                   variant="outline"
                   size="sm"
-                  disabled={!hasActiveSlot}
+                  disabled={!hasActiveSlot || fileUploading}
+                  loading={fileUploading}
                   onClick={() => fileRef.current?.click()}
                 >
                   Bilgisayardan yükle

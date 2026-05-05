@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
@@ -12,18 +12,44 @@ import { CalendarPicker } from '@/components/calendar/CalendarPicker';
 import { TimeSlotGrid, type SlotOption } from '@/components/calendar/TimeSlotGrid';
 import { ReservationModal } from '@/components/reservation/ReservationModal';
 import { useToast } from '@/components/ui/Toast';
-import { Check } from 'lucide-react';
+import { formatServicePriceLabel } from '@/lib/servicePrice';
+import { Check, Users } from 'lucide-react';
 
 interface Service {
   _id: string;
   name: string;
   durationMinutes: number;
-  price?: number;
+  price?: number | null;
+  priceMin?: number | null;
+  priceMax?: number | null;
+  currency?: string;
+  staffIds?: string[];
 }
 
 interface Business {
   _id: string;
   name: string;
+}
+
+interface StaffMember {
+  _id: string;
+  name: string;
+  serviceIds?: (string | { _id: string })[];
+}
+
+function serviceIdFromRef(x: string | { _id: string }): string {
+  return typeof x === 'string' ? x : x._id;
+}
+
+function staffOffersService(member: StaffMember, service: Service | null): boolean {
+  if (!service) return true;
+  const assigned = service.staffIds;
+  if (assigned && assigned.length > 0) {
+    return assigned.some((id) => String(id) === member._id);
+  }
+  const ids = member.serviceIds;
+  if (!ids || ids.length === 0) return true;
+  return ids.some((x) => serviceIdFromRef(x) === service._id);
 }
 
 function buildSlotOptions(
@@ -59,6 +85,8 @@ export default function ReservePage() {
   const serviceId = searchParams.get('serviceId');
   const { addToast } = useToast();
   const [service, setService] = useState<Service | null>(null);
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
   const [slots, setSlots] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
@@ -86,6 +114,13 @@ export default function ReservePage() {
   }, [businessId]);
 
   useEffect(() => {
+    api
+      .get<{ data: StaffMember[] }>(`/staff/business/${businessId}`)
+      .then((res) => setStaffList(Array.isArray(res.data.data) ? res.data.data : []))
+      .catch(() => setStaffList([]));
+  }, [businessId]);
+
+  useEffect(() => {
     if (!serviceId) return;
     api
       .get<{ data: Service[] }>(`/services/business/${businessId}`)
@@ -98,19 +133,41 @@ export default function ReservePage() {
   }, [businessId, serviceId]);
 
   useEffect(() => {
+    setSelectedTime(null);
+  }, [selectedStaffId]);
+
+  useEffect(() => {
     if (!serviceId || !selectedDate) return;
     setLoadingSlots(true);
     const dateStr = format(selectedDate, 'yyyy-MM-dd');
     api
       .get<{ data: { slots: string[] } }>('/reservations/available-slots', {
-        params: { businessId, serviceId, date: dateStr },
+        params: {
+          businessId,
+          serviceId,
+          date: dateStr,
+          ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
+        },
       })
       .then((res) => setSlots(res.data.data?.slots || []))
       .catch(() => setSlots([]))
       .finally(() => setLoadingSlots(false));
-  }, [businessId, serviceId, selectedDate]);
+  }, [businessId, serviceId, selectedDate, selectedStaffId]);
 
   const slotOptions = selectedDate ? buildSlotOptions(slots, selectedDate) : [];
+  const servicePriceLabel = service ? formatServicePriceLabel(service) : null;
+
+  const eligibleStaff = useMemo(() => {
+    if (!service) return [];
+    return staffList.filter((s) => staffOffersService(s, service));
+  }, [staffList, service]);
+
+  const reservationStaffLabel =
+    eligibleStaff.length > 0
+      ? selectedStaffId
+        ? eligibleStaff.find((s) => s._id === selectedStaffId)?.name ?? ''
+        : 'Farketmez (müsait personel)'
+      : undefined;
 
   const handleSlotSelect = (time: string) => {
     setSelectedTime(time);
@@ -125,6 +182,7 @@ export default function ReservePage() {
       await api.post('/reservations', {
         businessId,
         serviceId,
+        ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
@@ -192,7 +250,72 @@ export default function ReservePage() {
       {service && (
         <p className="mt-2 text-sm text-neutral-600">
           Hizmet: <strong>{service.name}</strong> ({service.durationMinutes} dk)
+          {servicePriceLabel && (
+            <span className="text-neutral-800 dark:text-neutral-200">
+              {' '}
+              · {servicePriceLabel}
+            </span>
+          )}
         </p>
+      )}
+
+      {eligibleStaff.length > 0 && (
+        <div
+          className="relative mt-6 overflow-hidden rounded-2xl border-2 border-primary-500 bg-gradient-to-br from-primary-50 via-white to-primary-50/80 p-5 shadow-[0_8px_30px_-8px_rgba(59,130,246,0.35)] dark:border-primary-500/70 dark:from-primary-950/80 dark:via-neutral-900 dark:to-primary-950/50 dark:shadow-[0_8px_30px_-8px_rgba(59,130,246,0.25)] sm:p-6"
+          role="region"
+          aria-labelledby="reserve-staff-heading"
+        >
+          <div className="pointer-events-none absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary-400/20 blur-2xl dark:bg-primary-500/20" aria-hidden />
+          <div className="relative flex gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-md dark:bg-primary-500">
+              <Users className="h-6 w-6" strokeWidth={2} aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase tracking-wide text-primary-700 dark:text-primary-300">
+                Randevu için
+              </p>
+              <h2
+                id="reserve-staff-heading"
+                className="mt-0.5 text-lg font-bold text-neutral-900 dark:text-white sm:text-xl"
+              >
+                Personel seçin{' '}
+                <span className="font-semibold text-primary-700 dark:text-primary-300">(isteğe bağlı)</span>
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+                <strong className="text-neutral-900 dark:text-white">Farketmez</strong> müsait personel atanır. Bir isim
+                seçerseniz yalnızca <strong className="text-neutral-900 dark:text-white">o kişinin</strong> uygun
+                saatleri görürsünüz.
+              </p>
+            </div>
+          </div>
+          <div className="relative mt-5 flex flex-wrap gap-2.5 border-t border-primary-200/80 pt-5 dark:border-primary-800/60">
+            <button
+              type="button"
+              onClick={() => setSelectedStaffId(null)}
+              className={`min-h-[46px] rounded-xl border-2 px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900 ${
+                selectedStaffId === null
+                  ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
+                  : 'border-neutral-200 bg-white text-neutral-900 hover:border-primary-400 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100'
+              }`}
+            >
+              Farketmez
+            </button>
+            {eligibleStaff.map((s) => (
+              <button
+                key={s._id}
+                type="button"
+                onClick={() => setSelectedStaffId(s._id)}
+                className={`min-h-[46px] rounded-xl border-2 px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900 ${
+                  selectedStaffId === s._id
+                    ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
+                    : 'border-neutral-200 bg-white text-neutral-900 hover:border-primary-400 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100'
+                }`}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       <Card className="mt-6 space-y-6 p-6">
@@ -237,6 +360,7 @@ export default function ReservePage() {
         }}
         businessName={businessName}
         serviceName={service?.name ?? ''}
+        staffLabel={reservationStaffLabel}
         date={selectedDate ?? new Date()}
         time={selectedTime ?? ''}
         durationMinutes={service?.durationMinutes}

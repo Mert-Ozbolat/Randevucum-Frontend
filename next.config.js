@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: '**' }, { protocol: 'http', hostname: '**' }],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'ik.imagekit.io', pathname: '/**' },
+      { protocol: 'https', hostname: '**' },
+      { protocol: 'http', hostname: '**' },
+    ],
   },
   // Google Identity Services uses a popup/postMessage; strict COOP breaks the flow in some browsers.
   async headers() {

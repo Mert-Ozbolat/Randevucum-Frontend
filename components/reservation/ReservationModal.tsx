@@ -9,6 +9,8 @@ interface ReservationModalProps {
   onClose: () => void;
   businessName?: string;
   serviceName: string;
+  /** Boş dizi yoksa: seçilen personel adı veya "Farketmez" metni */
+  staffLabel?: string;
   date: Date;
   time: string;
   durationMinutes?: number;
@@ -24,6 +26,7 @@ export function ReservationModal({
   onClose,
   businessName,
   serviceName,
+  staffLabel,
   date,
   time,
   durationMinutes,
@@ -75,6 +78,11 @@ export function ReservationModal({
           <p className="mt-2 text-neutral-900">
             <span className="font-bold">Saat:</span> {time}
           </p>
+          {staffLabel ? (
+            <p className="mt-2 text-neutral-900">
+              <span className="font-bold">Personel:</span> {staffLabel}
+            </p>
+          ) : null}
         </div>
 
         <div className="mt-4">

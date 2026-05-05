@@ -20,6 +20,8 @@ const config: Config = {
           700: '#15803d',
           800: '#166534',
           900: '#14532d',
+          /** Used by dark-mode nav / surfaces; was missing so `bg-primary-950/*` did not override light `bg-primary-50` */
+          950: '#052e16',
         },
         neutral: {
           50: '#fafafa',

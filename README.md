@@ -17,20 +17,18 @@ Next.js 14 (App Router) + Tailwind CSS ile çok kiracılı randevu platformu ara
 cd frontend
 npm install
 cp .env.local.example .env.local
-# .env.local içinde NEXT_PUBLIC_API_URL ve isteğe bağlı Stripe anahtarlarını düzenle
+# .env.local içinde NEXT_PUBLIC_API_URL ayarlayın; Stripe anahtarları backend .env dosyasındadır
 npm run dev
 ```
 
-Backend API’nin çalışıyor olması gerekir (varsayılan: `http://localhost:3000`).
+Backend API’nin çalışıyor olması gerekir (varsayılan: `http://localhost:5001`).
 
 ## Ortam Değişkenleri
 
 | Değişken | Açıklama |
 |----------|----------|
-| `NEXT_PUBLIC_API_URL` | Backend API base URL (örn. http://localhost:3000) |
-| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (opsiyonel) |
-| `STRIPE_SECRET_KEY` | Stripe secret key – sadece API route için (opsiyonel) |
-| `STRIPE_PRICE_ID_MONTHLY` | Aylık abonelik price ID (opsiyonel) |
+| `NEXT_PUBLIC_API_URL` | Backend API base URL (örn. http://localhost:5001) |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | İleride client Stripe için (opsiyonel) |
 
 ## Sayfalar
 
@@ -51,30 +49,16 @@ Backend API’nin çalışıyor olması gerekir (varsayılan: `http://localhost:
 app/
   (public)/          # Navbar’lı genel sayfalar
   dashboard/         # Sidebar’lı panel
-  api/               # Stripe checkout API route
+  api/               # (boş / ileride)
 components/
 lib/                 # api, auth, constants
 store/               # Zustand auth
 ```
 
-## Stripe
+## Stripe (abonelik)
 
-Abonelik ödemesi için:
-
-1. Stripe hesabında bir Product + recurring Price oluştur.
-2. `STRIPE_SECRET_KEY` ve `STRIPE_PRICE_ID_MONTHLY` (veya kullandığın price ID) ile `.env.local` doldur.
-3. Abonelik sayfasında “Ödeme Yap” benzeri bir buton, `/api/stripe-create-checkout` POST ile session oluşturup dönen URL’e yönlendirir.
-4. Ödeme sonrası webhook ile backend’de abonelik kaydı güncellenebilir (backend tarafında Stripe webhook endpoint gerekir).
+Checkout ve webhook **Express backend** üzerinde: `backend/.env` ve `backend/README.md` içindeki Stripe bölümüne bakın. Panelde **Abonelik** sayfası, Stripe hazırsa “Kredi kartı ile abonelik öde” ile Checkout’a yönlendirir.
 
 ## Lisans
 
 ISC
-# webrezervasyon
-# Randevucum
-# Randevucum
-# Randevucum
-# Randevucum
-# Randevucum
-# Randevucum
-# Randevucum-Frontend
-# Randevucum-Frontend

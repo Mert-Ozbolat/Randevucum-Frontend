@@ -31,7 +31,7 @@ type GoogleAccountRequired = {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get('from') || '/dashboard';
+  const from = searchParams.get('from') || '/';
   const setStoreAuth = useAuthStore((s) => s.setAuth);
 
   const [email, setEmail] = useState('');

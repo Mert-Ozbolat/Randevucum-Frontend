@@ -45,7 +45,8 @@ export function BusinessCard({
     imageUrl || PLACEHOLDER_IMAGES[businessType] || PLACEHOLDER_IMAGES.other;
   const location = [address?.district, address?.city].filter(Boolean).join(', ');
   const displayRating = rating != null && rating > 0 ? rating : null;
-  const reviews = reviewCount ?? (displayRating ? 120 : 0);
+  const reviewLabelCount =
+    reviewCount != null && reviewCount > 0 ? reviewCount : 0;
 
   return (
     <Link href={`/business/${_id}`} className="group block">
@@ -79,8 +80,8 @@ export function BusinessCard({
               <div className="flex items-center gap-1 rounded-full bg-white/95 px-2.5 py-1 shadow-soft backdrop-blur">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500" aria-hidden />
                 <span className="text-sm font-semibold text-neutral-800">{displayRating.toFixed(1)}</span>
-                {reviews > 0 && (
-                  <span className="text-xs text-neutral-500">({reviews} yorum)</span>
+                {reviewLabelCount > 0 && (
+                  <span className="text-xs text-neutral-500">({reviewLabelCount} yorum)</span>
                 )}
               </div>
             )}

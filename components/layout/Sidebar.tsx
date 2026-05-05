@@ -6,6 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   Building2,
   Calendar,
+  CalendarDays,
   Clock,
   CreditCard,
   Home,
@@ -17,9 +18,16 @@ import {
 } from 'lucide-react';
 import { isBusinessOwner } from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
+import { useStaffPanel } from '@/contexts/StaffPanelContext';
 import { Logo } from '@/components/brand/Logo';
 
-type SidebarLink = { href: string; label: string; Icon: LucideIcon; emphasize?: boolean };
+type SidebarLink = {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  emphasize?: boolean;
+  isActive?: (pathname: string | null) => boolean;
+};
 
 const businessLinks: SidebarLink[] = [
   { href: '/dashboard/business', label: 'Özet', Icon: LayoutDashboard },
@@ -41,7 +49,22 @@ export function Sidebar() {
   const pathname = usePathname();
   const user = useAuthStore((s) => s.user);
   const isOwner = isBusinessOwner(user);
-  const links = isOwner ? businessLinks : customerLinks;
+  const { canViewStaffPanel } = useStaffPanel();
+
+  const links: SidebarLink[] = (() => {
+    if (isOwner) return businessLinks;
+    const base = [...customerLinks];
+    if (canViewStaffPanel) {
+      base.splice(1, 0, {
+        href: '/dashboard/staff/reservations',
+        label: 'İş randevularım',
+        Icon: CalendarDays,
+        emphasize: true,
+        isActive: (p) => Boolean(p?.startsWith('/dashboard/staff')),
+      });
+    }
+    return base;
+  })();
 
   return (
     <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-neutral-200 bg-gradient-to-b from-white to-neutral-50/80 shadow-soft dark:border-neutral-700 dark:from-neutral-900 dark:to-neutral-900/95">
@@ -56,8 +79,8 @@ export function Sidebar() {
       )}
 
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {links.map(({ href, label, Icon, emphasize }) => {
-          const active = pathname === href;
+        {links.map(({ href, label, Icon, emphasize, isActive }) => {
+          const active = isActive ? isActive(pathname) : pathname === href;
           return (
             <Link
               key={href}
@@ -65,10 +88,10 @@ export function Sidebar() {
               className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
                 emphasize && !isOwner
                   ? active
-                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25 dark:bg-primary-600'
-                    : 'bg-primary-50/90 text-primary-900 hover:bg-primary-100 dark:bg-primary-950/50 dark:text-primary-100 dark:hover:bg-primary-900/40'
+                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25 dark:bg-primary-600 dark:text-white'
+                    : 'bg-primary-50/90 text-primary-900 hover:bg-primary-100 dark:bg-primary-950/60 dark:text-primary-50 dark:hover:bg-primary-900/55 dark:hover:text-white'
                   : active
-                    ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/40 dark:text-primary-200'
+                    ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-50'
                     : 'text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800'
               }`}
             >

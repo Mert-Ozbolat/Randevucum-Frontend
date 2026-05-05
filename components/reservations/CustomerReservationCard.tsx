@@ -14,6 +14,7 @@ export interface CustomerReservationItem {
   status: string;
   businessId?: { _id?: string; name: string; businessType?: string };
   serviceId?: { name: string; durationMinutes?: number };
+  customerId?: { firstName?: string; lastName?: string };
 }
 
 function safeParseDate(iso: string): Date | null {
@@ -27,9 +28,12 @@ function safeParseDate(iso: string): Date | null {
 export function CustomerReservationCard({
   reservation: r,
   onCancel,
+  readOnly = false,
 }: {
   reservation: CustomerReservationItem;
   onCancel: (id: string) => void;
+  /** Personel görünümü: iptal yok, müşteri bilgisi gösterilir */
+  readOnly?: boolean;
 }) {
   const raw = typeof r.date === 'string' ? r.date : String(r.date);
   const d = safeParseDate(raw);
@@ -38,7 +42,12 @@ export function CustomerReservationCard({
   const weekday = d ? format(d, 'EEE', { locale: tr }) : '';
   const dateLine = d ? format(d, 'd MMMM yyyy', { locale: tr }) : raw;
 
-  const canCancel = r.status === 'pending' || r.status === 'approved';
+  const canCancel =
+    !readOnly && (r.status === 'pending' || r.status === 'approved');
+  const customerName = [r.customerId?.firstName, r.customerId?.lastName]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card transition duration-200 hover:border-primary-200/80 hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-900/60 dark:hover:border-primary-700/50">
@@ -68,6 +77,11 @@ export function CustomerReservationCard({
               <p className="mt-0.5 text-sm font-medium text-primary-600 dark:text-primary-400">
                 {r.serviceId?.name || 'Hizmet'}
               </p>
+              {readOnly && customerName && (
+                <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">
+                  Müşteri: <span className="font-medium text-neutral-800 dark:text-neutral-200">{customerName}</span>
+                </p>
+              )}
             </div>
             <ReservationStatusBadge status={r.status} />
           </div>
@@ -101,11 +115,13 @@ export function CustomerReservationCard({
             </span>
           </div>
 
-          {canCancel && (
+          {(canCancel || (readOnly && r.businessId?._id)) && (
             <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/80">
-              <Button size="sm" variant="danger" onClick={() => onCancel(r._id)}>
-                Randevuyu iptal et
-              </Button>
+              {canCancel && (
+                <Button size="sm" variant="danger" onClick={() => onCancel(r._id)}>
+                  Randevuyu iptal et
+                </Button>
+              )}
               {r.businessId?._id && (
                 <Link href={`/business/${r.businessId._id}`}>
                   <Button size="sm" variant="outline">

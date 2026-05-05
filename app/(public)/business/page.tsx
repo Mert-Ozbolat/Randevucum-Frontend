@@ -20,6 +20,7 @@ interface Business {
   phone?: string;
   description?: string;
   imageUrl?: string | null;
+  averageRating?: number | null;
   rating?: number | null;
   reviewCount?: number | null;
   createdAt?: string;
@@ -97,7 +98,10 @@ function BusinessListPage() {
       });
     }
     if (sortBy === 'rating') {
-      list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
+      list.sort(
+        (a, b) =>
+          (b.averageRating ?? b.rating ?? 0) - (a.averageRating ?? a.rating ?? 0)
+      );
     }
     if (sortBy === 'nearest') {
       const cities = [...new Set(list.map((b) => b.address?.city).filter(Boolean))];
@@ -239,9 +243,11 @@ function BusinessListPage() {
                   address={b.address}
                   description={b.description}
                   imageUrl={b.imageUrl}
-                  rating={b.rating}
+                  rating={b.averageRating ?? b.rating}
                   reviewCount={b.reviewCount}
-                  isPopular={(b.rating ?? 0) >= 4.5}
+                  isPopular={
+                    (b.averageRating ?? b.rating ?? 0) >= 4.5 && (b.reviewCount ?? 0) > 0
+                  }
                   isNew={b.createdAt ? new Date(b.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : false}
                 />
               ))}

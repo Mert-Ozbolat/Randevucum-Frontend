@@ -8,7 +8,9 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { GoogleMapPinPicker } from '@/components/business/GoogleMapPinPicker';
+import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { ImageIcon } from 'lucide-react';
+import { dispatchBusinessSetupRefresh } from '@/lib/businessSetupRefresh';
 
 interface Business {
   _id: string;
@@ -79,18 +81,22 @@ function CreateBusinessForm({ onCreated }: { onCreated: (b: Business) => void })
   };
   return (
     <Card>
-      <h2 className="text-lg font-bold text-neutral-900">Yeni işletme oluştur</h2>
+      <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50">Yeni işletme oluştur</h2>
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-        {error && <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+            {error}
+          </div>
+        )}
         <Input label="İşletme adı" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-neutral-900">Alan</label>
+          <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Alan</label>
           <select
             value={form.mainCategory}
             onChange={(e) =>
               setForm((f) => ({ ...f, mainCategory: e.target.value, subCategory: '' }))
             }
-            className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none"
+            className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
             required
           >
             <option value="">Alan seçin</option>
@@ -100,11 +106,11 @@ function CreateBusinessForm({ onCreated }: { onCreated: (b: Business) => void })
           </select>
         </div>
         <div>
-          <label className="mb-1.5 block text-sm font-medium text-neutral-900">Meslek</label>
+          <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Meslek</label>
           <select
             value={form.subCategory}
             onChange={(e) => setForm((f) => ({ ...f, subCategory: e.target.value }))}
-            className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500"
+            className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none disabled:bg-neutral-100 disabled:text-neutral-500 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100 dark:disabled:bg-neutral-900 dark:disabled:text-neutral-500"
             disabled={!form.mainCategory}
             required
           >
@@ -113,7 +119,7 @@ function CreateBusinessForm({ onCreated }: { onCreated: (b: Business) => void })
               <option key={sc} value={sc}>{sc}</option>
             ))}
           </select>
-          <p className="mt-1 text-xs text-neutral-600">
+          <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
             Bu seçim arama ve filtre için kaydedilir.
           </p>
         </div>
@@ -136,6 +142,7 @@ export default function BusinessInfoPage() {
   const [error, setError] = useState('');
   const [form, setForm] = useState<Partial<Business>>({});
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -160,6 +167,7 @@ export default function BusinessInfoPage() {
               ? b.workingHours
               : DAYS.map((d) => ({ dayOfWeek: d, open: '09:00', close: '18:00', isClosed: d === 0 })),
             breakTimes: b.breakTimes || [{ start: '12:00', end: '13:00' }],
+            imageUrl: b.imageUrl || '',
           });
           if (b.imageUrl) setProfilePreview(b.imageUrl);
         }
@@ -181,6 +189,7 @@ export default function BusinessInfoPage() {
       };
       await api.put(`/business/${business._id}`, payload);
       setBusiness({ ...business, ...payload });
+      dispatchBusinessSetupRefresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
     } finally {
@@ -188,14 +197,29 @@ export default function BusinessInfoPage() {
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith('image/')) return;
-    const reader = new FileReader();
-    reader.onload = () => setProfilePreview(reader.result as string);
-    reader.readAsDataURL(file);
-    // TODO: API'ye yükleme (backend imageUrl / upload endpoint eklendiğinde)
+    setError('');
+    if (!isImageKitReady()) {
+      setError(
+        'ImageKit yapılandırması eksik. NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ve NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ekleyin; API tarafında IMAGEKIT_* değişkenleri olmalı.'
+      );
+      e.target.value = '';
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const url = await uploadFileToImageKit(file, { folder: '/business-covers' });
+      setProfilePreview(url);
+      setForm((f) => ({ ...f, imageUrl: url }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Görsel yüklenemedi.');
+    } finally {
+      setPhotoUploading(false);
+      e.target.value = '';
+    }
   };
 
   if (loading) {
@@ -220,6 +244,7 @@ export default function BusinessInfoPage() {
             email: b.email,
             description: b.description,
           });
+          dispatchBusinessSetupRefresh();
         }}
       />
     );
@@ -230,18 +255,22 @@ export default function BusinessInfoPage() {
 
   return (
     <div className="max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold text-neutral-900">İşletme Bilgileri</h1>
+      <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">İşletme Bilgileri</h1>
       <form onSubmit={handleSubmit}>
         <Card className="space-y-6">
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+              {error}
+            </div>
           )}
 
           {/* Profil foto yükleme */}
           <div>
-            <label className="mb-2 block text-sm font-medium text-neutral-900">Profil / kapak fotoğrafı</label>
+            <label className="mb-2 block text-sm font-medium text-neutral-900 dark:text-neutral-200">
+              Profil / kapak fotoğrafı
+            </label>
             <div className="flex items-center gap-4">
-              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-neutral-200 bg-neutral-100">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-neutral-200 bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800">
                 {profilePreview ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={profilePreview} alt="Profil" className="h-full w-full object-cover" />
@@ -257,10 +286,19 @@ export default function BusinessInfoPage() {
                   onChange={handlePhotoChange}
                   className="hidden"
                 />
-                <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  loading={photoUploading}
+                  disabled={photoUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   Fotoğraf seç
                 </Button>
-                <p className="mt-1 text-xs text-neutral-600">JPG, PNG. Yükleme API bağlandığında kaydedilecek.</p>
+                <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                  JPG, PNG veya WebP. ImageKit’e yüklenir; kaydet ile işletme kaydına yazılır.
+                </p>
               </div>
             </div>
           </div>
@@ -272,7 +310,7 @@ export default function BusinessInfoPage() {
             required
           />
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-neutral-900">Alan</label>
+            <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Alan</label>
             <select
               value={form.mainCategory || ''}
               onChange={(e) =>
@@ -283,7 +321,7 @@ export default function BusinessInfoPage() {
                   businessType: 'other',
                 }))
               }
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
             >
               <option value="">Alan seçin</option>
               {BUSINESS_CATEGORY_GROUPS.map((g) => (
@@ -292,7 +330,7 @@ export default function BusinessInfoPage() {
             </select>
           </div>
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-neutral-900">Meslek</label>
+            <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Meslek</label>
             <select
               value={form.subCategory || ''}
               onChange={(e) =>
@@ -302,7 +340,7 @@ export default function BusinessInfoPage() {
                   businessType: mapSubCategoryToBusinessType(e.target.value),
                 }))
               }
-            className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-neutral-100 disabled:text-neutral-500"
+              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 disabled:bg-neutral-100 disabled:text-neutral-500 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100 dark:disabled:bg-neutral-900 dark:disabled:text-neutral-500"
               disabled={!form.mainCategory}
             >
               <option value="">{form.mainCategory ? 'Meslek seçin' : 'Önce alan seçin'}</option>
@@ -310,7 +348,7 @@ export default function BusinessInfoPage() {
                 <option key={sc} value={sc}>{sc}</option>
               ))}
             </select>
-            <p className="mt-1 text-xs text-neutral-600">
+            <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
               Kaydet dediğinizde seçimler işletmeye yazılır.
             </p>
           </div>
@@ -332,7 +370,7 @@ export default function BusinessInfoPage() {
 
           {/* Adres: İlçe, Şehir, Açık adres */}
           <div className="space-y-3">
-            <span className="block text-sm font-medium text-neutral-900">Adres</span>
+            <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-200">Adres</span>
             <Input
               label="İlçe"
               value={form.address?.district || ''}
@@ -342,13 +380,13 @@ export default function BusinessInfoPage() {
               placeholder="Örn. İskele"
             />
             <div>
-              <label className="mb-1.5 block text-sm font-medium text-neutral-900">Şehir</label>
+              <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Şehir</label>
               <select
                 value={form.address?.city || ''}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, address: { ...f.address, city: e.target.value } }))
                 }
-                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+                className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
               >
                 <option value="">Şehir seçin</option>
                 {KKTC_CITIES.map((city) => (
@@ -367,12 +405,13 @@ export default function BusinessInfoPage() {
           </div>
 
           <div>
-            <label className="mb-1.5 block text-sm font-medium text-neutral-900">Açıklama</label>
+            <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Açıklama</label>
             <textarea
               value={form.description || ''}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               rows={3}
-              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20"
+              placeholder="İşletmenizi kısaca anlatın (kurulum için en az 8 karakter)."
+              className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 placeholder:text-neutral-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-50 dark:placeholder:text-neutral-500"
             />
           </div>
           <Button type="submit" loading={saving}>

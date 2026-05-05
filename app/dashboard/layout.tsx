@@ -3,16 +3,27 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Building2, Calendar, User } from 'lucide-react';
+import { BusinessSetupStatusBar } from '@/components/dashboard/BusinessSetupStatusBar';
+import { Building2, Calendar, CalendarDays, User } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardBackButton } from '@/components/layout/DashboardBackButton';
+import { StaffPanelProvider, useStaffPanel } from '@/contexts/StaffPanelContext';
 import { useAuthStore } from '@/store/authStore';
 import { clearAuth, isBusinessOwner } from '@/lib/auth';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <StaffPanelProvider>
+      <DashboardShell>{children}</DashboardShell>
+    </StaffPanelProvider>
+  );
+}
+
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, token, logout } = useAuthStore();
+  const { canViewStaffPanel } = useStaffPanel();
 
   useEffect(() => {
     useAuthStore.persist.rehydrate();
@@ -50,6 +61,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   const owner = isBusinessOwner(user);
+  const showBusinessSetupBar = owner && pathname?.startsWith('/dashboard/business');
+  const headerScopeTitle = pathname?.startsWith('/dashboard/staff')
+    ? 'İş randevularım'
+    : owner
+      ? 'İşletme paneli'
+      : 'Hesabım';
 
   return (
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-900">
@@ -60,7 +77,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
               <DashboardBackButton fallbackHref={owner ? '/dashboard/business' : '/'} />
               <h1 className="truncate text-lg font-semibold text-neutral-900 dark:text-neutral-50">
-                {owner ? 'İşletme paneli' : 'Hesabım'}
+                {headerScopeTitle}
               </h1>
             </div>
             {!owner && (
@@ -69,22 +86,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   href="/dashboard/customer/reservations"
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
                     pathname?.startsWith('/dashboard/customer/reservations')
-                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-primary-950/50'
+                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
                   }`}
                 >
-                  <Calendar className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  <Calendar className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                   Randevularım
                 </Link>
+                {canViewStaffPanel && (
+                  <Link
+                    href="/dashboard/staff/reservations"
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
+                      pathname?.startsWith('/dashboard/staff')
+                        ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
+                    }`}
+                  >
+                    <CalendarDays className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    İş randevularım
+                  </Link>
+                )}
                 <Link
                   href="/dashboard/customer/profile"
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
                     pathname?.startsWith('/dashboard/customer/profile')
-                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-primary-950/50'
+                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
                   }`}
                 >
-                  <User className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  <User className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                   Profil
                 </Link>
               </div>
@@ -95,22 +125,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   href="/dashboard/business"
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
                     pathname === '/dashboard/business'
-                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-primary-950/50'
+                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
                   }`}
                 >
-                  <Building2 className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  <Building2 className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                   Özet
                 </Link>
                 <Link
                   href="/dashboard/business/reservations"
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
                     pathname?.startsWith('/dashboard/business/reservations')
-                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200'
-                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-primary-950/50'
+                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
                   }`}
                 >
-                  <Calendar className="h-4 w-4" strokeWidth={2} aria-hidden />
+                  <Calendar className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                   Randevular
                 </Link>
               </div>
@@ -129,6 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
           </div>
         </header>
+        {showBusinessSetupBar && <BusinessSetupStatusBar />}
         <main className="p-6">{children}</main>
       </div>
     </div>
