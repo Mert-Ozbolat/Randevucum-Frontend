@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
@@ -32,6 +32,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const from = searchParams.get('from') || '/';
+  const debug = searchParams.get('debug') === '1';
   const setStoreAuth = useAuthStore((s) => s.setAuth);
 
   const [email, setEmail] = useState('');
@@ -46,6 +47,19 @@ export default function LoginPage() {
     lastName: '',
   });
   const [googleAccountType, setGoogleAccountType] = useState<AccountType | null>(null);
+
+  useEffect(() => {
+    if (!debug) return;
+    // Safe env debug: only NEXT_PUBLIC values, never secrets.
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    // eslint-disable-next-line no-console
+    console.log('[env-debug] NEXT_PUBLIC_API_URL:', apiUrl || '(missing)');
+    // eslint-disable-next-line no-console
+    console.log('[env-debug] NEXT_PUBLIC_GOOGLE_CLIENT_ID set?:', Boolean(googleClientId));
+    // eslint-disable-next-line no-console
+    console.log('[env-debug] NEXT_PUBLIC_GOOGLE_CLIENT_ID prefix:', googleClientId ? googleClientId.slice(0, 10) + '...' : '(missing)');
+  }, [debug]);
 
   const finishAuth = (data: AuthPayload['data']) => {
     const u = {
@@ -132,6 +146,21 @@ export default function LoginPage() {
         <p className="mt-1 text-sm text-neutral-600">
           Hesabınıza giriş yaparak randevu ve panel işlemlerinize devam edin.
         </p>
+        {debug && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-100">
+            <p className="font-semibold">Env debug (public)</p>
+            <p className="mt-1">
+              <span className="font-medium">NEXT_PUBLIC_API_URL:</span>{' '}
+              <code className="rounded bg-white/70 px-1 dark:bg-neutral-900/60">
+                {process.env.NEXT_PUBLIC_API_URL || '(missing)'}
+              </code>
+            </p>
+            <p className="mt-1">
+              <span className="font-medium">NEXT_PUBLIC_GOOGLE_CLIENT_ID:</span>{' '}
+              {process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ? 'set' : '(missing)'}
+            </p>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           {error && !pendingGoogleToken && (
             <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
