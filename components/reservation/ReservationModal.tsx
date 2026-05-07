@@ -3,6 +3,7 @@
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -16,6 +17,9 @@ interface ReservationModalProps {
   durationMinutes?: number;
   notes: string;
   onNotesChange: (value: string) => void;
+  phone?: string;
+  onPhoneChange?: (value: string) => void;
+  requirePhone?: boolean;
   onConfirm: () => void;
   loading?: boolean;
   error?: string;
@@ -32,6 +36,9 @@ export function ReservationModal({
   durationMinutes,
   notes,
   onNotesChange,
+  phone,
+  onPhoneChange,
+  requirePhone = false,
   onConfirm,
   loading = false,
   error,
@@ -86,6 +93,22 @@ export function ReservationModal({
         </div>
 
         <div className="mt-4">
+          {requirePhone && onPhoneChange && (
+            <div className="mb-4">
+              <Input
+                label="Telefon (WhatsApp hatırlatmaları için)"
+                type="tel"
+                autoComplete="tel"
+                placeholder="05xx xxx xx xx"
+                value={phone || ''}
+                onChange={(e) => onPhoneChange(e.target.value)}
+                required
+              />
+              <p className="mt-1 text-xs text-neutral-500">
+                Otomatik formatlanır. İlk randevunuzda istenir; sonraki randevularda tekrar sorulmaz.
+              </p>
+            </div>
+          )}
           <label
             htmlFor="reservation-notes"
             className="block text-sm font-medium text-neutral-900"

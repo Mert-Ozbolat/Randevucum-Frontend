@@ -226,10 +226,12 @@ export default function RegisterPage() {
             minLength={6}
           />
           <Input
-            label="Telefon (isteğe bağlı)"
+            label={accountType === 'business_owner' ? 'Telefon' : 'Telefon (isteğe bağlı)'}
             type="tel"
+            autoComplete="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            required={accountType === 'business_owner'}
           />
           <Button type="submit" fullWidth loading={loading}>
             Kayıt Ol

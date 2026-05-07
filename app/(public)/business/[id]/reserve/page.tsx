@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
-import { getStoredToken } from '@/lib/auth';
+import { getStoredToken, getStoredUser, setAuth } from '@/lib/auth';
 import { format, startOfDay } from 'date-fns';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -14,6 +14,29 @@ import { ReservationModal } from '@/components/reservation/ReservationModal';
 import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Check, Users } from 'lucide-react';
+
+function phoneDigitsOnly(input: string): string {
+  return String(input || '').replace(/\D/g, '');
+}
+
+function formatTrMobile(digitsRaw: string): string {
+  // Keep only digits, format as 0(5xx) xxx xx xx when possible.
+  const d = phoneDigitsOnly(digitsRaw);
+  let x = d;
+  if (x.startsWith('90')) x = x.slice(2);
+  if (x.startsWith('0')) x = x.slice(1);
+  // expect 10 digits starting with 5
+  const m = x.slice(0, 10);
+  const a = m.slice(0, 3);
+  const b = m.slice(3, 6);
+  const c = m.slice(6, 8);
+  const e = m.slice(8, 10);
+  if (!a) return '';
+  if (m.length <= 3) return `0${a}`;
+  if (m.length <= 6) return `0${a} ${b}`;
+  if (m.length <= 8) return `0${a} ${b} ${c}`;
+  return `0${a} ${b} ${c} ${e}`;
+}
 
 interface Service {
   _id: string;
@@ -99,6 +122,12 @@ export default function ReservePage() {
   const [reserveError, setReserveError] = useState('');
   const [success, setSuccess] = useState(false);
   const [businessName, setBusinessName] = useState<string>('');
+  const [phone, setPhone] = useState<string>(() => getStoredUser()?.phone || '');
+  const [needsPhone, setNeedsPhone] = useState<boolean>(() => {
+    const u = getStoredUser();
+    const p = u?.phone ? String(u.phone).trim() : '';
+    return !p;
+  });
 
   useEffect(() => {
     const token = getStoredToken();
@@ -171,6 +200,10 @@ export default function ReservePage() {
 
   const handleSlotSelect = (time: string) => {
     setSelectedTime(time);
+    // Compute at modal-open time so we reliably show the field.
+    const u = getStoredUser();
+    const p = u?.phone ? String(u.phone).trim() : '';
+    setNeedsPhone(!p);
     setModalOpen(true);
   };
 
@@ -179,6 +212,17 @@ export default function ReservePage() {
     setReserveError('');
     setReserveLoading(true);
     try {
+      const u = getStoredUser();
+      const phoneDigits = phoneDigitsOnly(phone);
+      // TR mobile should be 10 digits (5xxxxxxxxx) after trimming prefixes.
+      let normalizedDigits = phoneDigits;
+      if (normalizedDigits.startsWith('90')) normalizedDigits = normalizedDigits.slice(2);
+      if (normalizedDigits.startsWith('0')) normalizedDigits = normalizedDigits.slice(1);
+      normalizedDigits = normalizedDigits.slice(0, 10);
+      if (needsPhone && normalizedDigits.length < 10) {
+        setReserveError('Telefon numarası gerekli.');
+        return;
+      }
       await api.post('/reservations', {
         businessId,
         serviceId,
@@ -186,7 +230,17 @@ export default function ReservePage() {
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
+        ...(needsPhone ? { customerPhone: phone.trim() } : {}),
       });
+      if (needsPhone) {
+        const token = getStoredToken();
+        if (token && u) {
+          // Store pretty formatted version on client; backend will normalize to E.164.
+          const updated = { ...u, phone: formatTrMobile(phone) || phone.trim() };
+          setAuth(token, updated);
+          setNeedsPhone(false);
+        }
+      }
       addToast('success', 'Randevunuz alındı.');
       setSuccess(true);
       setModalOpen(false);
@@ -366,6 +420,9 @@ export default function ReservePage() {
         durationMinutes={service?.durationMinutes}
         notes={notes}
         onNotesChange={setNotes}
+        phone={phone}
+        onPhoneChange={(v) => setPhone(formatTrMobile(v))}
+        requirePhone={needsPhone}
         onConfirm={handleConfirm}
         loading={reserveLoading}
         error={reserveError}
