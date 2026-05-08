@@ -128,6 +128,34 @@ export default function ReservePage() {
     const p = u?.phone ? String(u.phone).trim() : '';
     return !p;
   });
+  const phoneRequiredByApi = useMemo(() => {
+    const msg = String(reserveError || '').toLowerCase();
+    return msg.includes('telefon numarası gerekli') || msg.includes('telefon numarasi gerekli');
+  }, [reserveError]);
+  const requirePhoneForThisReservation = needsPhone || phoneRequiredByApi;
+
+  // Keep localStorage user in sync with backend (phone may be missing in DB even if LS is stale).
+  useEffect(() => {
+    api
+      .get<{ data: { phone?: string } }>('/auth/me')
+      .then((res) => {
+        const u = getStoredUser();
+        const token = getStoredToken();
+        const phoneFromApi = res.data.data?.phone ? String(res.data.data.phone).trim() : '';
+        if (phoneFromApi) {
+          setPhone(formatTrMobile(phoneFromApi));
+          setNeedsPhone(false);
+          if (token && u && !u.phone) {
+            setAuth(token, { ...u, phone: phoneFromApi });
+          }
+        } else {
+          setNeedsPhone(true);
+        }
+      })
+      .catch(() => {
+        // ignore; fall back to localStorage
+      });
+  }, []);
 
   useEffect(() => {
     const token = getStoredToken();
@@ -207,19 +235,28 @@ export default function ReservePage() {
     setModalOpen(true);
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (phoneFromModal?: string) => {
     if (!selectedDate || !selectedTime || !service) return;
     setReserveError('');
     setReserveLoading(true);
     try {
       const u = getStoredUser();
-      const phoneDigits = phoneDigitsOnly(phone);
+      const phoneCandidateA = (phoneFromModal ?? '') as string;
+      const phoneCandidateB = (phone ?? '') as string;
+      const phoneInput =
+        phoneDigitsOnly(phoneCandidateA).length > 0
+          ? phoneCandidateA
+          : phoneDigitsOnly(phoneCandidateB).length > 0
+            ? phoneCandidateB
+            : phoneCandidateA || phoneCandidateB || '';
+
+      const phoneDigits = phoneDigitsOnly(phoneInput);
       // TR mobile should be 10 digits (5xxxxxxxxx) after trimming prefixes.
       let normalizedDigits = phoneDigits;
       if (normalizedDigits.startsWith('90')) normalizedDigits = normalizedDigits.slice(2);
       if (normalizedDigits.startsWith('0')) normalizedDigits = normalizedDigits.slice(1);
       normalizedDigits = normalizedDigits.slice(0, 10);
-      if (needsPhone && normalizedDigits.length < 10) {
+      if (requirePhoneForThisReservation && normalizedDigits.length < 10) {
         setReserveError('Telefon numarası gerekli.');
         return;
       }
@@ -230,14 +267,16 @@ export default function ReservePage() {
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
-        ...(needsPhone ? { customerPhone: phone.trim() } : {}),
+        ...(requirePhoneForThisReservation ? { customerPhone: String(phoneInput).trim() } : {}),
       });
-      if (needsPhone) {
+      if (requirePhoneForThisReservation) {
         const token = getStoredToken();
         if (token && u) {
           // Store pretty formatted version on client; backend will normalize to E.164.
-          const updated = { ...u, phone: formatTrMobile(phone) || phone.trim() };
+          const pretty = formatTrMobile(phoneInput) || String(phoneInput).trim();
+          const updated = { ...u, phone: pretty };
           setAuth(token, updated);
+          setPhone(pretty);
           setNeedsPhone(false);
         }
       }
@@ -245,7 +284,11 @@ export default function ReservePage() {
       setSuccess(true);
       setModalOpen(false);
     } catch (err) {
-      setReserveError(getApiErrorMessage(err));
+      const msg = getApiErrorMessage(err);
+      setReserveError(msg);
+      if (msg.toLowerCase().includes('telefon numarası gerekli') || msg.toLowerCase().includes('telefon numarasi gerekli')) {
+        setNeedsPhone(true);
+      }
     } finally {
       setReserveLoading(false);
     }
@@ -421,8 +464,11 @@ export default function ReservePage() {
         notes={notes}
         onNotesChange={setNotes}
         phone={phone}
-        onPhoneChange={(v) => setPhone(formatTrMobile(v))}
-        requirePhone={needsPhone}
+        onPhoneChange={(v) => {
+          setPhone(formatTrMobile(v));
+          if (reserveError) setReserveError('');
+        }}
+        requirePhone={requirePhoneForThisReservation}
         onConfirm={handleConfirm}
         loading={reserveLoading}
         error={reserveError}

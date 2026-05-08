@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuthStore } from '@/store/authStore';
 import { format, startOfDay } from 'date-fns';
 import { api as apiLib, getApiErrorMessage } from '@/lib/api';
+import { getStoredToken, getStoredUser, setAuth as setLocalAuth } from '@/lib/auth';
 import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Clock, Mail, MapPin, Phone, Star, Users, X } from 'lucide-react';
@@ -83,6 +84,27 @@ function staffInitials(name: string) {
     .toUpperCase() || '?';
 }
 
+function phoneDigitsOnly(input: string): string {
+  return String(input || '').replace(/\D/g, '');
+}
+
+function formatTrMobile(digitsRaw: string): string {
+  const d = phoneDigitsOnly(digitsRaw);
+  let x = d;
+  if (x.startsWith('90')) x = x.slice(2);
+  if (x.startsWith('0')) x = x.slice(1);
+  const m = x.slice(0, 10);
+  const a = m.slice(0, 3);
+  const b = m.slice(3, 6);
+  const c = m.slice(6, 8);
+  const e = m.slice(8, 10);
+  if (!a) return '';
+  if (m.length <= 3) return `0${a}`;
+  if (m.length <= 6) return `0${a} ${b}`;
+  if (m.length <= 8) return `0${a} ${b} ${c}`;
+  return `0${a} ${b} ${c} ${e}`;
+}
+
 interface Review {
   _id: string;
   businessId: string;
@@ -124,6 +146,8 @@ export default function BusinessDetailPage() {
   const router = useRouter();
   const id = params.id as string;
   const { token } = useAuthStore();
+  const storeUser = useAuthStore((s) => s.user);
+  const setStoreAuth = useAuthStore((s) => s.setAuth);
   const { addToast } = useToast();
   const [business, setBusiness] = useState<Business | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -146,6 +170,34 @@ export default function BusinessDetailPage() {
   const [reviewComment, setReviewComment] = useState<string>('');
   const [postingReview, setPostingReview] = useState(false);
   const [staffProfileModal, setStaffProfileModal] = useState<Staff | null>(null);
+  const [phone, setPhone] = useState<string>(() => storeUser?.phone || getStoredUser()?.phone || '');
+  const [needsPhone, setNeedsPhone] = useState<boolean>(() => {
+    const p = String(storeUser?.phone || getStoredUser()?.phone || '').trim();
+    return !p;
+  });
+
+  useEffect(() => {
+    if (!token) return;
+    apiLib
+      .get<{ data: { phone?: string } }>('/auth/me')
+      .then((res) => {
+        const apiPhone = res.data.data?.phone ? String(res.data.data.phone).trim() : '';
+        if (apiPhone) {
+          setPhone(formatTrMobile(apiPhone));
+          setNeedsPhone(false);
+          const t = getStoredToken() || token;
+          const u = getStoredUser() || storeUser;
+          if (t && u && !u.phone) {
+            const merged = { ...u, phone: apiPhone };
+            setLocalAuth(t, merged);
+            setStoreAuth(t, merged);
+          }
+        } else {
+          setNeedsPhone(true);
+        }
+      })
+      .catch(() => {});
+  }, [token, storeUser, setStoreAuth]);
 
   useEffect(() => {
     if (!staffProfileModal) return;
@@ -258,11 +310,21 @@ export default function BusinessDetailPage() {
     setModalOpen(true);
   };
 
-  const handleConfirmReservation = async () => {
+  const handleConfirmReservation = async (phoneFromModal?: string) => {
     if (!selectedDate || !selectedTime || !selectedServiceId || !business) return;
     setReserveError('');
     setReserveLoading(true);
     try {
+      const phoneInput = String(phoneFromModal ?? phone ?? '').trim();
+      const digits = phoneDigitsOnly(phoneInput);
+      let normalizedDigits = digits;
+      if (normalizedDigits.startsWith('90')) normalizedDigits = normalizedDigits.slice(2);
+      if (normalizedDigits.startsWith('0')) normalizedDigits = normalizedDigits.slice(1);
+      normalizedDigits = normalizedDigits.slice(0, 10);
+      if (needsPhone && normalizedDigits.length < 10) {
+        setReserveError('Telefon numarası gerekli.');
+        return;
+      }
       await apiLib.post('/reservations', {
         businessId: id,
         serviceId: selectedServiceId,
@@ -270,14 +332,31 @@ export default function BusinessDetailPage() {
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
+        ...(needsPhone ? { customerPhone: phoneInput } : {}),
       });
+      if (needsPhone) {
+        const t = getStoredToken() || token;
+        const u = getStoredUser() || storeUser;
+        if (t && u) {
+          const pretty = formatTrMobile(phoneInput) || phoneInput;
+          const updated = { ...u, phone: pretty };
+          setLocalAuth(t, updated);
+          setStoreAuth(t, updated);
+          setPhone(pretty);
+          setNeedsPhone(false);
+        }
+      }
       addToast('success', 'Randevunuz alındı.');
       setModalOpen(false);
       setSelectedTime(null);
       setNotes('');
       setAvailableSlots((prev) => prev.filter((t) => t !== selectedTime));
     } catch (err) {
-      setReserveError(getApiErrorMessage(err));
+      const msg = getApiErrorMessage(err);
+      setReserveError(msg);
+      if (msg.toLowerCase().includes('telefon numarası gerekli') || msg.toLowerCase().includes('telefon numarasi gerekli')) {
+        setNeedsPhone(true);
+      }
     } finally {
       setReserveLoading(false);
     }
@@ -1013,6 +1092,12 @@ export default function BusinessDetailPage() {
           durationMinutes={selectedService?.durationMinutes}
           notes={notes}
           onNotesChange={setNotes}
+          phone={phone}
+          onPhoneChange={(v) => {
+            setPhone(formatTrMobile(v));
+            if (reserveError) setReserveError('');
+          }}
+          requirePhone={needsPhone}
           onConfirm={handleConfirmReservation}
           loading={reserveLoading}
           error={reserveError}
