@@ -154,7 +154,7 @@ export function ReservationModal({
             loading={loading}
             onClick={() => onConfirm(showPhone ? localPhone : undefined)}
           >
-            Rezervasyonu Onayla
+            Randevuyu Onayla
           </Button>
         </div>
       </div>

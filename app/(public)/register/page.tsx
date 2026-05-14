@@ -136,7 +136,7 @@ export default function RegisterPage() {
             >
               <span className="text-lg font-semibold text-neutral-900">Bireysel</span>
               <span className="mt-1 text-sm text-neutral-600">
-                Randevu almak, işletmeleri keşfetmek ve rezervasyonlarımı yönetmek için.
+                Randevu almak, işletmeleri keşfetmek ve randevularımı yönetmek için.
               </span>
             </button>
             <button

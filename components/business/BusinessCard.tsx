@@ -111,7 +111,7 @@ export function BusinessCard({
             <p className="mt-2 line-clamp-2 text-sm text-neutral-600 dark:text-neutral-400">{description}</p>
           )}
           <span className="mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary-500 py-2.5 text-sm font-semibold text-white shadow-soft transition group-hover:bg-primary-600 group-hover:shadow-[0_4px_14px_rgba(34,197,94,0.4)] group-active:scale-[0.98] dark:bg-primary-600 dark:group-hover:bg-primary-700">
-            Rezervasyon Yap
+            Randevu al
           </span>
         </div>
       </article>

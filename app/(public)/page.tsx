@@ -80,7 +80,7 @@ export default function HomePage() {
             Dakikalar içinde randevu alın
           </h1>
           <p className="mt-4 max-w-xl text-lg text-neutral-600 dark:text-neutral-300">
-            Kuaförden kliniğe, tek yerden müsait saatleri görün ve rezervasyonunuzu oluşturun.
+            Kuaförden kliniğe, tek yerden müsait saatleri görün ve randevunuzu oluşturun.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -98,7 +98,7 @@ export default function HomePage() {
             </Link>
           </div>
           <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-            {['Hızlı rezervasyon', 'Ücretsiz kullanım', 'Onaylı işletmeler'].map((label) => (
+            {['Hızlı randevu', 'Ücretsiz kullanım', 'Onaylı işletmeler'].map((label) => (
               <li key={label} className="flex items-center gap-2">
                 <span
                   className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"

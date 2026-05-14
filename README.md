@@ -1,4 +1,4 @@
-# Web Rezervasyon – Frontend
+# Randevucum – Frontend
 
 Next.js 14 (App Router) + Tailwind CSS ile çok kiracılı randevu platformu arayüzü.
 

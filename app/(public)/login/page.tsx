@@ -231,7 +231,7 @@ export default function LoginPage() {
                 }`}
               >
                 <span className="font-semibold text-neutral-900">Bireysel</span>
-                <span className="mt-1 block text-neutral-600">Randevu almak ve rezervasyonlarımı yönetmek.</span>
+                <span className="mt-1 block text-neutral-600">Randevu almak ve randevularımı yönetmek.</span>
               </button>
               <button
                 type="button"

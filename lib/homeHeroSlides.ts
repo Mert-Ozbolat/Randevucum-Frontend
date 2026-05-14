@@ -36,7 +36,7 @@ export const HOME_PLATFORM_SLIDES: HeroSlide[] = [
     image:
       'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1600&q=85',
     title: 'Eğitim ve danışmanlık',
-    subtitle: 'Ders ve seanslar için online rezervasyon.',
+    subtitle: 'Ders ve seanslar için online randevu.',
     href: '/business?area=Eğitim',
     badge: 'Keşfet',
   },

@@ -143,7 +143,7 @@ export default function SubscriptionPage() {
         <p className="text-sm font-medium text-primary-100">Faturalandırma</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Abonelik</h1>
         <p className="mt-2 max-w-2xl text-sm text-primary-100">
-          Aboneliğiniz aktifse rezervasyon alabilirsiniz. Ödeme işlemi Stripe üzerinden güvenli şekilde tamamlanır.
+          Aboneliğiniz aktifse randevu alabilirsiniz. Ödeme işlemi Stripe üzerinden güvenli şekilde tamamlanır.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-xs text-primary-100">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
@@ -205,7 +205,7 @@ export default function SubscriptionPage() {
                     </div>
                     <ul className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
                       {[
-                        'Rezervasyon almaya başla',
+                        'Randevu almaya başla',
                         'Personel & hizmet yönetimi',
                         'İşletme paneli',
                       ].map((x) => (

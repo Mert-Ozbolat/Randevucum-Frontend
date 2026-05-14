@@ -315,7 +315,7 @@ export default function ReservePage() {
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/40 dark:text-primary-400">
             <Check className="h-7 w-7" strokeWidth={2.5} aria-hidden />
           </div>
-          <h1 className="mt-4 text-xl font-semibold text-neutral-900">Rezervasyon Onaylandı</h1>
+          <h1 className="mt-4 text-xl font-semibold text-neutral-900">Randevu onaylandı</h1>
           <p className="mt-2 text-neutral-600">
             Randevunuz alındı. İşletme onayından sonra bilgilendirileceksiniz.
           </p>

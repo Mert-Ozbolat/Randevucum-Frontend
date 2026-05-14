@@ -137,7 +137,7 @@ export default function CustomerReservationsPage() {
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-500 via-primary-600 to-emerald-700 px-6 py-8 text-white shadow-soft sm:px-10 sm:py-10">
         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full bg-emerald-400/20 blur-xl" />
-        <p className="text-sm font-medium text-primary-100">Rezervasyonlarım</p>
+        <p className="text-sm font-medium text-primary-100">Randevularım</p>
         <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Randevularım</h1>
         <p className="mt-2 max-w-lg text-sm text-primary-100/95">
           Tüm randevularınızı tek yerden takip edin; yaklaşan ve geçmiş kayıtları filtreleyin.

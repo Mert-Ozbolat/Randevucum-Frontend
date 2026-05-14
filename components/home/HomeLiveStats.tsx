@@ -65,7 +65,7 @@ export function HomeLiveStats() {
         </span>
         <div>
           <p className="text-2xl font-bold tabular-nums text-neutral-900 dark:text-neutral-50">{r}</p>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Bugünkü rezervasyon</p>
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Bugünkü randevu</p>
         </div>
       </div>
       <div className="flex min-w-[10rem] flex-1 items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/90 px-4 py-3 shadow-card dark:border-neutral-600 dark:bg-neutral-800/90">
