@@ -44,7 +44,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     if (!isBusinessOwner(user) && pathname?.startsWith('/dashboard/business')) {
       router.replace('/dashboard/customer/reservations');
     }
-    if (isBusinessOwner(user) && pathname?.startsWith('/dashboard/customer')) {
+    const ownerBlockedCustomer =
+      pathname?.startsWith('/dashboard/customer/reservations') ||
+      pathname?.startsWith('/dashboard/customer/favorites');
+    if (isBusinessOwner(user) && ownerBlockedCustomer) {
       router.replace('/dashboard/business');
     }
   }, [user, pathname, router]);
@@ -131,9 +134,9 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                     Favorilerim
                   </Link>
                   <Link
-                    href="/dashboard/customer/profile"
+                    href="/dashboard/profile"
                     className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
-                      pathname?.startsWith('/dashboard/customer/profile')
+                      pathname?.startsWith('/dashboard/profile')
                         ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
                         : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
                     }`}

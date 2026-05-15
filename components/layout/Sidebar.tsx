@@ -41,12 +41,13 @@ const businessLinks: SidebarLink[] = [
   { href: '/dashboard/business/reservations', label: 'Randevular', Icon: Calendar },
   { href: '/dashboard/business/slider-ad', label: 'Ana sayfa reklamı', Icon: Megaphone },
   { href: '/dashboard/business/subscription', label: 'Abonelik', Icon: CreditCard },
+  { href: '/dashboard/profile', label: 'Profil', Icon: User },
 ];
 
 const customerLinks: SidebarLink[] = [
   { href: '/dashboard/customer/reservations', label: 'Randevularım', Icon: Calendar, emphasize: true },
   { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart, emphasize: true },
-  { href: '/dashboard/customer/profile', label: 'Profil', Icon: User, emphasize: true },
+  { href: '/dashboard/profile', label: 'Profil', Icon: User, emphasize: true },
 ];
 
 export function Sidebar() {

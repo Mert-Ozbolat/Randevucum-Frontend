@@ -36,7 +36,7 @@ export function Navbar() {
       ? ([
           { href: '/dashboard/customer/reservations', label: 'Randevularım', Icon: Calendar },
           { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
-          { href: '/dashboard/customer/profile', label: 'Profil', Icon: User },
+          { href: '/dashboard/profile', label: 'Profil', Icon: User },
         ] as const)
       : null;
 
