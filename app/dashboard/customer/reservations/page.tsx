@@ -133,7 +133,7 @@ export default function CustomerReservationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto w-full max-w-3xl space-y-6 sm:space-y-8">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-500 via-primary-600 to-emerald-700 px-6 py-8 text-white shadow-soft sm:px-10 sm:py-10">
         <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl" />
         <div className="pointer-events-none absolute -bottom-8 left-1/3 h-32 w-32 rounded-full bg-emerald-400/20 blur-xl" />

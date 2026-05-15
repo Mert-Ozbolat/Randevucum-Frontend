@@ -9,16 +9,19 @@ import {
   CalendarDays,
   Clock,
   CreditCard,
+  Heart,
   Home,
   LayoutDashboard,
   Megaphone,
   Scissors,
   User,
   Users,
+  X,
 } from 'lucide-react';
 import { isBusinessOwner } from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
 import { useStaffPanel } from '@/contexts/StaffPanelContext';
+import { useDashboardShell } from '@/contexts/DashboardShellContext';
 import { Logo } from '@/components/brand/Logo';
 
 type SidebarLink = {
@@ -42,6 +45,7 @@ const businessLinks: SidebarLink[] = [
 
 const customerLinks: SidebarLink[] = [
   { href: '/dashboard/customer/reservations', label: 'Randevularım', Icon: Calendar, emphasize: true },
+  { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart, emphasize: true },
   { href: '/dashboard/customer/profile', label: 'Profil', Icon: User, emphasize: true },
 ];
 
@@ -50,6 +54,7 @@ export function Sidebar() {
   const user = useAuthStore((s) => s.user);
   const isOwner = isBusinessOwner(user);
   const { canViewStaffPanel } = useStaffPanel();
+  const { sidebarOpen, closeSidebar } = useDashboardShell();
 
   const links: SidebarLink[] = (() => {
     if (isOwner) return businessLinks;
@@ -67,50 +72,90 @@ export function Sidebar() {
   })();
 
   return (
-    <aside className="fixed left-0 top-0 z-40 flex h-screen w-64 flex-col border-r border-neutral-200 bg-gradient-to-b from-white to-neutral-50/80 shadow-soft dark:border-neutral-700 dark:from-neutral-900 dark:to-neutral-900/95">
-      <div className="flex h-[4.25rem] items-center border-b border-neutral-200/90 px-4 dark:border-neutral-700">
-        <Logo size="sm" href="/" />
-      </div>
+    <>
+      <button
+        type="button"
+        aria-label="Menüyü kapat"
+        className={`fixed inset-0 z-40 bg-neutral-900/60 backdrop-blur-sm transition-opacity lg:hidden ${
+          sidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0'
+        }`}
+        onClick={closeSidebar}
+        tabIndex={sidebarOpen ? 0 : -1}
+      />
 
-      {!isOwner && (
-        <p className="border-b border-neutral-100 px-5 pb-3 pt-2 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
-          Hızlı erişim
-        </p>
-      )}
+      <aside
+        id="dashboard-sidebar"
+        className={`fixed left-0 top-0 z-50 flex h-[100dvh] w-[min(100vw-3rem,17rem)] max-w-[85vw] flex-col border-r border-neutral-200 bg-gradient-to-b from-white to-neutral-50/80 shadow-soft transition-transform duration-300 ease-out dark:border-neutral-700 dark:from-neutral-900 dark:to-neutral-900/95 lg:z-40 lg:w-64 lg:max-w-none ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } lg:translate-x-0`}
+        aria-label="Panel menüsü"
+      >
+        <SidebarHeader>
+          <Logo size="sm" href="/" />
+          <button
+            type="button"
+            onClick={closeSidebar}
+            className="rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800 lg:hidden"
+            aria-label="Menüyü kapat"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </SidebarHeader>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto p-3">
-        {links.map(({ href, label, Icon, emphasize, isActive }) => {
-          const active = isActive ? isActive(pathname) : pathname === href;
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
-                emphasize && !isOwner
-                  ? active
-                    ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25 dark:bg-primary-600 dark:text-white'
-                    : 'bg-primary-50/90 text-primary-900 hover:bg-primary-100 dark:bg-primary-950/60 dark:text-primary-50 dark:hover:bg-primary-900/55 dark:hover:text-white'
-                  : active
-                    ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-50'
-                    : 'text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800'
-              }`}
-            >
-              <Icon className="h-5 w-5 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+        {!isOwner && (
+          <p className="border-b border-neutral-100 px-5 pb-3 pt-2 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+            Hızlı erişim
+          </p>
+        )}
 
-      <div className="border-t border-neutral-200 p-3 dark:border-neutral-700">
-        <Link
-          href="/"
-          className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-        >
-          <Home className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
-          Ana sayfaya dön
-        </Link>
-      </div>
-    </aside>
+        <nav className="flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
+          {links.map(({ href, label, Icon, emphasize, isActive }) => {
+            const active = isActive ? isActive(pathname) : pathname === href;
+            return (
+              <Link
+                key={href}
+                href={href}
+                onClick={closeSidebar}
+                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
+                  emphasize && !isOwner
+                    ? active
+                      ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25 dark:bg-primary-600 dark:text-white'
+                      : 'bg-primary-50/90 text-primary-900 hover:bg-primary-100 dark:bg-primary-950/60 dark:text-primary-50 dark:hover:bg-primary-900/55 dark:hover:text-white'
+                    : active
+                      ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-50'
+                      : 'text-neutral-800 hover:bg-neutral-100 dark:text-neutral-100 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <Icon className="h-5 w-5 shrink-0 opacity-90" strokeWidth={1.75} aria-hidden />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <SidebarFooter>
+          <Link
+            href="/"
+            onClick={closeSidebar}
+            className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+          >
+            <Home className="h-4 w-4 shrink-0" strokeWidth={1.75} aria-hidden />
+            Ana sayfaya dön
+          </Link>
+        </SidebarFooter>
+      </aside>
+    </>
   );
+}
+
+function SidebarHeader({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex h-[4.25rem] shrink-0 items-center justify-between border-b border-neutral-200/90 px-4 dark:border-neutral-700">
+      {children}
+    </div>
+  );
+}
+
+function SidebarFooter({ children }: { children: React.ReactNode }) {
+  return <div className="shrink-0 border-t border-neutral-200 p-3 dark:border-neutral-700">{children}</div>;
 }

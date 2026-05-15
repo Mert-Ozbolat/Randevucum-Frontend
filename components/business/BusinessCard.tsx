@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { MapPin, Star } from 'lucide-react';
 import { BUSINESS_TYPES } from '@/lib/constants';
 import { BUSINESS_TYPE_LABELS } from '@/lib/businessCategories';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 
 interface BusinessCardProps {
   _id: string;
@@ -18,6 +19,7 @@ interface BusinessCardProps {
   isPopular?: boolean;
   isNew?: boolean;
   isAvailableToday?: boolean;
+  showFavorite?: boolean;
 }
 
 const PLACEHOLDER_IMAGES: Record<string, string> = {
@@ -40,6 +42,7 @@ export function BusinessCard({
   isPopular = false,
   isNew = false,
   isAvailableToday = false,
+  showFavorite = true,
 }: BusinessCardProps) {
   const cover =
     imageUrl || PLACEHOLDER_IMAGES[businessType] || PLACEHOLDER_IMAGES.other;
@@ -60,6 +63,11 @@ export function BusinessCard({
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             unoptimized={cover.startsWith('http')}
           />
+          {showFavorite && (
+            <div className="absolute bottom-3 right-3 z-10">
+              <FavoriteButton businessId={_id} size="sm" />
+            </div>
+          )}
           <div className="absolute left-3 top-3 flex flex-wrap gap-1.5">
             <span className="rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-neutral-700 shadow-soft backdrop-blur">
               {BUSINESS_TYPE_LABELS[businessType] || BUSINESS_TYPES[businessType] || businessType}

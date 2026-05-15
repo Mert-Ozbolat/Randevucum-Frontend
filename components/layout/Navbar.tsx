@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Calendar, Menu, Moon, Sun, User, Building2, X } from 'lucide-react';
+import { Calendar, Heart, Menu, Moon, Sun, User, Building2, X } from 'lucide-react';
 import { useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 import { useThemeStore } from '@/store/themeStore';
@@ -35,6 +35,7 @@ export function Navbar() {
     token && user && isCustomer(user)
       ? ([
           { href: '/dashboard/customer/reservations', label: 'Randevularım', Icon: Calendar },
+          { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
           { href: '/dashboard/customer/profile', label: 'Profil', Icon: User },
         ] as const)
       : null;

@@ -19,6 +19,7 @@ import { getStoredToken, getStoredUser, setAuth as setLocalAuth } from '@/lib/au
 import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Clock, Mail, MapPin, Phone, Star, Users, X } from 'lucide-react';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 
 interface Business {
   _id: string;
@@ -485,7 +486,8 @@ export default function BusinessDetailPage() {
               {BUSINESS_TYPE_LABELS[business.businessType] || BUSINESS_TYPES[business.businessType] || business.businessType}
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <FavoriteButton businessId={business._id} stopPropagation={false} />
             {mapsQuery && (
               <a
                 href={mapsSearchUrl}

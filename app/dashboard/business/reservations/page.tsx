@@ -91,7 +91,7 @@ export default function BusinessReservationsPage() {
         <div className="pointer-events-none absolute -right-20 top-0 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-primary-500/10 blur-2xl" />
         <p className="text-sm font-medium text-emerald-200/90">İşletme paneli</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight sm:text-4xl">Randevu takvimi</h1>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">Randevu takvimi</h1>
         <p className="mt-2 max-w-xl text-sm text-slate-300">
           Günlük veya haftalık görünümde randevularınızı yönetin; bekleyen talepleri onaylayın veya iptal edin.
         </p>

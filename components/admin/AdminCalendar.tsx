@@ -145,8 +145,10 @@ export function AdminCalendar({
       </p>
 
       <div
-        className={`mx-auto grid w-full gap-6 ${
-          view === 'daily' ? 'max-w-2xl md:grid-cols-1' : 'md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+        className={`mx-auto grid w-full gap-4 sm:gap-6 ${
+          view === 'daily'
+            ? 'max-w-2xl grid-cols-1'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
         }`}
       >
         {days.map((d, i) => {
