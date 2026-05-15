@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
@@ -13,6 +14,13 @@ import { ImageIcon, User } from 'lucide-react';
 
 interface Business {
   _id: string;
+}
+
+interface StaffQuota {
+  planKey?: string;
+  staffLimit?: number | null;
+  staffCount?: number;
+  canAddStaff?: boolean;
 }
 
 interface Staff {
@@ -41,6 +49,7 @@ function initials(name: string) {
 export default function StaffPage() {
   const { addToast } = useToast();
   const [businessId, setBusinessId] = useState<string | null>(null);
+  const [quota, setQuota] = useState<StaffQuota | null>(null);
   const [staff, setStaff] = useState<Staff[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -71,6 +80,23 @@ export default function StaffPage() {
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
   const editFileRef = useRef<HTMLInputElement>(null);
 
+  const loadStaffData = async (bid: string) => {
+    const [staffRes, subRes] = await Promise.all([
+      api.get<{ data: Staff[] }>(`/staff/business/${bid}`),
+      api.get<{ data: StaffQuota }>(`/subscription/status/${bid}`).catch(() => null),
+    ]);
+    setStaff(staffRes.data.data || []);
+    if (subRes?.data?.data) {
+      const q = subRes.data.data;
+      setQuota({
+        planKey: q.planKey,
+        staffLimit: q.staffLimit ?? null,
+        staffCount: q.staffCount ?? (staffRes.data.data || []).length,
+        canAddStaff: q.canAddStaff,
+      });
+    }
+  };
+
   useEffect(() => {
     api
       .get<{ data: Business[] }>('/business')
@@ -78,12 +104,9 @@ export default function StaffPage() {
         const list = res.data.data || [];
         if (list[0]) {
           setBusinessId(list[0]._id);
-          return api.get<{ data: Staff[] }>(`/staff/business/${list[0]._id}`);
+          return loadStaffData(list[0]._id);
         }
         return null;
-      })
-      .then((res) => {
-        if (res) setStaff(res.data.data || []);
       })
       .catch(() => setError('Yüklenemedi.'))
       .finally(() => setLoading(false));
@@ -157,6 +180,7 @@ export default function StaffPage() {
       });
       const data = res.data;
       setStaff((s) => [...s, data.data]);
+      if (businessId) void loadStaffData(businessId);
       addToast('success', data.message || 'Personel eklendi.');
       setShowForm(false);
       setForm({
@@ -217,6 +241,12 @@ export default function StaffPage() {
     }
   };
 
+  const canAddStaff = quota?.canAddStaff !== false;
+  const staffLimitLabel =
+    quota?.staffLimit == null
+      ? 'Sınırsız personel (Pro)'
+      : `Personel: ${quota?.staffCount ?? staff.length} / ${quota.staffLimit}`;
+
   if (loading) {
     return (
       <div className="flex justify-center py-12">
@@ -227,12 +257,41 @@ export default function StaffPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-neutral-900">Personel</h1>
-        <Button onClick={() => setShowForm(true)}>Yeni Personel</Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Personel</h1>
+          {quota && (
+            <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">{staffLimitLabel}</p>
+          )}
+        </div>
+        <Button
+          onClick={() => setShowForm(true)}
+          disabled={!canAddStaff}
+          title={
+            canAddStaff
+              ? undefined
+              : 'Standart pakette en fazla 1 personel ekleyebilirsiniz. Pro pakete geçin.'
+          }
+        >
+          Yeni Personel
+        </Button>
       </div>
+      {!canAddStaff && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+          <p className="font-medium">Personel limitine ulaştınız</p>
+          <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
+            Standart pakette yalnızca 1 personel tanımlayabilirsiniz. Sınırsız personel için Pro pakete geçin.
+          </p>
+          <Link
+            href="/dashboard/business/subscription"
+            className="mt-2 inline-block font-semibold text-primary-700 underline dark:text-primary-300"
+          >
+            Abonelik / paket yükseltme →
+          </Link>
+        </div>
+      )}
       {error && (
-        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+        <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-200">{error}</div>
       )}
       {showForm && businessId && (
         <Card>

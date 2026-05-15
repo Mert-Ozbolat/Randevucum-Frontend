@@ -15,6 +15,10 @@ interface SubStatus {
   endDate?: string;
   isActive: boolean;
   hasSubscription?: boolean;
+  planKey?: string;
+  staffLimit?: number | null;
+  staffCount?: number;
+  canAddStaff?: boolean;
 }
 
 interface StripePlan {
@@ -178,6 +182,22 @@ export default function SubscriptionPage() {
                 Bitiş: {new Date(subscription.endDate).toLocaleDateString('tr-TR')}
               </p>
             )}
+            {subscription.planKey && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Paket:{' '}
+                <span className="font-medium text-neutral-800 dark:text-neutral-200">
+                  {subscription.planKey === 'pro' ? 'Pro' : 'Standart / Başlangıç'}
+                </span>
+              </p>
+            )}
+            {subscription.staffLimit != null && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Personel: {subscription.staffCount ?? 0} / {subscription.staffLimit}
+              </p>
+            )}
+            {subscription.staffLimit == null && subscription.planKey === 'pro' && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Personel: sınırsız (Pro)</p>
+            )}
           </div>
         )}
         {!subscription?.isActive && businessId && (
@@ -204,11 +224,20 @@ export default function SubscriptionPage() {
                       </span>
                     </div>
                     <ul className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-                      {[
-                        'Randevu almaya başla',
-                        'Personel & hizmet yönetimi',
-                        'İşletme paneli',
-                      ].map((x) => (
+                      {(p.label.toLowerCase().includes('pro')
+                        ? [
+                            'Randevu almaya başla',
+                            'Sınırsız personel',
+                            'WhatsApp bildirimleri',
+                            'İşletme paneli',
+                          ]
+                        : [
+                            'Randevu almaya başla',
+                            'En fazla 1 personel',
+                            'Hizmet yönetimi',
+                            'İşletme paneli',
+                          ]
+                      ).map((x) => (
                         <li key={x} className="flex items-center gap-2">
                           <Check className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden /> {x}
                         </li>

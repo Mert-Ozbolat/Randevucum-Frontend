@@ -67,7 +67,8 @@ export default function PricingPage() {
       description: 'Randevu yönetimi için hızlı başlangıç',
       features: [
         'Sınırsız randevu',
-        'Hizmet ve personel yönetimi',
+        'En fazla 1 personel',
+        'Hizmet yönetimi',
         'Müşteri paneli',
         'İşletme sayfası ve görünürlük',
       ],
@@ -82,10 +83,11 @@ export default function PricingPage() {
       description: 'Gelişmiş özellikler ve otomasyon',
       features: [
         'Başlangıç paketindeki her şey',
+        'Sınırsız personel',
+        'WhatsApp bildirimleri (müşteri + işletme)',
         'Öncelikli destek',
-        'WhatsApp bildirimleri (müşteri hatırlatma)',
-        'Gelişmiş raporlama (yakında)',
         '1 adet ana sayfa reklam hakkı',
+        'Gelişmiş raporlama (yakında)',
       ],
       cta: isTrialActive ? 'Ücretsiz kullan' : 'Pro’ya geç',
       highlighted: true,
