@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { formatTrMobile, phoneDigitsOnly } from '@/lib/phone';
 
 type AccountType = 'customer' | 'business_owner';
 
@@ -47,6 +48,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (accountType === 'business_owner' && phoneDigitsOnly(phone).length < 10) {
+      setError('İşletme hesabı için telefon numarası zorunludur.');
+      return;
+    }
     setLoading(true);
     try {
       const { data } = await api.post<{
@@ -85,6 +90,13 @@ export default function RegisterPage() {
 
   const handleGoogleCredential = async (idToken: string) => {
     setError('');
+    if (accountType === 'business_owner') {
+      const digits = phoneDigitsOnly(phone);
+      if (digits.length < 10) {
+        setError('İşletme hesabı için telefon numarasını girin (aşağıdaki alan).');
+        return;
+      }
+    }
     setGoogleLoading(true);
     try {
       const { data } = await api.post<{
@@ -175,7 +187,29 @@ export default function RegisterPage() {
         </div>
         <h1 className="text-2xl font-semibold text-neutral-900">Kayıt Ol</h1>
         {error && (
-          <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600">{error}</div>
+          <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-950/40 dark:text-red-200">
+            {error}
+          </div>
+        )}
+        {accountType === 'business_owner' && (
+          <div className="mt-4">
+            <Input
+              label="Telefon"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              required
+              placeholder="0 5xx xxx xx xx"
+              value={phone}
+              onChange={(e) => {
+                const digits = phoneDigitsOnly(e.target.value);
+                if (digits.length <= 11) setPhone(formatTrMobile(digits));
+              }}
+            />
+            <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
+              İşletme hesabı için zorunludur (Google veya e-posta ile kayıt).
+            </p>
+          </div>
         )}
         <div className="mt-6">
           <GoogleSignInButton
@@ -225,14 +259,20 @@ export default function RegisterPage() {
             required
             minLength={6}
           />
-          <Input
-            label={accountType === 'business_owner' ? 'Telefon' : 'Telefon (isteğe bağlı)'}
-            type="tel"
-            autoComplete="tel"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required={accountType === 'business_owner'}
-          />
+          {accountType === 'customer' && (
+            <Input
+              label="Telefon (isteğe bağlı)"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="0 5xx xxx xx xx"
+              value={phone}
+              onChange={(e) => {
+                const digits = phoneDigitsOnly(e.target.value);
+                if (digits.length <= 11) setPhone(formatTrMobile(digits));
+              }}
+            />
+          )}
           <Button type="submit" fullWidth loading={loading}>
             Kayıt Ol
           </Button>
