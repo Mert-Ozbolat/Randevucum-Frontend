@@ -4,7 +4,7 @@ import { getPresenceSessionId } from '@/lib/presenceSession';
 export type HomeStatsPayload = {
   activeUsers: number;
   todayReservations: number;
-  openBusinesses: number;
+  registeredBusinesses: number;
   activeWindowMinutes: number;
   updatedAt: string;
 };

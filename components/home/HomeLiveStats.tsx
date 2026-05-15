@@ -37,7 +37,7 @@ export function HomeLiveStats() {
 
   const a = stats?.activeUsers ?? '—';
   const r = stats?.todayReservations ?? '—';
-  const b = stats?.openBusinesses ?? '—';
+  const b = stats?.registeredBusinesses ?? '—';
   const windowMin = stats?.activeWindowMinutes ?? 5;
 
   return (
@@ -77,7 +77,7 @@ export function HomeLiveStats() {
         </span>
         <div>
           <p className="text-2xl font-bold tabular-nums text-neutral-900 dark:text-neutral-50">{b}</p>
-          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Şu an açık işletme</p>
+          <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Kayıtlı işletme</p>
         </div>
       </div>
     </div>
