@@ -26,6 +26,7 @@ interface Business {
   email?: string;
   description?: string;
   imageUrl?: string | null;
+  isActive?: boolean;
   workingHours?: { dayOfWeek: number; open: string; close: string; isClosed: boolean }[];
   breakTimes?: { start: string; end: string }[];
 }
@@ -82,6 +83,10 @@ function CreateBusinessForm({ onCreated }: { onCreated: (b: Business) => void })
   return (
     <Card>
       <h2 className="text-lg font-bold text-neutral-900 dark:text-neutral-50">Yeni işletme oluştur</h2>
+      <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+        İşletme oluşturulduktan sonra müşterilere görünmez. Profil, hizmet, personel ve çalışma saatlerini
+        tamamladığınızda otomatik yayına alınır.
+      </p>
       <form onSubmit={handleSubmit} className="mt-4 space-y-4">
         {error && (
           <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
@@ -256,6 +261,12 @@ export default function BusinessInfoPage() {
   return (
     <div className="max-w-2xl space-y-6">
       <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">İşletme Bilgileri</h1>
+      {business.isActive === false && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+          İşletmeniz henüz müşterilere görünmüyor. Telefon, konum, açıklama (en az 8 karakter), en az bir hizmet,
+          personel ve açık çalışma günü ekledikten sonra otomatik yayına alınır.
+        </div>
+      )}
       <form onSubmit={handleSubmit}>
         <Card className="space-y-6">
           {error && (

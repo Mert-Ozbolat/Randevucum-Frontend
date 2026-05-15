@@ -12,6 +12,8 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { formatTrMobile, phoneDigitsOnly } from '@/lib/phone';
+import { businessOwnerLandingPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
+import { isBusinessOwner } from '@/lib/auth';
 
 type AccountType = 'customer' | 'business_owner';
 
@@ -63,7 +65,7 @@ export default function LoginPage() {
     console.log('[env-debug] NEXT_PUBLIC_GOOGLE_CLIENT_ID prefix:', googleClientId ? googleClientId.slice(0, 10) + '...' : '(missing)');
   }, [debug]);
 
-  const finishAuth = (data: AuthPayload['data']) => {
+  const finishAuth = async (data: AuthPayload['data']) => {
     const u = {
       _id: data.user._id,
       email: data.user.email,
@@ -73,7 +75,12 @@ export default function LoginPage() {
     };
     setAuth(data.token, u);
     setStoreAuth(data.token, u);
-    router.push(from);
+    if (isBusinessOwner(u) && from.startsWith('/dashboard')) {
+      const status = await fetchBusinessSetupStatus();
+      router.push(businessOwnerLandingPath(status));
+    } else {
+      router.push(from);
+    }
     router.refresh();
   };
 

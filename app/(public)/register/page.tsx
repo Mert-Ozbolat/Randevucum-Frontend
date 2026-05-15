@@ -79,7 +79,7 @@ export default function RegisterPage() {
         lastName: user.lastName,
         role: user.role as 'customer' | 'business_owner' | 'super_admin',
       });
-      router.push('/dashboard');
+      router.push(accountType === 'business_owner' ? '/dashboard/business/info' : '/dashboard');
       router.refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -123,7 +123,7 @@ export default function RegisterPage() {
         lastName: user.lastName,
         role: user.role as 'customer' | 'business_owner' | 'super_admin',
       });
-      router.push('/dashboard');
+      router.push(accountType === 'business_owner' ? '/dashboard/business/info' : '/dashboard');
       router.refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));

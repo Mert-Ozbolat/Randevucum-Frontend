@@ -11,6 +11,11 @@ import { StaffPanelProvider, useStaffPanel } from '@/contexts/StaffPanelContext'
 import { DashboardShellProvider, useDashboardShell } from '@/contexts/DashboardShellContext';
 import { useAuthStore } from '@/store/authStore';
 import { clearAuth, isBusinessOwner } from '@/lib/auth';
+import {
+  businessOwnerLandingPath,
+  fetchBusinessSetupStatus,
+  shouldRedirectBusinessOwner,
+} from '@/lib/businessOwnerRedirect';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -48,8 +53,23 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       pathname?.startsWith('/dashboard/customer/reservations') ||
       pathname?.startsWith('/dashboard/customer/favorites');
     if (isBusinessOwner(user) && ownerBlockedCustomer) {
-      router.replace('/dashboard/business');
+      void fetchBusinessSetupStatus().then((status) => {
+        router.replace(businessOwnerLandingPath(status));
+      });
     }
+  }, [user, pathname, router]);
+
+  useEffect(() => {
+    if (!user || !shouldRedirectBusinessOwner(user, pathname || '')) return;
+    let cancelled = false;
+    void fetchBusinessSetupStatus().then((status) => {
+      if (cancelled) return;
+      const target = businessOwnerLandingPath(status);
+      if (target !== pathname) router.replace(target);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user, pathname, router]);
 
   const handleLogout = () => {
@@ -67,7 +87,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   const owner = isBusinessOwner(user);
-  const showBusinessSetupBar = owner && pathname?.startsWith('/dashboard/business');
+  const showBusinessSetupBar = owner && Boolean(pathname?.startsWith('/dashboard'));
   const headerScopeTitle = pathname?.startsWith('/dashboard/staff')
     ? 'İş randevularım'
     : owner

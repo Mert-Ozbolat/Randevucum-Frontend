@@ -22,6 +22,7 @@ export function BusinessSetupStatusBar() {
   const [completed, setCompleted] = useState(0);
   const [total, setTotal] = useState(4);
   const [steps, setSteps] = useState<ReturnType<typeof buildSetupSteps>['steps']>([]);
+  const [isPublicActive, setIsPublicActive] = useState(false);
 
   useEffect(() => {
     const onRefresh = () => {
@@ -39,20 +40,38 @@ export function BusinessSetupStatusBar() {
     if (!silent) setLoading(true);
 
     api
-      .get<{ data: BusinessForSetup[] }>('/business')
+      .get<{
+        data: {
+          hasBusiness: boolean;
+          isActive: boolean;
+          setupComplete: boolean;
+          percent: number;
+          completed: number;
+          total: number;
+        };
+      }>('/business/setup-status')
       .then(async (res) => {
         if (cancelled) return;
-        const list = res.data.data || [];
-        if (!list[0]) {
+        const status = res.data.data;
+        if (!status?.hasBusiness) {
           setNoBusiness(true);
           setSteps([]);
           setPercent(0);
           setCompleted(0);
+          setIsPublicActive(false);
           return;
         }
         setNoBusiness(false);
-        const b = list[0];
-        const bid = (b as { _id: string })._id;
+        setIsPublicActive(Boolean(status.isActive));
+        setPercent(status.percent ?? 0);
+        setCompleted(status.completed ?? 0);
+        setTotal(status.total ?? 4);
+
+        const bizRes = await api.get<{ data: (BusinessForSetup & { _id: string })[] }>('/business');
+        if (cancelled) return;
+        const b = bizRes.data.data?.[0];
+        if (!b) return;
+        const bid = b._id;
 
         const [sv, st] = await Promise.all([
           api.get<{ data: unknown[] }>(`/services/business/${bid}`),
@@ -109,20 +128,26 @@ export function BusinessSetupStatusBar() {
   }
 
   const allDone = completed === total && total > 0;
+  const published = isPublicActive && allDone;
 
   return (
     <div
       className={`border-b px-4 py-3 sm:px-6 ${
-        allDone
+        published
           ? 'border-emerald-200 bg-emerald-50/90 dark:border-emerald-900/40 dark:bg-emerald-950/30'
-          : 'border-neutral-200 bg-gradient-to-r from-primary-50/80 to-white dark:border-neutral-700 dark:from-primary-950/20 dark:to-neutral-900'
+          : 'border-amber-200 bg-amber-50/95 dark:border-amber-900/50 dark:bg-amber-950/40'
       }`}
     >
+      {!published && (
+        <p className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-100">
+          İşletmeniz müşterilere henüz görünmüyor — kurulumu tamamlayana kadar randevu alınamaz.
+        </p>
+      )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-              Hesap kurulumu
+              {published ? 'İşletme yayında' : 'Hesap kurulumu gerekli'}
             </span>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-bold ${
@@ -133,9 +158,9 @@ export function BusinessSetupStatusBar() {
             >
               %{percent}
             </span>
-            {allDone ? (
+            {published ? (
               <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                Tamamlandı
+                Müşterilere açık
               </span>
             ) : (
               <span className="text-xs text-neutral-600 dark:text-neutral-400">
@@ -146,7 +171,7 @@ export function BusinessSetupStatusBar() {
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-200/80 dark:bg-neutral-700">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
-                allDone ? 'bg-emerald-500' : 'bg-primary-500'
+                published ? 'bg-emerald-500' : 'bg-amber-500'
               }`}
               style={{ width: `${percent}%` }}
               role="progressbar"
@@ -203,10 +228,13 @@ export function BusinessSetupStatusBar() {
         </ul>
       )}
 
-      {!expanded && !allDone && (
-        <p className="mt-2 text-xs text-neutral-600 dark:text-neutral-300">
-          Profilde telefon, konum için şehir veya ilçe veya açık adres, en az 8 karakter açıklama; en az bir hizmet ve
-          personel; en az bir gün açık çalışma saati. Kaydettikten sonra çubuk güncellenir.
+      {!expanded && !published && (
+        <p className="mt-2 text-xs text-amber-900/90 dark:text-amber-100/90">
+          Profil (telefon, konum, açıklama), en az 1 hizmet, en az 1 personel ve çalışma saatleri tamamlanınca işletme
+          otomatik yayına alınır.{' '}
+          <Link href="/dashboard/business/info" className="font-semibold underline underline-offset-2">
+            İşletme bilgisi →
+          </Link>
         </p>
       )}
     </div>
