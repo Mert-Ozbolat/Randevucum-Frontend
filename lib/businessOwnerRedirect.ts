@@ -25,6 +25,20 @@ export function businessOwnerLandingPath(status: BusinessSetupStatus | null): st
   return '/dashboard/business';
 }
 
+/** Giriş / kayıt sonrası — kurulum eksikse her zaman işletme formu */
+export function businessOwnerPostAuthPath(
+  status: BusinessSetupStatus | null,
+  from?: string | null
+): string {
+  const landing = businessOwnerLandingPath(status);
+  if (landing === '/dashboard/business/info') return landing;
+  const f = (from || '/').trim();
+  if (f && f !== '/' && f !== '/login' && !f.startsWith('/register')) {
+    return f;
+  }
+  return landing;
+}
+
 export function shouldRedirectBusinessOwner(user: User | null, pathname: string): boolean {
   if (!user || !isBusinessOwner(user)) return false;
   if (!pathname.startsWith('/dashboard/business')) return false;

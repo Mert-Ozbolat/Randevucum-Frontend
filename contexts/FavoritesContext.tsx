@@ -40,6 +40,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
   }, [token]);
 
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname;
+      if (path === '/login' || path === '/register') return;
+    }
     refresh();
   }, [refresh, token]);
 

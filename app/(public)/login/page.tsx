@@ -5,14 +5,14 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { api, getApiErrorMessage } from '@/lib/api';
-import { setAuth } from '@/lib/auth';
+import { clearAuth, getStoredToken, setAuth } from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { formatTrMobile, phoneDigitsOnly } from '@/lib/phone';
-import { businessOwnerLandingPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
+import { businessOwnerPostAuthPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
 import { isBusinessOwner } from '@/lib/auth';
 
 type AccountType = 'customer' | 'business_owner';
@@ -53,6 +53,45 @@ export default function LoginPage() {
   const [googlePhone, setGooglePhone] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+    const stored = getStoredToken();
+    if (!stored) return;
+
+    api
+      .get<{ data: AuthPayload['data']['user'] }>('/auth/me')
+      .then(async (res) => {
+        if (cancelled) return;
+        const me = res.data.data;
+        const u = {
+          _id: me._id,
+          email: me.email,
+          firstName: me.firstName,
+          lastName: me.lastName,
+          role: me.role as AuthPayload['data']['user']['role'],
+        };
+        setAuth(stored, u);
+        setStoreAuth(stored, u);
+        if (isBusinessOwner(u)) {
+          const status = await fetchBusinessSetupStatus();
+          if (!cancelled) router.replace(businessOwnerPostAuthPath(status, from));
+        } else if (from && from !== '/' && from !== '/login') {
+          router.replace(from);
+        } else {
+          router.replace('/dashboard/customer/reservations');
+        }
+      })
+      .catch(() => {
+        if (cancelled) return;
+        clearAuth();
+        useAuthStore.getState().logout();
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [from, router, setStoreAuth]);
+
+  useEffect(() => {
     if (!debug) return;
     // Safe env debug: only NEXT_PUBLIC values, never secrets.
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -75,9 +114,9 @@ export default function LoginPage() {
     };
     setAuth(data.token, u);
     setStoreAuth(data.token, u);
-    if (isBusinessOwner(u) && from.startsWith('/dashboard')) {
+    if (isBusinessOwner(u)) {
       const status = await fetchBusinessSetupStatus();
-      router.push(businessOwnerLandingPath(status));
+      router.push(businessOwnerPostAuthPath(status, from));
     } else {
       router.push(from);
     }

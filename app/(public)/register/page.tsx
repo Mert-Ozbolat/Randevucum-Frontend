@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { formatTrMobile, phoneDigitsOnly } from '@/lib/phone';
+import { businessOwnerPostAuthPath } from '@/lib/businessOwnerRedirect';
 
 type AccountType = 'customer' | 'business_owner';
 
@@ -79,7 +80,11 @@ export default function RegisterPage() {
         lastName: user.lastName,
         role: user.role as 'customer' | 'business_owner' | 'super_admin',
       });
-      router.push(accountType === 'business_owner' ? '/dashboard/business/info' : '/dashboard');
+      router.push(
+        accountType === 'business_owner'
+          ? businessOwnerPostAuthPath(null, searchParams.get('from'))
+          : '/dashboard'
+      );
       router.refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -123,7 +128,11 @@ export default function RegisterPage() {
         lastName: user.lastName,
         role: user.role as 'customer' | 'business_owner' | 'super_admin',
       });
-      router.push(accountType === 'business_owner' ? '/dashboard/business/info' : '/dashboard');
+      router.push(
+        accountType === 'business_owner'
+          ? businessOwnerPostAuthPath(null, searchParams.get('from'))
+          : '/dashboard'
+      );
       router.refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
