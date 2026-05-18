@@ -1,3 +1,5 @@
+import { clearBusinessSetupPublishedCache } from './businessSetupCache';
+
 export const TOKEN_KEY = 'token';
 export const USER_KEY = 'user';
 
@@ -43,6 +45,7 @@ export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   document.cookie = 'token=; path=/; max-age=0';
+  clearBusinessSetupPublishedCache();
 }
 
 export function isBusinessOwner(user: User | null): boolean {

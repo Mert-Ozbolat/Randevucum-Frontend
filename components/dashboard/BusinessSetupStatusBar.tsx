@@ -7,30 +7,47 @@ import { CheckCircle2, Circle, ChevronDown, ChevronUp, Loader2 } from 'lucide-re
 import { api } from '@/lib/api';
 import { buildSetupStepsFromApi, type BusinessSetupStepsMap } from '@/lib/businessSetup';
 import { BUSINESS_SETUP_REFRESH_EVENT } from '@/lib/businessSetupRefresh';
+import {
+  isBusinessSetupPublishedCached,
+  markBusinessSetupPublished,
+} from '@/lib/businessSetupCache';
+import { isBusinessSetupPublished } from '@/lib/businessOwnerRedirect';
+import { useAuthStore } from '@/store/authStore';
 
 export function BusinessSetupStatusBar() {
   const pathname = usePathname();
+  const userId = useAuthStore((s) => s.user?._id);
   const silentRefreshRef = useRef(false);
   const [refreshTick, setRefreshTick] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [hidden, setHidden] = useState(() => isBusinessSetupPublishedCached(userId));
+  const [loading, setLoading] = useState(() => !isBusinessSetupPublishedCached(userId));
   const [expanded, setExpanded] = useState(false);
   const [noBusiness, setNoBusiness] = useState(false);
   const [percent, setPercent] = useState(0);
   const [completed, setCompleted] = useState(0);
   const [total, setTotal] = useState(4);
   const [steps, setSteps] = useState<ReturnType<typeof buildSetupStepsFromApi>['steps']>([]);
-  const [isPublicActive, setIsPublicActive] = useState(false);
+
+  useEffect(() => {
+    if (isBusinessSetupPublishedCached(userId)) {
+      setHidden(true);
+      setLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
     const onRefresh = () => {
+      if (isBusinessSetupPublishedCached(userId)) return;
       silentRefreshRef.current = true;
       setRefreshTick((n) => n + 1);
     };
     window.addEventListener(BUSINESS_SETUP_REFRESH_EVENT, onRefresh);
     return () => window.removeEventListener(BUSINESS_SETUP_REFRESH_EVENT, onRefresh);
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
+    if (!userId || hidden || isBusinessSetupPublishedCached(userId)) return;
+
     let cancelled = false;
     const silent = silentRefreshRef.current;
     silentRefreshRef.current = false;
@@ -51,16 +68,21 @@ export function BusinessSetupStatusBar() {
       .then((res) => {
         if (cancelled) return;
         const status = res.data.data;
+
+        if (isBusinessSetupPublished(status)) {
+          markBusinessSetupPublished(userId);
+          setHidden(true);
+          return;
+        }
+
         if (!status?.hasBusiness) {
           setNoBusiness(true);
           setSteps([]);
           setPercent(0);
           setCompleted(0);
-          setIsPublicActive(false);
           return;
         }
         setNoBusiness(false);
-        setIsPublicActive(Boolean(status.isActive));
 
         if (status.steps) {
           const result = buildSetupStepsFromApi(status.steps);
@@ -87,7 +109,9 @@ export function BusinessSetupStatusBar() {
     return () => {
       cancelled = true;
     };
-  }, [pathname, refreshTick]);
+  }, [pathname, refreshTick, userId, hidden]);
+
+  if (hidden) return null;
 
   if (loading) {
     return (
@@ -113,52 +137,25 @@ export function BusinessSetupStatusBar() {
     );
   }
 
-  const allDone = completed === total && total > 0;
-  const published = isPublicActive && allDone;
-
   return (
-    <div
-      className={`border-b px-4 py-3 sm:px-6 ${
-        published
-          ? 'border-emerald-200 bg-emerald-50/90 dark:border-emerald-900/40 dark:bg-emerald-950/30'
-          : 'border-amber-200 bg-amber-50/95 dark:border-amber-900/50 dark:bg-amber-950/40'
-      }`}
-    >
-      {!published && (
-        <p className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-100">
-          İşletmeniz müşterilere henüz görünmüyor — kurulumu tamamlayana kadar randevu alınamaz.
-        </p>
-      )}
+    <div className="border-b border-amber-200 bg-amber-50/95 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/40 sm:px-6">
+      <p className="mb-2 text-sm font-semibold text-amber-900 dark:text-amber-100">
+        İşletmeniz müşterilere henüz görünmüyor — kurulumu tamamlayana kadar randevu alınamaz.
+      </p>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-              {published ? 'İşletme yayında' : 'Hesap kurulumu gerekli'}
-            </span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                allDone
-                  ? 'bg-emerald-600 text-white dark:bg-emerald-500'
-                  : 'bg-primary-600 text-white dark:bg-primary-500'
-              }`}
-            >
+            <span className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Hesap kurulumu gerekli</span>
+            <span className="rounded-full bg-primary-600 px-2 py-0.5 text-xs font-bold text-white dark:bg-primary-500">
               %{percent}
             </span>
-            {published ? (
-              <span className="text-xs font-medium text-emerald-800 dark:text-emerald-200">
-                Müşterilere açık
-              </span>
-            ) : (
-              <span className="text-xs text-neutral-600 dark:text-neutral-400">
-                {completed}/{total} adım
-              </span>
-            )}
+            <span className="text-xs text-neutral-600 dark:text-neutral-400">
+              {completed}/{total} adım
+            </span>
           </div>
           <div className="mt-2 h-2 overflow-hidden rounded-full bg-neutral-200/80 dark:bg-neutral-700">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                published ? 'bg-emerald-500' : 'bg-amber-500'
-              }`}
+              className="h-full rounded-full bg-amber-500 transition-all duration-500"
               style={{ width: `${percent}%` }}
               role="progressbar"
               aria-valuenow={percent}
@@ -214,7 +211,7 @@ export function BusinessSetupStatusBar() {
         </ul>
       )}
 
-      {!expanded && !published && (
+      {!expanded && (
         <p className="mt-2 text-xs text-amber-900/90 dark:text-amber-100/90">
           Profil (telefon, konum, açıklama), en az 1 hizmet, en az 1 personel ve çalışma saatleri tamamlanınca işletme
           otomatik yayına alınır.{' '}

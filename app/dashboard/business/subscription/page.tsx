@@ -7,18 +7,30 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { SUBSCRIPTION_STATUS } from '@/lib/constants';
-import { Check, CreditCard, ShieldCheck } from 'lucide-react';
+import { Check, CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface SubStatus {
+  _id?: string;
   businessId: string;
   status?: string;
   endDate?: string;
   isActive: boolean;
+  canAcceptBookings?: boolean;
+  hasProAccess?: boolean;
   hasSubscription?: boolean;
   planKey?: string;
   staffLimit?: number | null;
   staffCount?: number;
   canAddStaff?: boolean;
+  isTrial?: boolean;
+  trialExpired?: boolean;
+  needsRenewal?: boolean;
+  inGracePeriod?: boolean;
+  cancelAtPeriodEnd?: boolean;
+  billingNotice?: string | null;
+  billingSuspended?: boolean;
+  stripeSubscriptionId?: string | null;
+  gracePeriodEndsAt?: string | null;
 }
 
 interface StripePlan {
@@ -40,11 +52,15 @@ export default function SubscriptionPage() {
   const [loading, setLoading] = useState(true);
   const [checkoutLoadingPriceId, setCheckoutLoadingPriceId] = useState<string | null>(null);
   const [demoLoading, setDemoLoading] = useState(false);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [reactivateLoading, setReactivateLoading] = useState(false);
+  const [portalLoading, setPortalLoading] = useState(false);
   const [error, setError] = useState('');
 
   const loadSubscription = useCallback(async (bid: string) => {
     const res = await api.get<{ data: SubStatus }>(`/subscription/status/${bid}`);
     setSubscription(res.data.data);
+    return res.data.data;
   }, []);
 
   useEffect(() => {
@@ -118,6 +134,55 @@ export default function SubscriptionPage() {
     }
   };
 
+  const openBillingPortal = async () => {
+    if (!businessId) return;
+    setPortalLoading(true);
+    setError('');
+    try {
+      const res = await api.post<{ data: { url?: string } }>('/payments/stripe/billing-portal', { businessId });
+      const url = res.data.data?.url;
+      if (url) window.location.href = url;
+      else setError('Portal bağlantısı alınamadı.');
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setPortalLoading(false);
+    }
+  };
+
+  const cancelAtPeriodEnd = async () => {
+    if (!subscription?._id) return;
+    if (!window.confirm('Abonelik dönem sonunda iptal edilecek. Bu tarihe kadar PRO erişiminiz devam eder. Onaylıyor musunuz?')) {
+      return;
+    }
+    setCancelLoading(true);
+    setError('');
+    try {
+      await api.patch(`/subscription/${subscription._id}/cancel`);
+      addToast('success', 'Abonelik dönem sonunda iptal edilecek şekilde ayarlandı.');
+      if (businessId) await loadSubscription(businessId);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const reactivate = async () => {
+    if (!subscription?._id) return;
+    setReactivateLoading(true);
+    setError('');
+    try {
+      await api.patch(`/subscription/${subscription._id}/reactivate`);
+      addToast('success', 'Otomatik yenileme tekrar açıldı.');
+      if (businessId) await loadSubscription(businessId);
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    } finally {
+      setReactivateLoading(false);
+    }
+  };
+
   const startDemoSubscription = async () => {
     if (!businessId) return;
     setDemoLoading(true);
@@ -141,13 +206,19 @@ export default function SubscriptionPage() {
     );
   }
 
+  const needsPay =
+    subscription?.trialExpired ||
+    subscription?.billingSuspended ||
+    (!subscription?.canAcceptBookings && subscription?.needsRenewal);
+
   return (
     <div className="space-y-8">
       <div className="rounded-3xl bg-gradient-to-br from-primary-600 to-primary-800 px-6 py-8 text-white shadow-soft sm:px-10">
         <p className="text-sm font-medium text-primary-100">Faturalandırma</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Abonelik</h1>
         <p className="mt-2 max-w-2xl text-sm text-primary-100">
-          Aboneliğiniz aktifse randevu alabilirsiniz. Ödeme işlemi Stripe üzerinden güvenli şekilde tamamlanır.
+          Yeni işletmelere 30 gün ücretsiz PRO deneme verilir. Deneme sonrası aylık abonelik otomatik yenilenir;
+          istediğiniz zaman dönem sonunda iptal edebilirsiniz.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-xs text-primary-100">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
@@ -158,11 +229,36 @@ export default function SubscriptionPage() {
           </span>
         </div>
       </div>
+
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-200">
           {error}
         </div>
       )}
+
+      {subscription?.isTrial && subscription.isActive && (
+        <div className="rounded-2xl border border-primary-200 bg-primary-50/80 p-4 dark:border-primary-900/50 dark:bg-primary-950/30">
+          <p className="flex items-center gap-2 text-sm font-semibold text-primary-900 dark:text-primary-100">
+            <Sparkles className="h-4 w-4" aria-hidden />
+            Ücretsiz PRO deneme aktif
+          </p>
+          <p className="mt-1 text-sm text-primary-800/90 dark:text-primary-100/80">
+            {subscription.endDate &&
+              `Bitiş: ${new Date(subscription.endDate).toLocaleDateString('tr-TR')}. `}
+            Deneme süresince tüm PRO özelliklerine erişebilirsiniz.
+          </p>
+        </div>
+      )}
+
+      {subscription?.billingSuspended && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
+          <p className="text-sm font-semibold text-red-900 dark:text-red-100">Abonelik askıda</p>
+          <p className="mt-1 text-sm text-red-800 dark:text-red-200">
+            Ödeme alınamadığı için işletmeniz yeni randevu alamaz. Lütfen aboneliğinizi yenileyin.
+          </p>
+        </div>
+      )}
+
       <Card className="p-0">
         <CardHeader>
           <CardTitle>Mevcut durum</CardTitle>
@@ -171,22 +267,44 @@ export default function SubscriptionPage() {
           <div className="space-y-2 px-6 pb-6">
             <p className="font-medium text-neutral-900 dark:text-neutral-100">
               Durum:{' '}
-              <span className={subscription.isActive ? 'text-primary-600 dark:text-primary-400' : 'text-red-600 dark:text-red-400'}>
-                {subscription.isActive
-                  ? 'Aktif'
-                  : SUBSCRIPTION_STATUS[subscription.status || ''] || subscription.status || 'Yok'}
+              <span
+                className={
+                  subscription.canAcceptBookings
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-red-600 dark:text-red-400'
+                }
+              >
+                {subscription.billingSuspended
+                  ? 'Askıda'
+                  : subscription.canAcceptBookings
+                    ? subscription.isTrial
+                      ? 'PRO deneme'
+                      : 'Aktif'
+                    : SUBSCRIPTION_STATUS[subscription.status || ''] || subscription.status || 'Yok'}
               </span>
             </p>
             {subscription.endDate && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                Bitiş: {new Date(subscription.endDate).toLocaleDateString('tr-TR')}
+                {subscription.cancelAtPeriodEnd ? 'Erişim bitişi' : 'Dönem bitişi'}:{' '}
+                {new Date(subscription.endDate).toLocaleDateString('tr-TR')}
+              </p>
+            )}
+            {subscription.inGracePeriod && subscription.gracePeriodEndsAt && (
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Ödeme grace süresi: {new Date(subscription.gracePeriodEndsAt).toLocaleDateString('tr-TR')} tarihine
+                kadar PRO devam eder.
+              </p>
+            )}
+            {subscription.cancelAtPeriodEnd && (
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Abonelik dönem sonunda iptal edilecek; bu tarihe kadar erişiminiz sürer.
               </p>
             )}
             {subscription.planKey && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Paket:{' '}
                 <span className="font-medium text-neutral-800 dark:text-neutral-200">
-                  {subscription.planKey === 'pro' ? 'Pro' : 'Standart / Başlangıç'}
+                  {subscription.planKey === 'pro' ? 'Pro' : 'Standart'}
                 </span>
               </p>
             )}
@@ -195,15 +313,38 @@ export default function SubscriptionPage() {
                 Personel: {subscription.staffCount ?? 0} / {subscription.staffLimit}
               </p>
             )}
-            {subscription.staffLimit == null && subscription.planKey === 'pro' && (
+            {subscription.staffLimit == null && subscription.hasProAccess && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">Personel: sınırsız (Pro)</p>
             )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {subscription.stripeSubscriptionId && (
+                <Button type="button" variant="outline" loading={portalLoading} onClick={() => void openBillingPortal()}>
+                  Ödeme yöntemini yönet
+                </Button>
+              )}
+              {subscription.isActive &&
+                !subscription.cancelAtPeriodEnd &&
+                subscription.stripeSubscriptionId && (
+                  <Button type="button" variant="outline" loading={cancelLoading} onClick={() => void cancelAtPeriodEnd()}>
+                    Dönem sonunda iptal et
+                  </Button>
+                )}
+              {subscription.cancelAtPeriodEnd && subscription.stripeSubscriptionId && (
+                <Button type="button" variant="outline" loading={reactivateLoading} onClick={() => void reactivate()}>
+                  Otomatik yenilemeyi aç
+                </Button>
+              )}
+            </div>
           </div>
         )}
-        {!subscription?.isActive && businessId && (
+
+        {needsPay && businessId && (
           <div className="border-t border-neutral-200 px-6 py-6 dark:border-neutral-800">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
-              Randevu alabilmek için aboneliğinizin aktif olması gerekir.
+              {subscription?.trialExpired
+                ? 'Deneme süreniz bitti. PRO ve randevu almaya devam etmek için abonelik başlatın.'
+                : 'Randevu alabilmek için geçerli bir abonelik gerekir.'}
             </p>
             {stripeConfig?.checkoutEnabled && (stripeConfig.plans?.length ?? 0) > 0 ? (
               <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -212,81 +353,45 @@ export default function SubscriptionPage() {
                     key={p.priceId}
                     className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-card dark:border-neutral-800 dark:bg-neutral-950/40"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
-                        <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                          Aylık abonelik • Online ödeme
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-primary-50 px-2 py-1 text-xs font-semibold text-primary-800 dark:bg-primary-950/50 dark:text-primary-50">
-                        Önerilen
-                      </span>
-                    </div>
+                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
+                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                      Aylık • Otomatik yenileme • İstediğiniz zaman iptal
+                    </p>
                     <ul className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-                      {(p.label.toLowerCase().includes('pro')
-                        ? [
-                            'Randevu almaya başla',
-                            'Sınırsız personel',
-                            'WhatsApp bildirimleri',
-                            'İşletme paneli',
-                          ]
-                        : [
-                            'Randevu almaya başla',
-                            'En fazla 1 personel',
-                            'Hizmet yönetimi',
-                            'İşletme paneli',
-                          ]
-                      ).map((x) => (
+                      {[
+                        'Randevu almaya devam',
+                        'Sınırsız personel (Pro)',
+                        'WhatsApp bildirimleri',
+                        'İşletme paneli',
+                      ].map((x) => (
                         <li key={x} className="flex items-center gap-2">
                           <Check className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden /> {x}
                         </li>
                       ))}
                     </ul>
-                    <div className="mt-5 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        loading={checkoutLoadingPriceId === p.priceId}
-                        disabled={Boolean(checkoutLoadingPriceId)}
-                        onClick={() => void startStripeCheckout(p.priceId)}
-                      >
-                        Paketi satın al
-                      </Button>
-                      <Link href="/pricing" className="inline-flex items-center">
-                        <Button type="button" variant="outline" disabled={Boolean(checkoutLoadingPriceId)}>
-                          Detayları gör
-                        </Button>
-                      </Link>
-                    </div>
-                    <p className="mt-3 text-xs text-neutral-500 dark:text-neutral-500">
-                      Ödeme Stripe sayfasında tamamlanır. İstediğiniz zaman iptal edebilirsiniz.
-                    </p>
+                    <Button
+                      type="button"
+                      className="mt-5 w-full"
+                      loading={checkoutLoadingPriceId === p.priceId}
+                      disabled={Boolean(checkoutLoadingPriceId)}
+                      onClick={() => void startStripeCheckout(p.priceId)}
+                    >
+                      Aboneliği başlat
+                    </Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="space-y-2">
-                <p className="text-xs text-neutral-500 dark:text-neutral-500">
-                  Stripe henüz sunucuda yapılandırılmadı (STRIPE_SECRET_KEY + en az bir STRIPE_PRICE_ID). Geliştirici
-                  modunda deneme için aşağıdaki demo aboneliği kullanabilirsiniz.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    loading={demoLoading}
-                    onClick={() => void startDemoSubscription()}
-                  >
-                    Demo: 30 gün aktifleştir
-                  </Button>
-                  <Link href="/pricing" className="inline-flex items-center">
-                    <Button type="button" variant="outline">
-                      Planları görüntüle
-                    </Button>
-                  </Link>
-                </div>
+              <div className="mt-4 space-y-2">
+                <p className="text-xs text-neutral-500">Stripe yapılandırması gerekli (geliştirme: demo abonelik).</p>
+                <Button type="button" variant="outline" loading={demoLoading} onClick={() => void startDemoSubscription()}>
+                  Demo: 30 gün PRO
+                </Button>
               </div>
             )}
+            <Link href="/pricing" className="mt-4 inline-block text-sm font-medium text-primary-700 dark:text-primary-300">
+              Planları karşılaştır →
+            </Link>
           </div>
         )}
       </Card>

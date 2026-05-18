@@ -55,6 +55,12 @@ export function isBusinessOnboardingComplete(status: BusinessSetupStatus | null)
   return Boolean(status.setupComplete || allSetupStepsDone(status.steps));
 }
 
+/** Kurulum bitti ve işletme müşterilere açık — status bar gösterilmez */
+export function isBusinessSetupPublished(status: BusinessSetupStatus | null): boolean {
+  if (!status?.hasBusiness) return false;
+  return Boolean(status.isActive && isBusinessOnboardingComplete(status));
+}
+
 export async function fetchBusinessSetupStatus(): Promise<BusinessSetupStatus | null> {
   try {
     const res = await api.get<{ data: BusinessSetupStatus }>('/business/setup-status');

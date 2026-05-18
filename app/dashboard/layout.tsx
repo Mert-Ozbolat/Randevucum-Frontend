@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { BusinessSetupStatusBar } from '@/components/dashboard/BusinessSetupStatusBar';
+import { BusinessBillingShell } from '@/components/dashboard/BusinessBillingShell';
 import { Building2, Calendar, CalendarDays, Heart, Menu, User } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardBackButton } from '@/components/layout/DashboardBackButton';
@@ -12,9 +13,15 @@ import { DashboardShellProvider, useDashboardShell } from '@/contexts/DashboardS
 import { useAuthStore } from '@/store/authStore';
 import { clearAuth, isBusinessOwner } from '@/lib/auth';
 import {
+  BUSINESS_SETUP_PUBLISHED_EVENT,
+  isBusinessSetupPublishedCached,
+  markBusinessSetupPublished,
+} from '@/lib/businessSetupCache';
+import {
   businessOwnerLandingPath,
   fetchBusinessSetupStatus,
   getOnboardingRedirectTarget,
+  isBusinessSetupPublished,
 } from '@/lib/businessOwnerRedirect';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -33,10 +40,27 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const { user, token, logout } = useAuthStore();
   const { canViewStaffPanel } = useStaffPanel();
   const { openSidebar } = useDashboardShell();
+  const [setupPublished, setSetupPublished] = useState(false);
 
   useEffect(() => {
     useAuthStore.persist.rehydrate();
   }, []);
+
+  useEffect(() => {
+    if (user?._id) {
+      setSetupPublished(isBusinessSetupPublishedCached(user._id));
+    } else {
+      setSetupPublished(false);
+    }
+  }, [user?._id]);
+
+  useEffect(() => {
+    const onPublished = () => {
+      if (user?._id) setSetupPublished(isBusinessSetupPublishedCached(user._id));
+    };
+    window.addEventListener(BUSINESS_SETUP_PUBLISHED_EVENT, onPublished);
+    return () => window.removeEventListener(BUSINESS_SETUP_PUBLISHED_EVENT, onPublished);
+  }, [user?._id]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -51,9 +75,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     }
     if (
       isBusinessOwner(user) &&
-      pathname?.startsWith('/dashboard/customer/reservations')
+      pathname?.startsWith('/dashboard/customer/reservations') &&
+      !isBusinessSetupPublishedCached(user._id)
     ) {
       void fetchBusinessSetupStatus().then((status) => {
+        if (isBusinessSetupPublished(status) && user._id) {
+          markBusinessSetupPublished(user._id);
+          setSetupPublished(true);
+        }
         router.replace(businessOwnerLandingPath(status));
       });
     }
@@ -61,9 +90,15 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!user || !isBusinessOwner(user) || !pathname) return;
+    if (isBusinessSetupPublishedCached(user._id)) return;
     let cancelled = false;
     void fetchBusinessSetupStatus().then((status) => {
       if (cancelled) return;
+      if (isBusinessSetupPublished(status)) {
+        markBusinessSetupPublished(user._id);
+        setSetupPublished(true);
+        return;
+      }
       const target = getOnboardingRedirectTarget(status, pathname);
       if (target) router.replace(target);
     });
@@ -87,7 +122,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   }
 
   const owner = isBusinessOwner(user);
-  const showBusinessSetupBar = owner && Boolean(pathname?.startsWith('/dashboard'));
+  const showBusinessSetupBar = owner && !setupPublished && Boolean(pathname?.startsWith('/dashboard'));
   const headerScopeTitle = pathname?.startsWith('/dashboard/staff')
     ? 'İş randevularım'
     : owner
@@ -218,8 +253,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </header>
-        {showBusinessSetupBar && <BusinessSetupStatusBar />}
-        <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        {owner ? (
+          <BusinessBillingShell>
+            {showBusinessSetupBar && <BusinessSetupStatusBar />}
+            <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+          </BusinessBillingShell>
+        ) : (
+          <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+        )}
       </div>
     </div>
   );
