@@ -5,14 +5,36 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { api, getApiErrorMessage } from '@/lib/api';
-import { clearAuth, getStoredToken, setAuth } from '@/lib/auth';
+import {
+  clearAuth,
+  getStoredToken,
+  isBusinessOwner,
+  setAuth,
+  type User,
+  type UserRole,
+} from '@/lib/auth';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { businessOwnerPostAuthPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
-import { isBusinessOwner } from '@/lib/auth';
+
+function mapApiUser(user: {
+  _id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}): User {
+  return {
+    _id: user._id,
+    email: user.email,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    role: user.role as UserRole,
+  };
+}
 
 type AccountType = 'customer' | 'business_owner';
 
@@ -60,13 +82,7 @@ export default function LoginPage() {
       .then(async (res) => {
         if (cancelled) return;
         const me = res.data.data;
-        const u = {
-          _id: me._id,
-          email: me.email,
-          firstName: me.firstName,
-          lastName: me.lastName,
-          role: me.role as AuthPayload['data']['user']['role'],
-        };
+        const u = mapApiUser(me);
         setAuth(stored, u);
         setStoreAuth(stored, u);
         if (isBusinessOwner(u)) {
@@ -103,13 +119,7 @@ export default function LoginPage() {
   }, [debug]);
 
   const finishAuth = async (data: AuthPayload['data']) => {
-    const u = {
-      _id: data.user._id,
-      email: data.user.email,
-      firstName: data.user.firstName,
-      lastName: data.user.lastName,
-      role: data.user.role as 'customer' | 'business_owner' | 'super_admin',
-    };
+    const u = mapApiUser(data.user);
     setAuth(data.token, u);
     setStoreAuth(data.token, u);
     if (isBusinessOwner(u)) {
