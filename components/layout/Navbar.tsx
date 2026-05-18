@@ -45,6 +45,7 @@ export function Navbar() {
       ? ([
           { href: '/dashboard/business', label: 'İşletme paneli', Icon: Building2 },
           { href: '/dashboard/business/reservations', label: 'Randevular', Icon: Calendar },
+          { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
         ] as const)
       : null;
 

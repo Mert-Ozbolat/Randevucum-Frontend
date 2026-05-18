@@ -1,12 +1,59 @@
 import { api } from '@/lib/api';
 import { isBusinessOwner, type User } from '@/lib/auth';
 
+export type BusinessSetupSteps = {
+  profile: boolean;
+  services: boolean;
+  staff: boolean;
+  hours: boolean;
+};
+
 export type BusinessSetupStatus = {
   hasBusiness: boolean;
   isActive: boolean;
   setupComplete: boolean;
   percent: number;
+  steps?: BusinessSetupSteps;
 };
+
+/** Kurulum adımları — bu sayfalara serbest geçiş */
+export const BUSINESS_SETUP_PATHS = [
+  '/dashboard/business/info',
+  '/dashboard/business/services',
+  '/dashboard/business/staff',
+  '/dashboard/business/working-hours',
+] as const;
+
+const STEP_HREFS: Record<keyof BusinessSetupSteps, string> = {
+  profile: '/dashboard/business/info',
+  services: '/dashboard/business/services',
+  staff: '/dashboard/business/staff',
+  hours: '/dashboard/business/working-hours',
+};
+
+export function isBusinessSetupPath(pathname: string): boolean {
+  return BUSINESS_SETUP_PATHS.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export function allSetupStepsDone(steps?: BusinessSetupSteps | null): boolean {
+  if (!steps) return false;
+  return Boolean(steps.profile && steps.services && steps.staff && steps.hours);
+}
+
+/** İlk eksik kurulum adımı; hepsi tamamsa null */
+export function firstIncompleteSetupPath(steps?: BusinessSetupSteps | null): string | null {
+  if (!steps) return STEP_HREFS.profile;
+  if (!steps.profile) return STEP_HREFS.profile;
+  if (!steps.services) return STEP_HREFS.services;
+  if (!steps.staff) return STEP_HREFS.staff;
+  if (!steps.hours) return STEP_HREFS.hours;
+  return null;
+}
+
+export function isBusinessOnboardingComplete(status: BusinessSetupStatus | null): boolean {
+  if (!status?.hasBusiness) return false;
+  return Boolean(status.setupComplete || allSetupStepsDone(status.steps));
+}
 
 export async function fetchBusinessSetupStatus(): Promise<BusinessSetupStatus | null> {
   try {
@@ -17,21 +64,19 @@ export async function fetchBusinessSetupStatus(): Promise<BusinessSetupStatus | 
   }
 }
 
-/** İşletme sahibi kurulum bitmeden özet paneline gitmesin */
+/** Giriş / dashboard kökü için hedef */
 export function businessOwnerLandingPath(status: BusinessSetupStatus | null): string {
-  if (!status?.hasBusiness || !status.setupComplete || !status.isActive) {
-    return '/dashboard/business/info';
-  }
-  return '/dashboard/business';
+  if (!status?.hasBusiness) return STEP_HREFS.profile;
+  if (isBusinessOnboardingComplete(status)) return '/dashboard/business';
+  return firstIncompleteSetupPath(status.steps) ?? STEP_HREFS.profile;
 }
 
-/** Giriş / kayıt sonrası — kurulum eksikse her zaman işletme formu */
 export function businessOwnerPostAuthPath(
   status: BusinessSetupStatus | null,
   from?: string | null
 ): string {
   const landing = businessOwnerLandingPath(status);
-  if (landing === '/dashboard/business/info') return landing;
+  if (landing !== '/dashboard/business') return landing;
   const f = (from || '/').trim();
   if (f && f !== '/' && f !== '/login' && !f.startsWith('/register')) {
     return f;
@@ -39,9 +84,33 @@ export function businessOwnerPostAuthPath(
   return landing;
 }
 
-export function shouldRedirectBusinessOwner(user: User | null, pathname: string): boolean {
+/**
+ * Kurulum sürerken yalnızca işletme panelindeki “ileri” sayfalardan eksik adıma yönlendir.
+ * Kurulum bitince veya kurulum sayfasındayken null döner (yönlendirme yok).
+ */
+export function getOnboardingRedirectTarget(
+  status: BusinessSetupStatus | null,
+  pathname: string
+): string | null {
+  if (!pathname.startsWith('/dashboard/business')) return null;
+  if (isBusinessSetupPath(pathname)) return null;
+  if (isBusinessOnboardingComplete(status)) return null;
+
+  if (!status?.hasBusiness) {
+    return pathname === STEP_HREFS.profile ? null : STEP_HREFS.profile;
+  }
+
+  const next = firstIncompleteSetupPath(status.steps);
+  if (!next || next === pathname) return null;
+  return next;
+}
+
+/** @deprecated use getOnboardingRedirectTarget */
+export function shouldRedirectBusinessOwner(
+  user: User | null,
+  pathname: string,
+  status?: BusinessSetupStatus | null
+): boolean {
   if (!user || !isBusinessOwner(user)) return false;
-  if (!pathname.startsWith('/dashboard/business')) return false;
-  if (pathname.startsWith('/dashboard/business/info')) return false;
-  return true;
+  return getOnboardingRedirectTarget(status ?? null, pathname) !== null;
 }

@@ -12,22 +12,38 @@ export type SetupStep = {
   done: boolean;
 };
 
+export type BusinessSetupStepsMap = {
+  profile: boolean;
+  services: boolean;
+  staff: boolean;
+  hours: boolean;
+};
+
 export type BusinessForSetup = {
   phone?: string;
   address?: { city?: string; street?: string; district?: string };
+  location?: { lat?: number; lng?: number };
   description?: string;
+  workingHoursConfigured?: boolean;
   workingHours?: { dayOfWeek?: number; open?: string; close?: string; isClosed?: boolean }[];
 };
 
-/** Kısa açıklama yeterli (uzun metin zorunluluğu kullanıcıları engelliyordu) */
-const DESCRIPTION_MIN_LEN = 8;
+export const DESCRIPTION_MIN_LEN = 8;
 
-/** Şehir veya ilçe veya anlamlı açık adres — yalnızca şehir zorunlu değil */
+/** Şehir / ilçe / açık adres veya harita pini */
 export function hasProfileLocationDone(b: BusinessForSetup): boolean {
   const city = b.address?.city?.trim();
   const district = b.address?.district?.trim();
   const street = b.address?.street?.trim() ?? '';
-  return !!(city || district || street.length >= 5);
+  if (city || district || street.length >= 5) return true;
+  const lat = b.location?.lat;
+  const lng = b.location?.lng;
+  return (
+    typeof lat === 'number' &&
+    typeof lng === 'number' &&
+    !Number.isNaN(lat) &&
+    !Number.isNaN(lng)
+  );
 }
 
 export function isProfileStepDone(b: BusinessForSetup): boolean {
@@ -44,6 +60,7 @@ export function isStaffStepDone(staffCount: number): boolean {
 }
 
 export function isWorkingHoursStepDone(b: BusinessForSetup): boolean {
+  if (!b.workingHoursConfigured) return false;
   const wh = b.workingHours;
   if (!wh?.length) return false;
   return wh.some((d) => !d.isClosed);
@@ -89,5 +106,49 @@ export function buildSetupSteps(
   const total = steps.length;
   const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
 
+  return { steps, percent, completed, total };
+}
+
+const SETUP_STEP_META: Omit<SetupStep, 'done'>[] = [
+  {
+    id: 'profile',
+    label: 'İşletme profili ve iletişim',
+    shortLabel: 'Profil',
+    href: '/dashboard/business/info',
+  },
+  {
+    id: 'services',
+    label: 'En az bir hizmet',
+    shortLabel: 'Hizmetler',
+    href: '/dashboard/business/services',
+  },
+  {
+    id: 'staff',
+    label: 'En az bir personel',
+    shortLabel: 'Personel',
+    href: '/dashboard/business/staff',
+  },
+  {
+    id: 'hours',
+    label: 'Çalışma saatleri',
+    shortLabel: 'Saatler',
+    href: '/dashboard/business/working-hours',
+  },
+];
+
+/** Status bar — backend /business/setup-status ile aynı sonuç */
+export function buildSetupStepsFromApi(stepsMap: BusinessSetupStepsMap): {
+  steps: SetupStep[];
+  percent: number;
+  completed: number;
+  total: number;
+} {
+  const steps: SetupStep[] = SETUP_STEP_META.map((meta) => ({
+    ...meta,
+    done: Boolean(stepsMap[meta.id]),
+  }));
+  const completed = steps.filter((s) => s.done).length;
+  const total = steps.length;
+  const percent = total === 0 ? 0 : Math.round((completed / total) * 100);
   return { steps, percent, completed, total };
 }

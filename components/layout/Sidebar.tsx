@@ -41,6 +41,7 @@ const businessLinks: SidebarLink[] = [
   { href: '/dashboard/business/reservations', label: 'Randevular', Icon: Calendar },
   { href: '/dashboard/business/slider-ad', label: 'Ana sayfa reklamı', Icon: Megaphone },
   { href: '/dashboard/business/subscription', label: 'Abonelik', Icon: CreditCard },
+  { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
   { href: '/dashboard/profile', label: 'Profil', Icon: User },
 ];
 

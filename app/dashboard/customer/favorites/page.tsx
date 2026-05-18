@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Heart } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -20,7 +20,7 @@ type FavoriteBusiness = {
 };
 
 export default function CustomerFavoritesPage() {
-  const { ids, loading: idsLoading } = useFavorites();
+  useFavorites();
   const [businesses, setBusinesses] = useState<FavoriteBusiness[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -48,12 +48,9 @@ export default function CustomerFavoritesPage() {
     };
   }, []);
 
-  const visible = useMemo(
-    () => businesses.filter((b) => ids.has(String(b._id))),
-    [businesses, ids]
-  );
+  const visible = businesses;
 
-  const busy = loading || idsLoading;
+  const busy = loading;
 
   return (
     <div className="mx-auto max-w-6xl px-3 py-6 sm:px-4 sm:py-8 lg:px-6">

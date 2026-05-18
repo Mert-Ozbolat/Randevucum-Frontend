@@ -12,6 +12,11 @@ import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { formatTrMobile, phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
 import { ImageIcon } from 'lucide-react';
 import { dispatchBusinessSetupRefresh } from '@/lib/businessSetupRefresh';
+import {
+  DESCRIPTION_MIN_LEN,
+  hasProfileLocationDone,
+  type BusinessForSetup,
+} from '@/lib/businessSetup';
 
 interface Business {
   _id: string;
@@ -32,8 +37,6 @@ interface Business {
   breakTimes?: { start: string; end: string }[];
 }
 
-const DAYS = [0, 1, 2, 3, 4, 5, 6];
-
 function mapSubCategoryToBusinessType(subCategory?: string) {
   if (!subCategory) return 'other';
   return SUBCATEGORY_TO_BUSINESS_TYPE[subCategory] || 'other';
@@ -51,13 +54,6 @@ function defaultFormState(): Partial<Business> {
     address: { street: '', city: '', district: '' },
     description: '',
     imageUrl: '',
-    workingHours: DAYS.map((d) => ({
-      dayOfWeek: d,
-      open: '09:00',
-      close: '18:00',
-      isClosed: d === 0,
-    })),
-    breakTimes: [{ start: '12:00', end: '13:00' }],
   };
 }
 
@@ -75,8 +71,6 @@ function buildPayload(form: Partial<Business>) {
     address: form.address,
     description: form.description?.trim() || undefined,
     imageUrl: form.imageUrl || undefined,
-    workingHours: form.workingHours,
-    breakTimes: form.breakTimes,
   };
 }
 
@@ -91,10 +85,6 @@ function businessToForm(b: Business): Partial<Business> {
     phone: phoneInputFromStored(b.phone),
     email: b.email || '',
     description: b.description || '',
-    workingHours: b.workingHours?.length
-      ? b.workingHours
-      : defaultFormState().workingHours,
-    breakTimes: b.breakTimes || [{ start: '12:00', end: '13:00' }],
     imageUrl: b.imageUrl || '',
   };
 }
@@ -109,6 +99,42 @@ export default function BusinessInfoPage() {
   const [profilePreview, setProfilePreview] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pageTopRef = useRef<HTMLDivElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const successRef = useRef<HTMLDivElement>(null);
+
+  const scrollToPageTop = () => {
+    window.setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      pageTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  };
+
+  const scrollToAlert = (el: HTMLElement | null) => {
+    window.setTimeout(() => {
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 50);
+  };
+
+  const scrollToErrorOnNextPaint = useRef(false);
+
+  const showFormError = (message: string) => {
+    setSuccess('');
+    scrollToErrorOnNextPaint.current = true;
+    setError(message);
+  };
+
+  useEffect(() => {
+    if (!error || !scrollToErrorOnNextPaint.current) return;
+    scrollToErrorOnNextPaint.current = false;
+    scrollToAlert(errorRef.current);
+  }, [error]);
+
+  useEffect(() => {
+    if (!success) return;
+    scrollToPageTop();
+    scrollToAlert(successRef.current);
+  }, [success]);
 
   useEffect(() => {
     api
@@ -132,15 +158,23 @@ export default function BusinessInfoPage() {
     setSuccess('');
 
     if (!form.name?.trim()) {
-      setError('İşletme adı zorunludur.');
+      showFormError('İşletme adı zorunludur.');
       return;
     }
     if (!form.mainCategory?.trim() || !form.subCategory?.trim()) {
-      setError('Alan ve meslek seçimi zorunludur.');
+      showFormError('Alan ve meslek seçimi zorunludur.');
       return;
     }
     if (phoneDigitsOnly(form.phone || '').length < 10) {
-      setError('Geçerli bir işletme telefon numarası girin.');
+      showFormError('Geçerli bir işletme telefon numarası girin.');
+      return;
+    }
+    if ((form.description?.trim().length ?? 0) < DESCRIPTION_MIN_LEN) {
+      showFormError(`Açıklama en az ${DESCRIPTION_MIN_LEN} karakter olmalıdır (yayın için gerekli).`);
+      return;
+    }
+    if (!hasProfileLocationDone(form as BusinessForSetup)) {
+      showFormError('Haritadan konum seçin veya adres alanlarından en az birini doldurun.');
       return;
     }
 
@@ -163,7 +197,7 @@ export default function BusinessInfoPage() {
       dispatchBusinessSetupRefresh();
       setSuccess('İşletme bilgileri kaydedildi.');
     } catch (err) {
-      setError(getApiErrorMessage(err));
+      showFormError(getApiErrorMessage(err));
     } finally {
       setSaving(false);
     }
@@ -208,7 +242,7 @@ export default function BusinessInfoPage() {
   }
 
   return (
-    <div className="max-w-2xl space-y-6">
+    <div ref={pageTopRef} className="max-w-2xl space-y-6 scroll-mt-24">
       <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">İşletme Bilgileri</h1>
 
       {(isNew || business?.isActive === false) && (
@@ -222,12 +256,20 @@ export default function BusinessInfoPage() {
       <form onSubmit={handleSubmit}>
         <Card className="space-y-6">
           {error && (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
+            <div
+              ref={errorRef}
+              className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200"
+              role="alert"
+            >
               {error}
             </div>
           )}
           {success && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200">
+            <div
+              ref={successRef}
+              className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm font-medium text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-200"
+              role="status"
+            >
               {success}
             </div>
           )}

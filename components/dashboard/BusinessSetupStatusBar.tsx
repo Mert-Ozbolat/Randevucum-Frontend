@@ -5,10 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CheckCircle2, Circle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
-import {
-  buildSetupSteps,
-  type BusinessForSetup,
-} from '@/lib/businessSetup';
+import { buildSetupStepsFromApi, type BusinessSetupStepsMap } from '@/lib/businessSetup';
 import { BUSINESS_SETUP_REFRESH_EVENT } from '@/lib/businessSetupRefresh';
 
 export function BusinessSetupStatusBar() {
@@ -21,7 +18,7 @@ export function BusinessSetupStatusBar() {
   const [percent, setPercent] = useState(0);
   const [completed, setCompleted] = useState(0);
   const [total, setTotal] = useState(4);
-  const [steps, setSteps] = useState<ReturnType<typeof buildSetupSteps>['steps']>([]);
+  const [steps, setSteps] = useState<ReturnType<typeof buildSetupStepsFromApi>['steps']>([]);
   const [isPublicActive, setIsPublicActive] = useState(false);
 
   useEffect(() => {
@@ -48,9 +45,10 @@ export function BusinessSetupStatusBar() {
           percent: number;
           completed: number;
           total: number;
+          steps?: BusinessSetupStepsMap;
         };
       }>('/business/setup-status')
-      .then(async (res) => {
+      .then((res) => {
         if (cancelled) return;
         const status = res.data.data;
         if (!status?.hasBusiness) {
@@ -63,30 +61,18 @@ export function BusinessSetupStatusBar() {
         }
         setNoBusiness(false);
         setIsPublicActive(Boolean(status.isActive));
-        setPercent(status.percent ?? 0);
-        setCompleted(status.completed ?? 0);
-        setTotal(status.total ?? 4);
 
-        const bizRes = await api.get<{ data: (BusinessForSetup & { _id: string })[] }>('/business');
-        if (cancelled) return;
-        const b = bizRes.data.data?.[0];
-        if (!b) return;
-        const bid = b._id;
-
-        const [sv, st] = await Promise.all([
-          api.get<{ data: unknown[] }>(`/services/business/${bid}`),
-          api.get<{ data: unknown[] }>(`/staff/business/${bid}`),
-        ]);
-        if (cancelled) return;
-
-        const servicesCount = Array.isArray(sv.data.data) ? sv.data.data.length : 0;
-        const staffCount = Array.isArray(st.data.data) ? st.data.data.length : 0;
-
-        const result = buildSetupSteps(b, servicesCount, staffCount);
-        setSteps(result.steps);
-        setPercent(result.percent);
-        setCompleted(result.completed);
-        setTotal(result.total);
+        if (status.steps) {
+          const result = buildSetupStepsFromApi(status.steps);
+          setSteps(result.steps);
+          setPercent(result.percent);
+          setCompleted(result.completed);
+          setTotal(result.total);
+        } else {
+          setPercent(status.percent ?? 0);
+          setCompleted(status.completed ?? 0);
+          setTotal(status.total ?? 4);
+        }
       })
       .catch(() => {
         if (!cancelled) {

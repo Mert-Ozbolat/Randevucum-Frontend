@@ -89,7 +89,11 @@ export default function WorkingHoursPage() {
     setError('');
     setSaving(true);
     try {
-      await api.put(`/business/${businessId}`, { workingHours: hours, breakTimes });
+      await api.put(`/business/${businessId}`, {
+        workingHours: hours,
+        breakTimes,
+        workingHoursConfigured: true,
+      });
       addToast('success', 'Çalışma saatleri kaydedildi.');
       dispatchBusinessSetupRefresh();
     } catch (err) {

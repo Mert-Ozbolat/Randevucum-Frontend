@@ -14,7 +14,7 @@ import { clearAuth, isBusinessOwner } from '@/lib/auth';
 import {
   businessOwnerLandingPath,
   fetchBusinessSetupStatus,
-  shouldRedirectBusinessOwner,
+  getOnboardingRedirectTarget,
 } from '@/lib/businessOwnerRedirect';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -49,10 +49,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     if (!isBusinessOwner(user) && pathname?.startsWith('/dashboard/business')) {
       router.replace('/dashboard/customer/reservations');
     }
-    const ownerBlockedCustomer =
-      pathname?.startsWith('/dashboard/customer/reservations') ||
-      pathname?.startsWith('/dashboard/customer/favorites');
-    if (isBusinessOwner(user) && ownerBlockedCustomer) {
+    if (
+      isBusinessOwner(user) &&
+      pathname?.startsWith('/dashboard/customer/reservations')
+    ) {
       void fetchBusinessSetupStatus().then((status) => {
         router.replace(businessOwnerLandingPath(status));
       });
@@ -60,12 +60,12 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [user, pathname, router]);
 
   useEffect(() => {
-    if (!user || !shouldRedirectBusinessOwner(user, pathname || '')) return;
+    if (!user || !isBusinessOwner(user) || !pathname) return;
     let cancelled = false;
     void fetchBusinessSetupStatus().then((status) => {
       if (cancelled) return;
-      const target = businessOwnerLandingPath(status);
-      if (target !== pathname) router.replace(target);
+      const target = getOnboardingRedirectTarget(status, pathname);
+      if (target) router.replace(target);
     });
     return () => {
       cancelled = true;
@@ -189,6 +189,17 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                   >
                     <Calendar className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
                     Randevular
+                  </Link>
+                  <Link
+                    href="/dashboard/customer/favorites"
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold sm:text-sm ${
+                      pathname?.startsWith('/dashboard/customer/favorites')
+                        ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-primary-50 hover:text-primary-800 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-primary-950/45 dark:hover:text-primary-50'
+                    }`}
+                  >
+                    <Heart className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    Favorilerim
                   </Link>
                 </div>
               )}
