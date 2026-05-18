@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { formatTrMobile, phoneDigitsOnly } from '@/lib/phone';
 import { businessOwnerPostAuthPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
 import { isBusinessOwner } from '@/lib/auth';
 
@@ -50,7 +49,6 @@ export default function LoginPage() {
     lastName: '',
   });
   const [googleAccountType, setGoogleAccountType] = useState<AccountType | null>(null);
-  const [googlePhone, setGooglePhone] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -181,18 +179,10 @@ export default function LoginPage() {
 
   const completeGoogleRegistration = () => {
     if (!pendingGoogleToken || !googleAccountType) return;
-    if (googleAccountType === 'business_owner') {
-      const digits = phoneDigitsOnly(googlePhone);
-      if (digits.length < 10) {
-        setError('İşletme hesabı için telefon numarası zorunludur.');
-        return;
-      }
-    }
     void sendGoogleAuth(pendingGoogleToken, {
       accountType: googleAccountType,
       firstName: googleProfile.firstName.trim() || undefined,
       lastName: googleProfile.lastName.trim() || undefined,
-      phone: googleAccountType === 'business_owner' ? googlePhone.trim() : undefined,
     });
   };
 
@@ -314,21 +304,6 @@ export default function LoginPage() {
                 value={googleProfile.lastName}
                 onChange={(e) => setGoogleProfile((p) => ({ ...p, lastName: e.target.value }))}
               />
-              {googleAccountType === 'business_owner' && (
-                <Input
-                  label="Telefon"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  required
-                  placeholder="0 5xx xxx xx xx"
-                  value={googlePhone}
-                  onChange={(e) => {
-                    const digits = phoneDigitsOnly(e.target.value);
-                    if (digits.length <= 11) setGooglePhone(formatTrMobile(digits));
-                  }}
-                />
-              )}
             </div>
             <div className="mt-6 flex flex-col gap-2 sm:flex-row-reverse">
               <Button
@@ -348,7 +323,6 @@ export default function LoginPage() {
                 onClick={() => {
                   setPendingGoogleToken(null);
                   setGoogleAccountType(null);
-                  setGooglePhone('');
                   setError('');
                 }}
               >
