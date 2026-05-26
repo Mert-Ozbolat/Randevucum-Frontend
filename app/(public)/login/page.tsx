@@ -18,7 +18,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { businessOwnerPostAuthPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
+import { businessOwnerPostAuthPath } from '@/lib/businessOwnerRedirect';
 
 function mapApiUser(user: {
   _id: string;
@@ -86,8 +86,7 @@ export default function LoginPage() {
         setAuth(stored, u);
         setStoreAuth(stored, u);
         if (isBusinessOwner(u)) {
-          const status = await fetchBusinessSetupStatus();
-          if (!cancelled) router.replace(businessOwnerPostAuthPath(status, from));
+          if (!cancelled) router.replace(businessOwnerPostAuthPath(null, from));
         } else if (from && from !== '/' && from !== '/login') {
           router.replace(from);
         } else {
@@ -123,8 +122,7 @@ export default function LoginPage() {
     setAuth(data.token, u);
     setStoreAuth(data.token, u);
     if (isBusinessOwner(u)) {
-      const status = await fetchBusinessSetupStatus();
-      router.push(businessOwnerPostAuthPath(status, from));
+      router.push(businessOwnerPostAuthPath(null, from));
     } else {
       router.push(from);
     }

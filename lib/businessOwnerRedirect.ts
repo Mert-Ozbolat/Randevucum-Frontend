@@ -77,17 +77,25 @@ export function businessOwnerLandingPath(status: BusinessSetupStatus | null): st
   return firstIncompleteSetupPath(status.steps) ?? STEP_HREFS.profile;
 }
 
+/**
+ * Giriş / kayıt sonrası varsayılan: ana sayfa (/).
+ * Yalnızca dashboard dışı bir `from` (ör. /business/xxx/reserve) varsa oraya gider.
+ */
 export function businessOwnerPostAuthPath(
-  status: BusinessSetupStatus | null,
+  _status: BusinessSetupStatus | null,
   from?: string | null
 ): string {
-  const landing = businessOwnerLandingPath(status);
-  if (landing !== '/dashboard/business') return landing;
   const f = (from || '/').trim();
-  if (f && f !== '/' && f !== '/login' && !f.startsWith('/register')) {
+  if (
+    f &&
+    f !== '/' &&
+    f !== '/login' &&
+    !f.startsWith('/register') &&
+    !f.startsWith('/dashboard')
+  ) {
     return f;
   }
-  return landing;
+  return '/';
 }
 
 /**

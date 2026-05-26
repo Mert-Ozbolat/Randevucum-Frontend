@@ -3,12 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { isBusinessOwner } from '@/lib/auth';
-import { isBusinessSetupPublishedCached, markBusinessSetupPublished } from '@/lib/businessSetupCache';
-import {
-  businessOwnerLandingPath,
-  fetchBusinessSetupStatus,
-  isBusinessSetupPublished,
-} from '@/lib/businessOwnerRedirect';
 import { useAuthStore } from '@/store/authStore';
 
 export default function DashboardPage() {
@@ -18,14 +12,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user) return;
     if (isBusinessOwner(user)) {
-      if (isBusinessSetupPublishedCached(user._id)) {
-        router.replace('/dashboard/business');
-        return;
-      }
-      void fetchBusinessSetupStatus().then((status) => {
-        if (isBusinessSetupPublished(status)) markBusinessSetupPublished(user._id);
-        router.replace(businessOwnerLandingPath(status));
-      });
+      router.replace('/');
     } else {
       router.replace('/dashboard/customer/reservations');
     }

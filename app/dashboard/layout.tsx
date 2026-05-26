@@ -18,7 +18,6 @@ import {
   markBusinessSetupPublished,
 } from '@/lib/businessSetupCache';
 import {
-  businessOwnerLandingPath,
   fetchBusinessSetupStatus,
   getOnboardingRedirectTarget,
   isBusinessSetupPublished,
@@ -72,19 +71,6 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     if (!user) return;
     if (!isBusinessOwner(user) && pathname?.startsWith('/dashboard/business')) {
       router.replace('/dashboard/customer/reservations');
-    }
-    if (
-      isBusinessOwner(user) &&
-      pathname?.startsWith('/dashboard/customer/reservations') &&
-      !isBusinessSetupPublishedCached(user._id)
-    ) {
-      void fetchBusinessSetupStatus().then((status) => {
-        if (isBusinessSetupPublished(status) && user._id) {
-          markBusinessSetupPublished(user._id);
-          setSetupPublished(true);
-        }
-        router.replace(businessOwnerLandingPath(status));
-      });
     }
   }, [user, pathname, router]);
 
