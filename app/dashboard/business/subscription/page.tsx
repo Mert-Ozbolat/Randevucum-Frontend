@@ -7,6 +7,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { SUBSCRIPTION_STATUS } from '@/lib/constants';
+import { isTrialBlockingPurchase, PLAN_FEATURES } from '@/lib/subscriptionTrial';
 import { Check, CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface SubStatus {
@@ -36,12 +37,17 @@ interface SubStatus {
 interface StripePlan {
   priceId: string;
   label: string;
+  planKey?: 'standard' | 'pro';
+  displayPrice?: string;
+  displayAmount?: number;
+  intervalLabel?: string;
 }
 
 interface StripeConfig {
   checkoutEnabled: boolean;
   publishableKey?: string;
   plans?: StripePlan[];
+  trialDays?: number;
 }
 
 export default function SubscriptionPage() {
@@ -117,6 +123,10 @@ export default function SubscriptionPage() {
 
   const startStripeCheckout = async (priceId: string) => {
     if (!businessId || !priceId) return;
+    if (isTrialBlockingPurchase(subscription)) {
+      addToast('info', 'Deneme süresince paket satın alınamaz. Deneme bitince tekrar deneyin.');
+      return;
+    }
     setCheckoutLoadingPriceId(priceId);
     setError('');
     try {
@@ -206,10 +216,13 @@ export default function SubscriptionPage() {
     );
   }
 
+  const trialBlocksPurchase = isTrialBlockingPurchase(subscription);
+
   const needsPay =
-    subscription?.trialExpired ||
-    subscription?.billingSuspended ||
-    (!subscription?.canAcceptBookings && subscription?.needsRenewal);
+    !trialBlocksPurchase &&
+    (subscription?.trialExpired ||
+      subscription?.billingSuspended ||
+      (!subscription?.canAcceptBookings && subscription?.needsRenewal));
 
   return (
     <div className="space-y-8">
@@ -236,17 +249,37 @@ export default function SubscriptionPage() {
         </div>
       )}
 
-      {subscription?.isTrial && subscription.isActive && (
+      {trialBlocksPurchase && (
         <div className="rounded-2xl border border-primary-200 bg-primary-50/80 p-4 dark:border-primary-900/50 dark:bg-primary-950/30">
           <p className="flex items-center gap-2 text-sm font-semibold text-primary-900 dark:text-primary-100">
             <Sparkles className="h-4 w-4" aria-hidden />
             Ücretsiz PRO deneme aktif
           </p>
           <p className="mt-1 text-sm text-primary-800/90 dark:text-primary-100/80">
-            {subscription.endDate &&
-              `Bitiş: ${new Date(subscription.endDate).toLocaleDateString('tr-TR')}. `}
-            Deneme süresince tüm PRO özelliklerine erişebilirsiniz.
+            {subscription?.endDate &&
+              `${new Date(subscription.endDate).toLocaleDateString('tr-TR')} tarihine kadar tüm PRO özelliklerini ücretsiz kullanıyorsunuz. `}
+            Deneme bitene kadar paket satın alma kapalıdır; aşağıda güncel liste fiyatlarını görebilirsiniz.
           </p>
+        </div>
+      )}
+
+      {trialBlocksPurchase && (stripeConfig?.plans?.length ?? 0) > 0 && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {(stripeConfig?.plans || []).map((p) => (
+            <Card key={p.priceId} className="p-5 opacity-95">
+              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
+              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                {p.displayPrice || '—'}
+                <span className="text-sm font-normal text-neutral-500">/{p.intervalLabel || 'ay'}</span>
+              </p>
+              <ul className="mt-3 space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
+                {(PLAN_FEATURES[p.planKey || 'standard'] || []).slice(0, 4).map((x) => (
+                  <li key={x}>• {x}</li>
+                ))}
+              </ul>
+              <p className="mt-4 text-xs font-medium text-neutral-500">Deneme süresince satın alınamaz</p>
+            </Card>
+          ))}
         </div>
       )}
 
@@ -354,16 +387,15 @@ export default function SubscriptionPage() {
                     className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-card dark:border-neutral-800 dark:bg-neutral-950/40"
                   >
                     <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
+                    <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                      {p.displayPrice || '—'}
+                      <span className="text-sm font-normal text-neutral-500">/{p.intervalLabel || 'ay'}</span>
+                    </p>
                     <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
                       Aylık • Otomatik yenileme • İstediğiniz zaman iptal
                     </p>
                     <ul className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-                      {[
-                        'Randevu almaya devam',
-                        'Sınırsız personel (Pro)',
-                        'WhatsApp bildirimleri',
-                        'İşletme paneli',
-                      ].map((x) => (
+                      {(PLAN_FEATURES[p.planKey || 'standard'] || PLAN_FEATURES.pro).map((x) => (
                         <li key={x} className="flex items-center gap-2">
                           <Check className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden /> {x}
                         </li>
