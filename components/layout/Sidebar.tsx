@@ -9,6 +9,7 @@ import {
   CalendarDays,
   Clock,
   CreditCard,
+  LineChart,
   Heart,
   Home,
   LayoutDashboard,
@@ -34,6 +35,7 @@ type SidebarLink = {
 
 const businessLinks: SidebarLink[] = [
   { href: '/dashboard/business', label: 'Özet', Icon: LayoutDashboard },
+  { href: '/dashboard/business/analytics', label: 'Analytics', Icon: LineChart },
   { href: '/dashboard/business/info', label: 'İşletme Bilgisi', Icon: Building2 },
   { href: '/dashboard/business/services', label: 'Hizmetler', Icon: Scissors },
   { href: '/dashboard/business/staff', label: 'Personel', Icon: Users },
