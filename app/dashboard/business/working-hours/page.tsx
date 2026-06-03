@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -35,7 +36,7 @@ export default function WorkingHoursPage() {
 
   useEffect(() => {
     api
-      .get<{ data: { _id: string; workingHours?: WorkingHour[]; breakTimes?: BreakTime[] }[] }>('/business')
+      fetchMyBusinesses<{ data: { _id: string; workingHours?: WorkingHour[]; breakTimes?: BreakTime[] }[] }>()
       .then((res) => {
         const list = res.data.data || [];
         const b = list[0];

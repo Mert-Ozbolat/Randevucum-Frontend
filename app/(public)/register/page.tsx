@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
-import { formatTrMobile, phoneDigitsOnly } from '@/lib/phone';
-import { businessOwnerPostAuthPath } from '@/lib/businessOwnerRedirect';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { businessOwnerPostAuthPath, fetchBusinessSetupStatus } from '@/lib/businessOwnerRedirect';
 
 type AccountType = 'customer' | 'business_owner';
 
@@ -76,11 +76,12 @@ export default function RegisterPage() {
         lastName: user.lastName,
         role: user.role as 'customer' | 'business_owner' | 'super_admin',
       });
-      router.push(
-        accountType === 'business_owner'
-          ? businessOwnerPostAuthPath(null, searchParams.get('from'))
-          : '/dashboard'
-      );
+      if (accountType === 'business_owner') {
+        const status = await fetchBusinessSetupStatus();
+        router.push(businessOwnerPostAuthPath(status, searchParams.get('from')));
+      } else {
+        router.push('/dashboard');
+      }
       router.refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -117,11 +118,12 @@ export default function RegisterPage() {
         lastName: user.lastName,
         role: user.role as 'customer' | 'business_owner' | 'super_admin',
       });
-      router.push(
-        accountType === 'business_owner'
-          ? businessOwnerPostAuthPath(null, searchParams.get('from'))
-          : '/dashboard'
-      );
+      if (accountType === 'business_owner') {
+        const status = await fetchBusinessSetupStatus();
+        router.push(businessOwnerPostAuthPath(status, searchParams.get('from')));
+      } else {
+        router.push('/dashboard');
+      }
       router.refresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -243,17 +245,10 @@ export default function RegisterPage() {
             minLength={6}
           />
           {accountType === 'customer' && (
-            <Input
+            <PhoneInput
               label="Telefon (isteğe bağlı)"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="0 5xx xxx xx xx"
               value={phone}
-              onChange={(e) => {
-                const digits = phoneDigitsOnly(e.target.value);
-                if (digits.length <= 11) setPhone(formatTrMobile(digits));
-              }}
+              onChange={setPhone}
             />
           )}
           <Button type="submit" fullWidth loading={loading}>

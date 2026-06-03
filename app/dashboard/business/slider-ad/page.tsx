@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -39,7 +40,7 @@ export default function SliderAdPage() {
   const load = () => {
     setError('');
     api
-      .get<{ data: Business[] }>('/business')
+      fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const list = res.data.data || [];
         const b = list[0];

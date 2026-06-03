@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
@@ -74,7 +75,7 @@ export default function SubscriptionPage() {
     setLoading(true);
     setError('');
     api
-      .get<{ data: { _id: string }[] }>('/business')
+      fetchMyBusinesses<{ data: { _id: string }[] }>()
       .then(async (res) => {
         const list = res.data.data || [];
         if (!list[0]) return;

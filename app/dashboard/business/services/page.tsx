@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { dispatchBusinessSetupRefresh } from '@/lib/businessSetupRefresh';
 import { Card } from '@/components/ui/Card';
@@ -82,7 +83,7 @@ export default function ServicesPage() {
 
   useEffect(() => {
     api
-      .get<{ data: Business[] }>('/business')
+      fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const list = res.data.data || [];
         if (list[0]) {

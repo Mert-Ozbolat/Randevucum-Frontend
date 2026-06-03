@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { KKTC_CITIES } from '@/lib/constants';
 import { BUSINESS_CATEGORY_GROUPS, SUBCATEGORY_TO_BUSINESS_TYPE } from '@/lib/businessCategories';
 import { Card } from '@/components/ui/Card';
@@ -9,7 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { GoogleMapPinPicker } from '@/components/business/GoogleMapPinPicker';
 import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
-import { formatTrMobile, phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
+import { phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 import { ImageIcon } from 'lucide-react';
 import { dispatchBusinessSetupRefresh } from '@/lib/businessSetupRefresh';
 import {
@@ -138,7 +140,7 @@ export default function BusinessInfoPage() {
 
   useEffect(() => {
     api
-      .get<{ data: Business[] }>('/business')
+      fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const list = res.data.data || [];
         if (list[0]) {
@@ -367,18 +369,11 @@ export default function BusinessInfoPage() {
             </select>
           </div>
 
-          <Input
+          <PhoneInput
             label="İşletme telefonu"
-            type="tel"
-            inputMode="tel"
-            autoComplete="tel"
             required
-            placeholder="0 5xx xxx xx xx"
             value={form.phone || ''}
-            onChange={(e) => {
-              const digits = phoneDigitsOnly(e.target.value);
-              if (digits.length <= 11) setForm((f) => ({ ...f, phone: formatTrMobile(digits) }));
-            }}
+            onChange={(phone) => setForm((f) => ({ ...f, phone }))}
           />
 
           <GoogleMapPinPicker

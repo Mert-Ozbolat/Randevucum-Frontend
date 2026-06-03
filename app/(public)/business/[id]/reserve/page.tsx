@@ -14,29 +14,7 @@ import { ReservationModal } from '@/components/reservation/ReservationModal';
 import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Check, Users } from 'lucide-react';
-
-function phoneDigitsOnly(input: string): string {
-  return String(input || '').replace(/\D/g, '');
-}
-
-function formatTrMobile(digitsRaw: string): string {
-  // Keep only digits, format as 0(5xx) xxx xx xx when possible.
-  const d = phoneDigitsOnly(digitsRaw);
-  let x = d;
-  if (x.startsWith('90')) x = x.slice(2);
-  if (x.startsWith('0')) x = x.slice(1);
-  // expect 10 digits starting with 5
-  const m = x.slice(0, 10);
-  const a = m.slice(0, 3);
-  const b = m.slice(3, 6);
-  const c = m.slice(6, 8);
-  const e = m.slice(8, 10);
-  if (!a) return '';
-  if (m.length <= 3) return `0${a}`;
-  if (m.length <= 6) return `0${a} ${b}`;
-  if (m.length <= 8) return `0${a} ${b} ${c}`;
-  return `0${a} ${b} ${c} ${e}`;
-}
+import { formatTrMobile, phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
 
 interface Service {
   _id: string;
@@ -122,7 +100,7 @@ export default function ReservePage() {
   const [reserveError, setReserveError] = useState('');
   const [success, setSuccess] = useState(false);
   const [businessName, setBusinessName] = useState<string>('');
-  const [phone, setPhone] = useState<string>(() => getStoredUser()?.phone || '');
+  const [phone, setPhone] = useState<string>(() => phoneInputFromStored(getStoredUser()?.phone));
   const [needsPhone, setNeedsPhone] = useState<boolean>(() => {
     const u = getStoredUser();
     const p = u?.phone ? String(u.phone).trim() : '';

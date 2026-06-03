@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { phoneInputFromStored } from '@/lib/phone';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -50,7 +52,7 @@ export function ReservationModal({
 
   useEffect(() => {
     // Sync local state whenever parent phone changes (e.g. after /auth/me) or modal opens.
-    setLocalPhone(phone || '');
+    setLocalPhone(phoneInputFromStored(phone) || phone || '');
   }, [phone, isOpen]);
 
   return (
@@ -103,22 +105,16 @@ export function ReservationModal({
         <div className="mt-4">
           {showPhone && (
             <div className="mb-4">
-              <Input
+              <PhoneInput
                 label="Telefon (WhatsApp hatırlatmaları için)"
-                type="tel"
-                autoComplete="tel"
-                placeholder="05xx xxx xx xx"
                 value={localPhone}
-                onChange={(e) => {
-                  const v = e.target.value;
+                onChange={(v) => {
                   setLocalPhone(v);
                   onPhoneChange?.(v);
                 }}
                 required={requirePhone}
+                hint="İlk randevunuzda istenir; sonraki randevularda tekrar sorulmaz."
               />
-              <p className="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
-                Otomatik formatlanır. İlk randevunuzda istenir; sonraki randevularda tekrar sorulmaz.
-              </p>
             </div>
           )}
           <label

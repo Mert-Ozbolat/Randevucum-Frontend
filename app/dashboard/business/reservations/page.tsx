@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Store } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { AdminCalendar } from '@/components/admin/AdminCalendar';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -33,7 +34,7 @@ export default function BusinessReservationsPage() {
 
   useEffect(() => {
     api
-      .get<{ data: { _id: string }[] }>('/business')
+      fetchMyBusinesses<{ data: { _id: string }[] }>()
       .then((res) => {
         const list = res.data.data || [];
         if (list[0]) {

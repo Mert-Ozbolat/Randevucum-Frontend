@@ -57,7 +57,7 @@ export default function CustomerFavoritesPage() {
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4 sm:mb-8">
         <div>
           <h2 className="flex items-center gap-2 text-xl font-bold text-neutral-900 dark:text-white sm:text-2xl">
-            <Heart className="h-6 w-6 text-red-500" strokeWidth={2} aria-hidden />
+            <Heart className="h-6 w-6 fill-red-500 text-red-500 stroke-red-500" strokeWidth={2} aria-hidden />
             Favorilerim
           </h2>
           <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-400">

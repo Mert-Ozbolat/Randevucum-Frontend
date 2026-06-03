@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { api, getApiErrorMessage } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { phoneInputFromStored } from '@/lib/phone';
 import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { dispatchBusinessSetupRefresh } from '@/lib/businessSetupRefresh';
 import { Card } from '@/components/ui/Card';
@@ -99,7 +102,7 @@ export default function StaffPage() {
 
   useEffect(() => {
     api
-      .get<{ data: Business[] }>('/business')
+      fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const list = res.data.data || [];
         if (list[0]) {
@@ -207,7 +210,7 @@ export default function StaffPage() {
     setEditForm({
       name: s.name,
       title: s.title || '',
-      phone: s.phone || '',
+      phone: phoneInputFromStored(s.phone),
       email: s.email || '',
       imageUrl: s.imageUrl || '',
       canViewOwnReservations: s.canViewOwnReservations ?? false,
@@ -335,14 +338,10 @@ export default function StaffPage() {
             </div>
             <Input label="Ad Soyad" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} required />
             <Input label="Ünvan" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-            <Input
+            <PhoneInput
               label="Telefon"
-              type="tel"
-              inputMode="tel"
-              autoComplete="tel"
-              placeholder="+90 5xx xxx xx xx"
               value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+              onChange={(phone) => setForm((f) => ({ ...f, phone }))}
             />
             <Input
               label="E-posta (isteğe bağlı)"
@@ -500,14 +499,10 @@ export default function StaffPage() {
                       required
                     />
                     <Input label="Ünvan" value={editForm.title} onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))} />
-                    <Input
+                    <PhoneInput
                       label="Telefon"
-                      type="tel"
-                      inputMode="tel"
-                      autoComplete="tel"
-                      placeholder="+90 5xx xxx xx xx"
                       value={editForm.phone}
-                      onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                      onChange={(phone) => setEditForm((f) => ({ ...f, phone }))}
                     />
                     <Input
                       label="E-posta (isteğe bağlı)"

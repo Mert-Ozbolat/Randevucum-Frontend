@@ -24,3 +24,18 @@ export function phoneInputFromStored(stored?: string | null): string {
   if (!stored?.trim()) return '';
   return formatTrMobile(stored);
 }
+
+/** Ekranda gösterim (+905… veya 05… → 0 5xx xxx xx xx) */
+export function formatPhoneDisplay(stored?: string | null): string {
+  return phoneInputFromStored(stored);
+}
+
+/** tel: link için sadece rakamlar (+90…) */
+export function phoneTelHref(stored?: string | null): string {
+  const d = phoneDigitsOnly(stored || '');
+  if (!d) return '';
+  if (d.startsWith('90')) return `+${d}`;
+  if (d.startsWith('0')) return `+90${d.slice(1)}`;
+  if (d.length === 10 && d.startsWith('5')) return `+90${d}`;
+  return d.startsWith('+') ? d : `+${d}`;
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import {
   LineChart,
@@ -52,8 +53,7 @@ export default function BusinessAnalyticsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api
-      .get<{ data: Business[] }>('/business')
+    fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const b = (res.data.data || [])[0];
         setBusinessId(b?._id || null);

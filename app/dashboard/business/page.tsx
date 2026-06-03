@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { format, startOfDay } from 'date-fns';
 import { api } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { RESERVATION_STATUS } from '@/lib/constants';
@@ -38,8 +39,7 @@ export default function BusinessDashboardPage() {
   const businessId = businesses[0]?._id;
 
   useEffect(() => {
-    api
-      .get<{ data: Business[] }>('/business')
+    fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const list = res.data.data || [];
         setBusinesses(list);

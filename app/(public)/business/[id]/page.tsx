@@ -20,6 +20,13 @@ import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Clock, Mail, MapPin, Phone, Star, Users, X } from 'lucide-react';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
+import {
+  formatPhoneDisplay,
+  formatTrMobile,
+  phoneDigitsOnly,
+  phoneInputFromStored,
+  phoneTelHref,
+} from '@/lib/phone';
 
 interface Business {
   _id: string;
@@ -83,27 +90,6 @@ function staffInitials(name: string) {
     .map((p) => p[0])
     .join('')
     .toUpperCase() || '?';
-}
-
-function phoneDigitsOnly(input: string): string {
-  return String(input || '').replace(/\D/g, '');
-}
-
-function formatTrMobile(digitsRaw: string): string {
-  const d = phoneDigitsOnly(digitsRaw);
-  let x = d;
-  if (x.startsWith('90')) x = x.slice(2);
-  if (x.startsWith('0')) x = x.slice(1);
-  const m = x.slice(0, 10);
-  const a = m.slice(0, 3);
-  const b = m.slice(3, 6);
-  const c = m.slice(6, 8);
-  const e = m.slice(8, 10);
-  if (!a) return '';
-  if (m.length <= 3) return `0${a}`;
-  if (m.length <= 6) return `0${a} ${b}`;
-  if (m.length <= 8) return `0${a} ${b} ${c}`;
-  return `0${a} ${b} ${c} ${e}`;
 }
 
 interface Review {
@@ -171,9 +157,11 @@ export default function BusinessDetailPage() {
   const [reviewComment, setReviewComment] = useState<string>('');
   const [postingReview, setPostingReview] = useState(false);
   const [staffProfileModal, setStaffProfileModal] = useState<Staff | null>(null);
-  const [phone, setPhone] = useState<string>(() => storeUser?.phone || getStoredUser()?.phone || '');
+  const [phone, setPhone] = useState<string>(() =>
+    phoneInputFromStored(storeUser?.phone || getStoredUser()?.phone)
+  );
   const [needsPhone, setNeedsPhone] = useState<boolean>(() => {
-    const p = String(storeUser?.phone || getStoredUser()?.phone || '').trim();
+    const p = phoneInputFromStored(storeUser?.phone || getStoredUser()?.phone);
     return !p;
   });
 
@@ -534,7 +522,7 @@ export default function BusinessDetailPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2">
           {business.phone && (
             <a
-              href={`tel:${business.phone.replace(/\s/g, '')}`}
+              href={`tel:${phoneTelHref(business.phone)}`}
               className={`flex items-center gap-4 ${sectionClass} group`}
             >
               <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900 dark:text-primary-400">
@@ -545,7 +533,7 @@ export default function BusinessDetailPage() {
                   Telefon
                 </p>
                 <p className="font-semibold text-neutral-900 group-hover:text-primary-600 dark:text-white dark:group-hover:text-primary-400">
-                  {business.phone}
+                  {formatPhoneDisplay(business.phone)}
                 </p>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">Tıklayarak ara</p>
               </div>
@@ -1040,13 +1028,15 @@ export default function BusinessDetailPage() {
               <div className="mt-6 space-y-3 rounded-xl border border-neutral-100 bg-neutral-50 p-4 text-left dark:border-neutral-700 dark:bg-neutral-800/80">
                 {staffProfileModal.phone?.trim() ? (
                   <a
-                    href={`tel:${staffProfileModal.phone.replace(/\s/g, '')}`}
+                    href={`tel:${phoneTelHref(staffProfileModal.phone)}`}
                     className="flex items-center gap-3 text-neutral-900 transition hover:text-primary-600 dark:text-neutral-100 dark:hover:text-primary-400"
                   >
                     <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/40 dark:text-primary-300">
                       <Phone className="h-5 w-5" aria-hidden />
                     </span>
-                    <span className="min-w-0 break-all font-medium">{staffProfileModal.phone}</span>
+                    <span className="min-w-0 break-all font-medium">
+                      {formatPhoneDisplay(staffProfileModal.phone)}
+                    </span>
                   </a>
                 ) : null}
                 {staffProfileModal.email?.trim() ? (

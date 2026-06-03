@@ -78,11 +78,11 @@ export function businessOwnerLandingPath(status: BusinessSetupStatus | null): st
 }
 
 /**
- * Giriş / kayıt sonrası varsayılan: ana sayfa (/).
+ * Giriş / kayıt sonrası: işletme formu veya eksik kurulum adımı.
  * Yalnızca dashboard dışı bir `from` (ör. /business/xxx/reserve) varsa oraya gider.
  */
 export function businessOwnerPostAuthPath(
-  _status: BusinessSetupStatus | null,
+  status: BusinessSetupStatus | null,
   from?: string | null
 ): string {
   const f = (from || '/').trim();
@@ -95,7 +95,7 @@ export function businessOwnerPostAuthPath(
   ) {
     return f;
   }
-  return '/';
+  return businessOwnerLandingPath(status);
 }
 
 /**

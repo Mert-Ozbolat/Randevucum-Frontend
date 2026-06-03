@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { BillingNoticeBanner } from '@/components/dashboard/BillingNoticeBanner';
 import { TrialRenewalModal } from '@/components/dashboard/TrialRenewalModal';
 
@@ -47,7 +48,7 @@ export function BusinessBillingShell({ children }: Props) {
   useEffect(() => {
     let cancelled = false;
     api
-      .get<{ data: { _id: string }[] }>('/business')
+      fetchMyBusinesses<{ data: { _id: string }[] }>()
       .then(async (res) => {
         const bid = res.data.data?.[0]?._id;
         if (!bid || cancelled) return;

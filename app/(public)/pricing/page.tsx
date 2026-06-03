@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Check, Sparkles } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
 import { api } from '@/lib/api';
+import { fetchMyBusinesses } from '@/lib/businessApi';
 import { useAuthStore } from '@/store/authStore';
 import { isBusinessOwner } from '@/lib/auth';
 import { isTrialBlockingPurchase, PLAN_FEATURES } from '@/lib/subscriptionTrial';
@@ -58,8 +59,7 @@ export default function PricingPage() {
 
     if (token && isBusinessOwner(user)) {
       tasks.push(
-        api
-          .get<{ data: { _id: string }[] }>('/business')
+        fetchMyBusinesses<{ data: { _id: string }[] }>()
           .then((res) => {
             const bid = (res.data.data || [])[0]?._id;
             if (!bid) return;

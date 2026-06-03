@@ -60,6 +60,18 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         window.location.href = `/login?from=${encodeURIComponent(from)}`;
         return false;
       }
+
+      const id = String(businessId);
+      const wasFavorite = ids.has(id);
+
+      // Anında görsel geri bildirim (kalp dolu / boş)
+      setIds((prev) => {
+        const next = new Set(prev);
+        if (wasFavorite) next.delete(id);
+        else next.add(id);
+        return next;
+      });
+
       try {
         const res = await api.post<{ data: { favorited: boolean } }>('/favorites/toggle', {
           businessId,
@@ -67,13 +79,19 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         const favorited = Boolean(res.data.data?.favorited);
         setIds((prev) => {
           const next = new Set(prev);
-          if (favorited) next.add(String(businessId));
-          else next.delete(String(businessId));
+          if (favorited) next.add(id);
+          else next.delete(id);
           return next;
         });
         return favorited;
       } catch {
-        return ids.has(String(businessId));
+        setIds((prev) => {
+          const next = new Set(prev);
+          if (wasFavorite) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        return wasFavorite;
       }
     },
     [ids, token]

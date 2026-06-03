@@ -5,7 +5,8 @@ import Image from 'next/image';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { setAuth as persistAuth, type User as AuthUser } from '@/lib/auth';
 import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
-import { formatTrMobile, phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
+import { PhoneInput } from '@/components/ui/PhoneInput';
+import { phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
 import { useAuthStore } from '@/store/authStore';
 import { useToast } from '@/components/ui/Toast';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -58,13 +59,6 @@ export default function ProfilePage() {
       cancelled = true;
     };
   }, [storeUser]);
-
-  const handlePhoneChange = (value: string) => {
-    const digits = phoneDigitsOnly(value);
-    if (digits.length <= 11) {
-      setPhone(formatTrMobile(digits));
-    }
-  };
 
   const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -251,15 +245,7 @@ export default function ProfilePage() {
             E-posta adresi güvenlik nedeniyle buradan değiştirilemez.
           </p>
 
-          <Input
-            label="Telefon"
-            type="tel"
-            inputMode="tel"
-            value={phone}
-            onChange={(e) => handlePhoneChange(e.target.value)}
-            placeholder="0 5xx xxx xx xx"
-            autoComplete="tel"
-          />
+          <PhoneInput label="Telefon" value={phone} onChange={setPhone} />
 
           <Button type="submit" loading={saving} disabled={saving || photoUploading} fullWidth>
             Kaydet
