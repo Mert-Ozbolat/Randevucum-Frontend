@@ -23,6 +23,8 @@ interface Business {
 
 /** İstemci tarafı yükleme üst sınırı (5 MB) — backend ile uyumlu */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+/** Ana sayfa slider reklam paketi süresi (gün) — backend SLIDER_PROMO_DAYS ile uyumlu */
+const SLIDER_PROMO_DAYS = 7;
 
 export default function SliderAdPage() {
   const [business, setBusiness] = useState<Business | null>(null);
@@ -128,11 +130,11 @@ export default function SliderAdPage() {
     try {
       const res = await api.post<{ data: { paidUntil: string; daysAdded: number } }>(
         `/business/${business._id}/home-slider-promo/purchase`,
-        { days: 30 }
+        { days: SLIDER_PROMO_DAYS }
       );
       const p = res.data.data;
       setSuccess(
-        `Slider süresi ${p?.daysAdded ?? 30} gün eklendi. Bitiş: ${p?.paidUntil ? new Date(p.paidUntil).toLocaleString('tr-TR') : ''}`
+        `Slider süresi ${p?.daysAdded ?? SLIDER_PROMO_DAYS} gün eklendi. Bitiş: ${p?.paidUntil ? new Date(p.paidUntil).toLocaleString('tr-TR') : ''}`
       );
       load();
     } catch (err) {
@@ -204,7 +206,9 @@ export default function SliderAdPage() {
           </p>
         )}
         <Button type="button" loading={purchasing} onClick={handlePurchase} variant="primary">
-          {hasActiveSlot ? 'Süreyi 30 gün uzat (demo)' : '30 günlük slider paketi al (demo)'}
+          {hasActiveSlot
+            ? `Süreyi ${SLIDER_PROMO_DAYS} gün uzat (demo)`
+            : `${SLIDER_PROMO_DAYS} günlük slider paketi al (demo)`}
         </Button>
       </Card>
 
