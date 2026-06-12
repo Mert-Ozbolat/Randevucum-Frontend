@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Calendar, Check, MessageCircle, Search, Sparkles } from 'lucide-react';
+import { ArrowRight, Calendar, Check, Search, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
 import { HOME_FEATURED_AREAS } from '@/lib/homeFeaturedAreas';
 import {
@@ -14,6 +14,7 @@ import {
 } from '@/lib/homeHeroSlides';
 import { HeroPromoCarousel } from '@/components/home/HeroPromoCarousel';
 import { HomeLiveStats } from '@/components/home/HomeLiveStats';
+import { HomeBottomSections } from '@/components/home/HomeBottomSections';
 import { BusinessCard } from '@/components/business/BusinessCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
@@ -273,6 +274,8 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      <HomeBottomSections />
     </div>
   );
 }

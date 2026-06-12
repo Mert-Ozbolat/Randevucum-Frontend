@@ -15,7 +15,7 @@ interface LogoProps {
 function LogoMark({ className }: { className: string }) {
   return (
     <Image
-      src="/logo-randevu.png"
+      src="/logo-randevu.jpeg"
       alt=""
       width={40}
       height={40}
