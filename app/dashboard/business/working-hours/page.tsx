@@ -29,6 +29,8 @@ export default function WorkingHoursPage() {
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [hours, setHours] = useState<WorkingHour[]>([]);
   const [breakTimes, setBreakTimes] = useState<BreakTime[]>([]);
+  const [allowConcurrentBookings, setAllowConcurrentBookings] = useState(false);
+  const [concurrentBookingLimit, setConcurrentBookingLimit] = useState(2);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -36,12 +38,26 @@ export default function WorkingHoursPage() {
 
   useEffect(() => {
     api
-      fetchMyBusinesses<{ data: { _id: string; workingHours?: WorkingHour[]; breakTimes?: BreakTime[] }[] }>()
+      fetchMyBusinesses<{
+        data: {
+          _id: string;
+          workingHours?: WorkingHour[];
+          breakTimes?: BreakTime[];
+          allowConcurrentBookings?: boolean;
+          concurrentBookingLimit?: number;
+        }[];
+      }>()
       .then((res) => {
         const list = res.data.data || [];
         const b = list[0];
         if (b) {
           setBusinessId(b._id);
+          setAllowConcurrentBookings(Boolean(b.allowConcurrentBookings));
+          setConcurrentBookingLimit(
+            typeof b.concurrentBookingLimit === 'number' && b.concurrentBookingLimit >= 2
+              ? b.concurrentBookingLimit
+              : 2
+          );
           const wh: WorkingHour[] =
             b.workingHours && b.workingHours.length > 0
               ? b.workingHours
@@ -94,8 +110,12 @@ export default function WorkingHoursPage() {
         workingHours: hours,
         breakTimes,
         workingHoursConfigured: true,
+        allowConcurrentBookings,
+        concurrentBookingLimit: allowConcurrentBookings
+          ? Math.min(50, Math.max(2, concurrentBookingLimit))
+          : concurrentBookingLimit,
       });
-      addToast('success', 'Çalışma saatleri kaydedildi.');
+      addToast('success', 'Randevu ayarları kaydedildi.');
       dispatchBusinessSetupRefresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -185,6 +205,51 @@ export default function WorkingHoursPage() {
               );
             })}
           </div>
+        </Card>
+
+        <Card className="p-6">
+          <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Eşzamanlı randevular</h2>
+          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
+            Varsayılan olarak aynı saatte yalnızca bir randevu alınır (veya personel sayısı kadar). Grup dersi, çok
+            istasyonlu salon gibi işletmeler aynı saatte birden fazla müşteri kabul edebilir.
+          </p>
+          <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-neutral-200 bg-neutral-50/50 p-4 dark:border-neutral-600 dark:bg-neutral-800/50">
+            <input
+              type="checkbox"
+              checked={allowConcurrentBookings}
+              onChange={(e) => setAllowConcurrentBookings(e.target.checked)}
+              className="mt-0.5 rounded border-neutral-300 text-primary-600 focus:ring-primary-500 dark:border-neutral-500 dark:bg-neutral-900"
+            />
+            <span>
+              <span className="block text-sm font-medium text-neutral-800 dark:text-neutral-100">
+                Aynı saatte birden fazla randevu kabul et
+              </span>
+              <span className="mt-1 block text-sm text-neutral-500 dark:text-neutral-400">
+                Kapalıyken mevcut personel kuralları geçerlidir. Belirli bir personel seçildiğinde o personel için
+                yine tek randevu uygulanır.
+              </span>
+            </span>
+          </label>
+          {allowConcurrentBookings && (
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <label className="text-sm font-medium text-neutral-700 dark:text-neutral-200" htmlFor="concurrent-limit">
+                Aynı saatte en fazla
+              </label>
+              <Input
+                id="concurrent-limit"
+                type="number"
+                min={2}
+                max={50}
+                value={concurrentBookingLimit}
+                onChange={(e) => {
+                  const n = parseInt(e.target.value, 10);
+                  setConcurrentBookingLimit(Number.isFinite(n) ? n : 2);
+                }}
+                className="w-24"
+              />
+              <span className="text-sm text-neutral-600 dark:text-neutral-300">randevu</span>
+            </div>
+          )}
         </Card>
 
         <Card className="p-6">

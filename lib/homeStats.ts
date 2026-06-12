@@ -22,5 +22,9 @@ export async function fetchHomeStats(): Promise<HomeStatsPayload | null> {
 export async function pingPresence(): Promise<void> {
   const id = getPresenceSessionId();
   if (!id) return;
-  await api.post('/stats/presence', {}, { headers: { 'X-Presence-Id': id } });
+  await api.post(
+    '/stats/presence',
+    { sessionId: id },
+    { headers: { 'X-Presence-Id': id } }
+  );
 }
