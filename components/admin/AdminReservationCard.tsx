@@ -2,6 +2,7 @@
 
 import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
 import { Button } from '@/components/ui/Button';
+import { isActionablePending, isExpiredPending } from '@/lib/reservationFilters';
 
 interface Reservation {
   _id: string;
@@ -37,7 +38,8 @@ export function AdminReservationCard({
 }: AdminReservationCardProps) {
   const c = reservation.customerId;
   const customerName = c ? `${c.firstName} ${c.lastName}`.trim() : '';
-  const isPending = reservation.status === 'pending';
+  const canActOnPending = isActionablePending(reservation);
+  const expiredPending = isExpiredPending(reservation);
   const compact = variant === 'compact';
 
   if (compact) {
@@ -73,7 +75,12 @@ export function AdminReservationCard({
               </div>
               <ReservationStatusBadge status={reservation.status} />
             </div>
-            {isPending && onApprove && onCancel && (
+            {expiredPending && (
+              <p className="mt-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
+                Onay süresi geçti
+              </p>
+            )}
+            {canActOnPending && onApprove && onCancel && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Button size="sm" className="!px-2.5 !py-1 text-xs" onClick={() => onApprove(reservation._id)}>
                   Onayla
@@ -85,6 +92,18 @@ export function AdminReservationCard({
                   onClick={() => onCancel(reservation._id)}
                 >
                   İptal
+                </Button>
+              </div>
+            )}
+            {expiredPending && onCancel && (
+              <div className="mt-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="!px-2.5 !py-1 text-xs"
+                  onClick={() => onCancel(reservation._id)}
+                >
+                  Kapat / İptal
                 </Button>
               </div>
             )}
@@ -134,13 +153,26 @@ export function AdminReservationCard({
             <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">{c.email}</p>
           )}
 
-          {isPending && onApprove && onCancel && (
+          {expiredPending && (
+            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+              Randevu saati geçti — onay verilemez. İsterseniz kaydı iptal ederek kapatabilirsiniz.
+            </p>
+          )}
+
+          {canActOnPending && onApprove && onCancel && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-700/80">
               <Button size="sm" className="rounded-lg" onClick={() => onApprove(reservation._id)}>
                 Onayla
               </Button>
               <Button size="sm" variant="danger" className="rounded-lg" onClick={() => onCancel(reservation._id)}>
                 Reddet / İptal
+              </Button>
+            </div>
+          )}
+          {expiredPending && onCancel && (
+            <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-700/80">
+              <Button size="sm" variant="outline" className="rounded-lg" onClick={() => onCancel(reservation._id)}>
+                Kapat / İptal
               </Button>
             </div>
           )}
