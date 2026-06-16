@@ -1,5 +1,17 @@
+const NOTIFICATION_SOUND_URL = '/sounds/notification.mp3';
+
 let audioCtx: AudioContext | null = null;
 let unlockListenerAttached = false;
+let notificationAudio: HTMLAudioElement | null = null;
+
+function getNotificationAudio(): HTMLAudioElement | null {
+  if (typeof window === 'undefined') return null;
+  if (!notificationAudio) {
+    notificationAudio = new Audio(NOTIFICATION_SOUND_URL);
+    notificationAudio.preload = 'auto';
+  }
+  return notificationAudio;
+}
 
 export function unlockNotificationAudio(): void {
   if (typeof window === 'undefined') return;
@@ -9,6 +21,8 @@ export function unlockNotificationAudio(): void {
   } catch {
     // Autoplay policy or unsupported environment
   }
+
+  getNotificationAudio()?.load();
 }
 
 /** İlk tıklamada ses kilidini aç (tarayıcı autoplay politikası). */
@@ -17,6 +31,21 @@ export function attachNotificationAudioUnlock(): void {
   unlockListenerAttached = true;
   const unlock = () => {
     unlockNotificationAudio();
+    const audio = getNotificationAudio();
+    if (audio) {
+      const prevVolume = audio.volume;
+      audio.volume = 0.001;
+      void audio
+        .play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          audio.volume = prevVolume;
+        })
+        .catch(() => {
+          audio.volume = prevVolume;
+        });
+    }
     window.removeEventListener('pointerdown', unlock);
     window.removeEventListener('keydown', unlock);
   };
@@ -24,8 +53,7 @@ export function attachNotificationAudioUnlock(): void {
   window.addEventListener('keydown', unlock, { once: true });
 }
 
-/** WhatsApp tarzı kısa çift ton. */
-export function playBookingNotificationSound(): void {
+function playDefaultTone(): void {
   if (typeof window === 'undefined') return;
   try {
     unlockNotificationAudio();
@@ -51,4 +79,14 @@ export function playBookingNotificationSound(): void {
   } catch {
     // ignore
   }
+}
+
+export function playBookingNotificationSound(): void {
+  if (typeof window === 'undefined') return;
+
+  const audio = getNotificationAudio();
+  if (!audio) return;
+
+  audio.currentTime = 0;
+  void audio.play().catch(() => playDefaultTone());
 }
