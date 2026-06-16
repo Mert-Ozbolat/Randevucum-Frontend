@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -39,6 +40,10 @@ const BENEFITS = [
     text: 'Randevularınız hesabınızda saklanır; geçmiş ve iptal işlemlerini kolayca yönetin.',
   },
 ] as const;
+
+/** Footer üstü CTA arka planı */
+const CTA_BACKGROUND_IMAGE =
+  'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1600&q=80';
 
 const FAQ = [
   {
@@ -87,7 +92,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 export function HomeBottomSections() {
   return (
-    <div className="mt-16 space-y-16 lg:mt-20 lg:space-y-24">
+    <div className="space-y-16 lg:space-y-24">
       {/* Neden Randevucum? */}
       <AnimateIn as="section" animation="slide-up">
         <div className="text-center">
@@ -202,35 +207,49 @@ export function HomeBottomSections() {
       {/* Final CTA */}
       <AnimateIn
         as="section"
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 py-12 text-center text-white shadow-glow sm:px-12 sm:py-14"
+        className="relative min-h-[280px] overflow-hidden rounded-3xl px-6 py-12 text-center text-white shadow-glow sm:min-h-[300px] sm:px-12 sm:py-14"
         animation="scale-in"
       >
+        <Image
+          src={CTA_BACKGROUND_IMAGE}
+          alt=""
+          fill
+          className="object-cover"
+          sizes="(max-width: 1280px) 100vw, 1280px"
+          unoptimized
+        />
+        <div
+          className="pointer-events-none absolute inset-0 bg-gradient-to-br from-primary-950/90 via-primary-800/85 to-emerald-950/80"
+          aria-hidden
+        />
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl"
           aria-hidden
         />
         <div
-          className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-black/10 blur-2xl"
+          className="pointer-events-none absolute -bottom-20 -left-10 h-56 w-56 rounded-full bg-black/20 blur-2xl"
           aria-hidden
         />
-        <h2 className="relative text-2xl font-bold sm:text-3xl">Bugün randevunuzu planlayın</h2>
-        <p className="relative mx-auto mt-3 max-w-lg text-primary-50/90">
-          Binlerce işletme arasından size en uygun olanı bulun — veya kendi işletmenizi platforma taşıyın.
-        </p>
-        <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
-          <Link
-            href="/business"
-            className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-primary-700 shadow-soft transition hover:bg-primary-50"
-          >
-            İşletmeleri keşfet
-            <ArrowRight className="h-4 w-4" aria-hidden />
-          </Link>
-          <Link
-            href="/register"
-            className="inline-flex items-center gap-2 rounded-2xl border-2 border-white/40 px-6 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
-          >
-            Ücretsiz başla
-          </Link>
+        <div className="relative z-10">
+          <h2 className="text-2xl font-bold sm:text-3xl">Bugün randevunuzu planlayın</h2>
+          <p className="mx-auto mt-3 max-w-lg text-primary-50/95">
+            Binlerce işletme arasından size en uygun olanı bulun — veya kendi işletmenizi platforma taşıyın.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href="/business"
+              className="inline-flex items-center gap-2 rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-primary-700 shadow-soft transition duration-300 hover:bg-primary-50 hover:shadow-glow"
+            >
+              İşletmeleri keşfet
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 rounded-2xl border-2 border-white/40 bg-white/10 px-6 py-3 text-sm font-semibold text-white backdrop-blur-sm transition duration-300 hover:bg-white/20"
+            >
+              Ücretsiz başla
+            </Link>
+          </div>
         </div>
       </AnimateIn>
     </div>

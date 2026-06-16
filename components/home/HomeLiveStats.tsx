@@ -41,8 +41,8 @@ export function HomeLiveStats() {
   const windowMin = stats?.activeWindowMinutes ?? 5;
 
   return (
-    <div className="mt-8 flex flex-wrap gap-3 sm:gap-4">
-      <div className="flex min-w-[10rem] flex-1 items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/90 px-4 py-3 shadow-card dark:border-neutral-600 dark:bg-neutral-800/90">
+    <div className="mt-6 grid gap-3 sm:grid-cols-3 sm:gap-4">
+      <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/80 px-4 py-3.5 shadow-sm backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-card dark:border-neutral-600/80 dark:bg-neutral-800/80">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400"
           aria-hidden
@@ -56,7 +56,7 @@ export function HomeLiveStats() {
           </p>
         </div>
       </div>
-      <div className="flex min-w-[10rem] flex-1 items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/90 px-4 py-3 shadow-card dark:border-neutral-600 dark:bg-neutral-800/90">
+      <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/80 px-4 py-3.5 shadow-sm backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-card dark:border-neutral-600/80 dark:bg-neutral-800/80">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400"
           aria-hidden
@@ -68,7 +68,7 @@ export function HomeLiveStats() {
           <p className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Bugünkü randevu</p>
         </div>
       </div>
-      <div className="flex min-w-[10rem] flex-1 items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/90 px-4 py-3 shadow-card dark:border-neutral-600 dark:bg-neutral-800/90">
+      <div className="flex items-center gap-3 rounded-2xl border border-neutral-200/80 bg-white/80 px-4 py-3.5 shadow-sm backdrop-blur-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-card dark:border-neutral-600/80 dark:bg-neutral-800/80">
         <span
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950/50 dark:text-violet-400"
           aria-hidden
