@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { BusinessSetupStatusBar } from '@/components/dashboard/BusinessSetupStatusBar';
 import { BusinessBillingShell } from '@/components/dashboard/BusinessBillingShell';
+import { BusinessReservationsLiveProvider } from '@/contexts/BusinessReservationsLiveContext';
 import { Building2, Calendar, CalendarDays, Heart, Menu, User } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardBackButton } from '@/components/layout/DashboardBackButton';
@@ -241,8 +242,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         </header>
         {owner ? (
           <BusinessBillingShell>
-            {showBusinessSetupBar && <BusinessSetupStatusBar />}
-            <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+            <BusinessReservationsLiveProvider>
+              {showBusinessSetupBar && <BusinessSetupStatusBar />}
+              <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+            </BusinessReservationsLiveProvider>
           </BusinessBillingShell>
         ) : (
           <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>

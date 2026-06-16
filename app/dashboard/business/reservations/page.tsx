@@ -1,12 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { CalendarDays, ClipboardList, History, Hourglass, Store } from 'lucide-react';
+import { CalendarDays, ClipboardList, History, Hourglass, Radio, Store } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
-import { fetchMyBusinesses } from '@/lib/businessApi';
 import { AdminCalendar } from '@/components/admin/AdminCalendar';
 import { AdminReservationCard } from '@/components/admin/AdminReservationCard';
 import { Card } from '@/components/ui/Card';
@@ -23,17 +22,9 @@ import {
 } from '@/lib/reservationFilters';
 import { useToast } from '@/components/ui/Toast';
 import { AnimateIn } from '@/components/ui/AnimateIn';
-
-interface Reservation {
-  _id: string;
-  date: string;
-  time: string;
-  endTime?: string;
-  status: string;
-  serviceId?: { name: string; durationMinutes: number };
-  staffId?: { name: string };
-  customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
-}
+import {
+  useBusinessReservationsLive,
+} from '@/contexts/BusinessReservationsLiveContext';
 
 type PageTab = 'calendar' | 'list' | 'past';
 
@@ -46,32 +37,21 @@ function formatReservationDay(raw: string): string {
 }
 
 export default function BusinessReservationsPage() {
-  const [businessId, setBusinessId] = useState<string | null>(null);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    businessId,
+    reservations,
+    loading,
+    error: liveError,
+    isLive,
+    updateReservation,
+  } = useBusinessReservationsLive();
   const [error, setError] = useState('');
   const [view, setView] = useState<'daily' | 'weekly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()));
   const [tab, setTab] = useState<PageTab>('calendar');
   const { addToast } = useToast();
 
-  useEffect(() => {
-    api
-      fetchMyBusinesses<{ data: { _id: string }[] }>()
-      .then((res) => {
-        const list = res.data.data || [];
-        if (list[0]) {
-          setBusinessId(list[0]._id);
-          return api.get<{ data: Reservation[] }>(`/reservations/business/${list[0]._id}`);
-        }
-        return null;
-      })
-      .then((res) => {
-        if (res) setReservations(res.data.data || []);
-      })
-      .catch(() => setError('Yüklenemedi.'))
-      .finally(() => setLoading(false));
-  }, []);
+  const displayError = error || liveError;
 
   const stats = useMemo(() => {
     const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
@@ -110,7 +90,7 @@ export default function BusinessReservationsPage() {
     setError('');
     try {
       await api.patch(`/reservations/${id}/status`, { status });
-      setReservations((prev) => prev.map((r) => (r._id === id ? { ...r, status } : r)));
+      updateReservation(id, { status });
       addToast('success', status === 'approved' ? 'Randevu onaylandı.' : 'Randevu iptal edildi.');
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -139,7 +119,15 @@ export default function BusinessReservationsPage() {
         <div className="pointer-events-none absolute -right-20 top-0 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-primary-500/10 blur-2xl" />
         <p className="text-sm font-medium text-emerald-200/90">İşletme paneli</p>
-        <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">Randevu yönetimi</h1>
+        <div className="mt-1 flex flex-wrap items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">Randevu yönetimi</h1>
+          {isLive && businessId && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-100 ring-1 ring-emerald-400/30">
+              <Radio className="h-3.5 w-3.5 animate-pulse" strokeWidth={2} aria-hidden />
+              Canlı
+            </span>
+          )}
+        </div>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
           Onay bekleyen talepleri hızlıca işleyin, takvimden günlük/haftalık planınızı görün ve geçmiş kayıtları
           ayrı sekmede inceleyin.
@@ -171,9 +159,9 @@ export default function BusinessReservationsPage() {
       </div>
       </AnimateIn>
 
-      {error && (
+      {displayError && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
-          {error}
+          {displayError}
         </div>
       )}
 

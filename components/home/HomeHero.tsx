@@ -16,7 +16,7 @@ interface HomeHeroProps {
 export function HomeHero({ slides }: HomeHeroProps) {
   return (
     <section className="relative -mx-4 px-4 pb-14 pt-6 sm:-mx-6 sm:px-6 sm:pb-16 lg:-mx-8 lg:px-8 lg:pb-20 lg:pt-10">
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-12 xl:gap-14">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-12">
         <div className="max-w-xl lg:max-w-none">
           <AnimateIn immediate animation="fade-in">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-primary-700 shadow-sm backdrop-blur-sm dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300">
@@ -88,7 +88,7 @@ export function HomeHero({ slides }: HomeHeroProps) {
           </AnimateIn>
         </div>
 
-        <AnimateIn immediate animation="slide-in-right" delay={200} className="w-full lg:min-w-0">
+        <AnimateIn immediate animation="slide-in-right" delay={200} className="w-full lg:max-w-md lg:justify-self-end xl:max-w-lg">
           <HeroPromoCarousel slides={slides} />
         </AnimateIn>
       </div>

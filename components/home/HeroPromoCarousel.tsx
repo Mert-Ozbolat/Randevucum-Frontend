@@ -58,7 +58,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
 
       <div className="relative">
         <div className="overflow-hidden rounded-[1.75rem] bg-neutral-900/5 p-2 shadow-2xl shadow-neutral-900/15 ring-1 ring-black/[0.06] dark:bg-white/5 dark:shadow-black/50 dark:ring-white/10 sm:rounded-[2rem] sm:p-2.5">
-          <div className="relative aspect-[4/5] min-h-[320px] overflow-hidden rounded-[1.35rem] sm:aspect-[3/4] sm:min-h-[380px] lg:aspect-[5/6] lg:min-h-[460px] xl:min-h-[520px]">
+          <div className="relative aspect-[4/5] min-h-[260px] overflow-hidden rounded-[1.35rem] sm:min-h-[300px] lg:aspect-[4/5] lg:min-h-[360px] xl:min-h-[400px]">
             <div
               className="flex h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
               style={{ transform: `translateX(-${safeIndex * 100}%)` }}
@@ -84,7 +84,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                       fill
                       priority={slide.id === slides[0].id}
                       className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, 55vw"
+                      sizes="(max-width: 1024px) 100vw, 480px"
                     />
                   )}
                   <div
@@ -96,14 +96,14 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                       {slide.badge}
                     </span>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:p-8">
-                    <p className="text-xl font-bold leading-snug text-white drop-shadow-sm sm:text-2xl lg:text-[1.65rem]">
+                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
+                    <p className="text-lg font-bold leading-snug text-white drop-shadow-sm sm:text-xl">
                       {slide.title}
                     </p>
                     {slide.subtitle && (
-                      <p className="mt-2 line-clamp-2 text-sm text-white/90 sm:text-base">{slide.subtitle}</p>
+                      <p className="mt-1.5 line-clamp-2 text-sm text-white/90">{slide.subtitle}</p>
                     )}
-                    <span className="mt-4 inline-flex items-center text-sm font-semibold text-white/95 sm:text-base">
+                    <span className="mt-3 inline-flex items-center text-sm font-semibold text-white/95">
                       Detaya git →
                     </span>
                   </div>

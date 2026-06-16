@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format, startOfDay } from 'date-fns';
-import { api } from '@/lib/api';
-import { fetchMyBusinesses } from '@/lib/businessApi';
-import { reservationLocalCalendarKey } from '@/lib/reservationDate';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { RESERVATION_STATUS } from '@/lib/constants';
+import { reservationLocalCalendarKey } from '@/lib/reservationDate';
+import { useBusinessReservationsLive } from '@/contexts/BusinessReservationsLiveContext';
+import { fetchMyBusinesses } from '@/lib/businessApi';
+import { api } from '@/lib/api';
 
 interface Business {
   _id: string;
@@ -21,52 +22,35 @@ interface SubStatus {
   endDate?: string;
 }
 
-interface Reservation {
-  _id: string;
-  status: string;
-  date: string;
-  time: string;
-  serviceId?: { name: string };
-  customerId?: { firstName: string; lastName: string };
-}
-
 export default function BusinessDashboardPage() {
+  const { reservations, loading: reservationsLoading } = useBusinessReservationsLive();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [subscription, setSubscription] = useState<SubStatus | null>(null);
-  const [todayReservations, setTodayReservations] = useState<Reservation[]>([]);
-  const [allReservations, setAllReservations] = useState<Reservation[]>([]);
   const [loading, setLoading] = useState(true);
-  const businessId = businesses[0]?._id;
 
   useEffect(() => {
     fetchMyBusinesses<{ data: Business[] }>()
       .then((res) => {
         const list = res.data.data || [];
         setBusinesses(list);
-        const empty: [{ data: { data: SubStatus } }, { data: { data: Reservation[] } }] = [
-          { data: { data: { isActive: false, status: 'Yok' } } },
-          { data: { data: [] } },
-        ];
-        if (!list[0]) return empty;
-        return Promise.all([
-          api.get<{ data: SubStatus }>(`/subscription/status/${list[0]._id}`),
-          api.get<{ data: Reservation[] }>(`/reservations/business/${list[0]._id}`),
-        ]);
+        if (!list[0]) return null;
+        return api.get<{ data: SubStatus }>(`/subscription/status/${list[0]._id}`);
       })
-      .then((results) => {
-        setSubscription(results[0].data.data);
-        const list = results[1].data.data || [];
-        setAllReservations(list);
-        const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
-        setTodayReservations(
-          list.filter((r: Reservation) => reservationLocalCalendarKey(String(r.date)) === todayStr)
-        );
+      .then((res) => {
+        if (res) setSubscription(res.data.data);
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) {
+  const todayReservations = useMemo(() => {
+    const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
+    return reservations.filter(
+      (r) => reservationLocalCalendarKey(String(r.date)) === todayStr
+    );
+  }, [reservations]);
+
+  if (loading || reservationsLoading) {
     return (
       <div className="flex justify-center py-12">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
@@ -115,7 +99,7 @@ export default function BusinessDashboardPage() {
           <CardHeader>
             <CardTitle>Toplam Randevular</CardTitle>
           </CardHeader>
-          <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">{allReservations.length}</p>
+          <p className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">{reservations.length}</p>
           <Link
             href="/dashboard/business/reservations"
             className="mt-2 text-sm font-medium text-primary-600 hover:underline dark:text-primary-300"
