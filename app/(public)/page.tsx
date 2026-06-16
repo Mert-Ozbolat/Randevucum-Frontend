@@ -17,6 +17,7 @@ import { HomeLiveStats } from '@/components/home/HomeLiveStats';
 import { HomeBottomSections } from '@/components/home/HomeBottomSections';
 import { BusinessCard } from '@/components/business/BusinessCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
+import { AnimateIn } from '@/components/ui/AnimateIn';
 
 interface Business {
   _id: string;
@@ -73,52 +74,65 @@ export default function HomePage() {
       {/* Hero — metin + görsel */}
       <section className="grid items-center gap-10 lg:grid-cols-[1fr_min(42%,520px)] lg:gap-14">
         <div>
-          <p className="inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-primary-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-700 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300">
-            <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-            Online randevu
-          </p>
-          <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-5xl lg:text-[2.75rem] lg:leading-[1.1]">
-            Dakikalar içinde randevu alın
-          </h1>
-          <p className="mt-4 max-w-xl text-lg text-neutral-600 dark:text-neutral-300">
-            Kuaförden kliniğe, tek yerden müsait saatleri görün ve randevunuzu oluşturun.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link
-              href="/register"
-              className="inline-flex items-center justify-center rounded-2xl bg-primary-500 px-6 py-3.5 text-base font-semibold text-white shadow-soft transition hover:bg-primary-600 active:scale-[0.98]"
-            >
-              Ücretsiz başlayın
-            </Link>
-            <Link
-              href="/business"
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-neutral-200 bg-white/80 px-6 py-3.5 text-base font-semibold text-neutral-800 backdrop-blur-sm transition hover:border-primary-400 hover:bg-white dark:border-neutral-600 dark:bg-neutral-800/80 dark:text-neutral-100 dark:hover:border-primary-500"
-            >
-              İşletmeleri keşfet
-              <ArrowRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-            </Link>
-          </div>
-          <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-            {['Hızlı randevu', 'Ücretsiz kullanım', 'Onaylı işletmeler'].map((label) => (
-              <li key={label} className="flex items-center gap-2">
-                <span
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
-                  aria-hidden
-                >
-                  <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
-                </span>
-                {label}
-              </li>
-            ))}
-          </ul>
-
-          <HomeLiveStats />
+          <AnimateIn immediate animation="fade-in" delay={0}>
+            <p className="inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-primary-50/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary-700 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-300">
+              <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
+              Online randevu
+            </p>
+          </AnimateIn>
+          <AnimateIn immediate animation="slide-up" delay={80}>
+            <h1 className="mt-5 text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-5xl lg:text-[2.75rem] lg:leading-[1.1]">
+              Dakikalar içinde randevu alın
+            </h1>
+          </AnimateIn>
+          <AnimateIn immediate animation="slide-up" delay={160}>
+            <p className="mt-4 max-w-xl text-lg text-neutral-600 dark:text-neutral-300">
+              Kuaförden kliniğe, tek yerden müsait saatleri görün ve randevunuzu oluşturun.
+            </p>
+          </AnimateIn>
+          <AnimateIn immediate animation="slide-up" delay={240}>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center rounded-2xl bg-primary-500 px-6 py-3.5 text-base font-semibold text-white shadow-soft transition duration-300 hover:bg-primary-600 hover:shadow-glow active:scale-[0.98]"
+              >
+                Ücretsiz başlayın
+              </Link>
+              <Link
+                href="/business"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-neutral-200 bg-white/80 px-6 py-3.5 text-base font-semibold text-neutral-800 backdrop-blur-sm transition duration-300 hover:border-primary-400 hover:bg-white dark:border-neutral-600 dark:bg-neutral-800/80 dark:text-neutral-100 dark:hover:border-primary-500"
+              >
+                İşletmeleri keşfet
+                <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={2.5} aria-hidden />
+              </Link>
+            </div>
+          </AnimateIn>
+          <AnimateIn immediate animation="slide-up" delay={320}>
+            <ul className="mt-10 flex flex-wrap gap-x-8 gap-y-3 text-sm font-medium text-neutral-600 dark:text-neutral-400">
+              {['Hızlı randevu', 'Ücretsiz kullanım', 'Onaylı işletmeler'].map((label) => (
+                <li key={label} className="flex items-center gap-2">
+                  <span
+                    className="flex h-6 w-6 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400"
+                    aria-hidden
+                  >
+                    <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+                  </span>
+                  {label}
+                </li>
+              ))}
+            </ul>
+          </AnimateIn>
+          <AnimateIn immediate animation="slide-up" delay={400}>
+            <HomeLiveStats />
+          </AnimateIn>
         </div>
-        <HeroPromoCarousel slides={heroSlides} />
+        <AnimateIn immediate animation="slide-in-right" delay={200}>
+          <HeroPromoCarousel slides={heroSlides} />
+        </AnimateIn>
       </section>
 
       {/* Öne çıkan alanlar — sadece 6 görsel kart */}
-      <section className="mt-20 lg:mt-28">
+      <AnimateIn as="section" className="mt-20 lg:mt-28" animation="slide-up">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-3xl">
@@ -137,12 +151,12 @@ export default function HomePage() {
           </Link>
         </div>
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {HOME_FEATURED_AREAS.map((area) => (
-            <Link
-              key={area.name}
-              href={`/business?area=${encodeURIComponent(area.name)}`}
-              className="group relative isolate overflow-hidden rounded-2xl shadow-card ring-1 ring-black/5 transition hover:-translate-y-0.5 hover:shadow-soft dark:ring-white/10"
-            >
+          {HOME_FEATURED_AREAS.map((area, i) => (
+            <AnimateIn key={area.name} animation="scale-in" delay={i * 70}>
+              <Link
+                href={`/business?area=${encodeURIComponent(area.name)}`}
+                className="group relative isolate block overflow-hidden rounded-2xl shadow-card ring-1 ring-black/5 transition duration-500 hover:-translate-y-1 hover:shadow-soft dark:ring-white/10"
+              >
               <div className="relative aspect-[16/11] w-full">
                 <Image
                   src={area.image}
@@ -165,13 +179,13 @@ export default function HomePage() {
                   </span>
                 </p>
               </div>
-            </Link>
+              </Link>
+            </AnimateIn>
           ))}
         </div>
-      </section>
+      </AnimateIn>
 
-      {/* Tek işletme bloğu */}
-      <section className="mt-20 lg:mt-24">
+      <AnimateIn as="section" className="mt-20 lg:mt-24" animation="slide-up">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-3xl">
@@ -198,9 +212,9 @@ export default function HomePage() {
         )}
         {!loading && !error && businesses.length > 0 && (
           <div className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredBusinesses.map((b) => (
-              <BusinessCard
-                key={b._id}
+            {featuredBusinesses.map((b, i) => (
+              <AnimateIn key={b._id} animation="slide-up" delay={i * 80}>
+                <BusinessCard
                 _id={b._id}
                 name={b.name}
                 businessType={b.businessType}
@@ -215,7 +229,8 @@ export default function HomePage() {
                 isNew={
                   !!b.createdAt && new Date(b.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
                 }
-              />
+                />
+              </AnimateIn>
             ))}
           </div>
         )}
@@ -230,10 +245,9 @@ export default function HomePage() {
             </Link>
           </div>
         )}
-      </section>
+      </AnimateIn>
 
-      {/* Nasıl çalışır — sıkı */}
-      <section className="mt-16 rounded-3xl border border-primary-200/40 bg-gradient-to-br from-primary-500/[0.06] via-white to-amber-50/40 px-6 py-10 dark:border-primary-900/40 dark:from-primary-950/30 dark:via-neutral-900 dark:to-amber-950/20 sm:px-10 lg:mt-20">
+      <AnimateIn as="section" className="mt-16 rounded-3xl border border-primary-200/40 bg-gradient-to-br from-primary-500/[0.06] via-white to-amber-50/40 px-6 py-10 dark:border-primary-900/40 dark:from-primary-950/30 dark:via-neutral-900 dark:to-amber-950/20 sm:px-10 lg:mt-20" animation="scale-in">
         <h2 className="text-center text-xl font-bold text-neutral-900 dark:text-neutral-50 sm:text-2xl">
           Nasıl çalışır?
         </h2>
@@ -260,20 +274,22 @@ export default function HomePage() {
               text: 'Randevunuz kaydedilir; bildirim alırsınız.',
               Icon: Check,
             },
-          ].map(({ step, title, text, Icon }) => (
-            <div key={step} className="flex flex-col items-center text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500 text-white shadow-md dark:bg-primary-600">
-                <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
+          ].map(({ step, title, text, Icon }, i) => (
+            <AnimateIn key={step} animation="slide-up" delay={i * 100}>
+              <div className="flex flex-col items-center text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500 text-white shadow-md transition duration-300 hover:scale-105 dark:bg-primary-600">
+                  <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
+                </div>
+                <span className="mt-3 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
+                  Adım {step}
+                </span>
+                <h3 className="mt-1 font-bold text-neutral-900 dark:text-neutral-50">{title}</h3>
+                <p className="mt-1 max-w-[14rem] text-xs text-neutral-600 dark:text-neutral-400">{text}</p>
               </div>
-              <span className="mt-3 text-xs font-bold uppercase tracking-wider text-primary-600 dark:text-primary-400">
-                Adım {step}
-              </span>
-              <h3 className="mt-1 font-bold text-neutral-900 dark:text-neutral-50">{title}</h3>
-              <p className="mt-1 max-w-[14rem] text-xs text-neutral-600 dark:text-neutral-400">{text}</p>
-            </div>
+            </AnimateIn>
           ))}
         </div>
-      </section>
+      </AnimateIn>
 
       <HomeBottomSections />
     </div>

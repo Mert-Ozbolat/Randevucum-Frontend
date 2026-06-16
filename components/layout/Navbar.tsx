@@ -203,12 +203,12 @@ export function Navbar() {
           <button
             type="button"
             aria-label="Menüyü kapat"
-            className="fixed inset-0 z-40 bg-neutral-900/50 backdrop-blur-[2px] lg:hidden"
+            className="fixed inset-0 z-40 animate-fade-in bg-neutral-900/50 backdrop-blur-[2px] lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
           <div
             id="mobile-nav"
-            className="absolute left-0 right-0 top-full z-50 max-h-[calc(100dvh-3.5rem)] overflow-y-auto border-t border-neutral-200 bg-white shadow-lg sm:max-h-[calc(100dvh-4.25rem)] dark:border-neutral-700 dark:bg-neutral-900 lg:hidden"
+            className="absolute left-0 right-0 top-full z-50 max-h-[calc(100dvh-3.5rem)] animate-slide-down overflow-y-auto border-t border-neutral-200 bg-white shadow-lg sm:max-h-[calc(100dvh-4.25rem)] dark:border-neutral-700 dark:bg-neutral-900 lg:hidden"
           >
             <nav className="mx-auto max-w-7xl px-3 py-3 sm:px-6">
               <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">

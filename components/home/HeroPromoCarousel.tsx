@@ -54,7 +54,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
     >
       {/* Arka plan — yumuşak glow */}
       <div
-        className="absolute -inset-3 rounded-[2.25rem] bg-gradient-to-br from-primary-400/30 via-emerald-300/15 to-amber-200/25 blur-2xl dark:from-primary-600/25 dark:via-emerald-900/20 dark:to-amber-900/15"
+        className="absolute -inset-3 animate-pulse-soft rounded-[2.25rem] bg-gradient-to-br from-primary-400/30 via-emerald-300/15 to-amber-200/25 blur-2xl dark:from-primary-600/25 dark:via-emerald-900/20 dark:to-amber-900/15"
         aria-hidden
       />
 

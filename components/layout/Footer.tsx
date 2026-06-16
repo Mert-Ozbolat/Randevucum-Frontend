@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ArrowRight, Calendar, Heart, Shield, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
+import { AnimateIn } from '@/components/ui/AnimateIn';
 
 const EXPLORE_LINKS = [
   { href: '/', label: 'Ana Sayfa' },
@@ -62,6 +63,7 @@ export function Footer() {
       />
 
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
+      <AnimateIn animation="slide-up">
         <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(3,1fr)] lg:gap-12">
           {/* Marka */}
           <div className="max-w-sm">
@@ -98,7 +100,6 @@ export function Footer() {
           <FooterLinkGroup title="İşletmeler" links={BUSINESS_LINKS} />
         </div>
 
-        {/* Alt çubuk */}
         <div className="mt-12 flex flex-col gap-4 border-t border-neutral-200/80 pt-8 dark:border-neutral-800 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             © {year} Randevucum. Tüm hakları saklıdır.
@@ -116,6 +117,7 @@ export function Footer() {
             </span>
           </div>
         </div>
+      </AnimateIn>
       </div>
     </footer>
   );

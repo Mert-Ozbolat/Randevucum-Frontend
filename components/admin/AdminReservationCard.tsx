@@ -44,7 +44,7 @@ export function AdminReservationCard({
 
   if (compact) {
     return (
-      <article className="rounded-xl border border-neutral-200/90 bg-white shadow-sm transition hover:border-primary-300/60 dark:border-neutral-600 dark:bg-neutral-900/80 dark:hover:border-primary-700/50">
+      <article className="rounded-xl border border-neutral-200/90 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-primary-300/60 hover:shadow-md dark:border-neutral-600 dark:bg-neutral-900/80 dark:hover:border-primary-700/50">
         <div className="flex gap-2.5 p-2.5">
           <div
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 text-[11px] font-bold text-white"
@@ -114,7 +114,7 @@ export function AdminReservationCard({
   }
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card transition hover:border-primary-200/70 hover:shadow-soft dark:border-neutral-600 dark:bg-neutral-900/70 dark:hover:border-primary-700/40">
+      <article className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-primary-200/70 hover:shadow-soft dark:border-neutral-600 dark:bg-neutral-900/70 dark:hover:border-primary-700/40">
       <div className="flex gap-3 p-4">
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-sm"

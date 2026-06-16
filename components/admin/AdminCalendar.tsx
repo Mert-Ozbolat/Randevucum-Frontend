@@ -54,10 +54,11 @@ export function AdminCalendar({
   onApprove,
   onCancel,
 }: AdminCalendarProps) {
-  const dayStart = startOfDay(selectedDate);
+  const todayStart = startOfDay(new Date());
+  const dayStart = view === 'weekly' ? todayStart : startOfDay(selectedDate);
   const days =
     view === 'weekly'
-      ? Array.from({ length: 7 }, (_, i) => addDays(dayStart, i))
+      ? Array.from({ length: 7 }, (_, i) => addDays(todayStart, i))
       : [dayStart];
 
   const reservationsByDay = days.map((d) => {
@@ -70,7 +71,6 @@ export function AdminCalendar({
   });
 
   const pendingCount = reservations.filter(isActionablePending).length;
-  const todayStart = startOfDay(new Date());
   const todayStr = format(todayStart, 'yyyy-MM-dd');
   const todayCount = reservations.filter((r) => {
     const raw = typeof r.date === 'string' ? r.date : String(r.date);
@@ -92,7 +92,10 @@ export function AdminCalendar({
               <button
                 key={v}
                 type="button"
-                onClick={() => onViewChange(v)}
+                onClick={() => {
+                  if (v === 'weekly') onDateChange(todayStart);
+                  onViewChange(v);
+                }}
                 className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                   view === v
                     ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
@@ -103,6 +106,15 @@ export function AdminCalendar({
               </button>
             ))}
           </div>
+          {view === 'weekly' && (
+            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+              {format(todayStart, 'd MMMM', { locale: tr })} –{' '}
+              {format(addDays(todayStart, 6), 'd MMMM yyyy', { locale: tr })}
+              <span className="ml-1 font-normal text-neutral-500 dark:text-neutral-400">
+                (bugünden itibaren 7 gün)
+              </span>
+            </p>
+          )}
           {view === 'daily' && (
             <div className="flex flex-wrap gap-2">
               <button
@@ -142,7 +154,9 @@ export function AdminCalendar({
       </div>
 
       <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 sm:text-left">
-        Çok sayıda randevuda her gün kutusu içinde kaydırarak tüm listeyi görebilirsiniz; saat dilimlerine göre gruplanır.
+        {view === 'weekly'
+          ? 'Haftalık görünüm bugünden başlayarak önümüzdeki 7 günü gösterir.'
+          : 'Çok sayıda randevuda her gün kutusu içinde kaydırarak tüm listeyi görebilirsiniz; saat dilimlerine göre gruplanır.'}
       </p>
 
       <div

@@ -22,6 +22,7 @@ import {
   sortByDateTimeDesc,
 } from '@/lib/reservationFilters';
 import { useToast } from '@/components/ui/Toast';
+import { AnimateIn } from '@/components/ui/AnimateIn';
 
 interface Reservation {
   _id: string;
@@ -133,6 +134,7 @@ export default function BusinessReservationsPage() {
   return (
     <div className="space-y-8">
       {/* Hero + özet */}
+      <AnimateIn immediate animation="slide-up">
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 via-slate-900 to-emerald-900 px-6 py-8 text-white shadow-soft sm:px-10 sm:py-10">
         <div className="pointer-events-none absolute -right-20 top-0 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl" />
         <div className="pointer-events-none absolute bottom-0 left-0 h-40 w-40 rounded-full bg-primary-500/10 blur-2xl" />
@@ -167,6 +169,7 @@ export default function BusinessReservationsPage() {
           </div>
         )}
       </div>
+      </AnimateIn>
 
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">

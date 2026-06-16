@@ -15,6 +15,7 @@ import {
   Star,
   Users,
 } from 'lucide-react';
+import { AnimateIn } from '@/components/ui/AnimateIn';
 
 const BENEFITS = [
   {
@@ -71,12 +72,12 @@ function FaqItem({ q, a }: { q: string; a: string }) {
       >
         <span className="font-semibold text-neutral-900 dark:text-neutral-50">{q}</span>
         <ChevronDown
-          className={`h-5 w-5 shrink-0 text-neutral-400 transition ${open ? 'rotate-180' : ''}`}
+          className={`h-5 w-5 shrink-0 text-neutral-400 transition-transform duration-300 ${open ? 'rotate-180' : ''}`}
           aria-hidden
         />
       </button>
       {open && (
-        <p className="border-t border-neutral-100 px-5 pb-4 pt-3 text-sm leading-relaxed text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">
+        <p className="animate-fade-in border-t border-neutral-100 px-5 pb-4 pt-3 text-sm leading-relaxed text-neutral-600 dark:border-neutral-700 dark:text-neutral-300">
           {a}
         </p>
       )}
@@ -88,7 +89,7 @@ export function HomeBottomSections() {
   return (
     <div className="mt-16 space-y-16 lg:mt-20 lg:space-y-24">
       {/* Neden Randevucum? */}
-      <section>
+      <AnimateIn as="section" animation="slide-up">
         <div className="text-center">
           <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary-600 dark:text-primary-400">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
@@ -102,23 +103,22 @@ export function HomeBottomSections() {
           </p>
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {BENEFITS.map(({ Icon, title, text }) => (
-            <div
-              key={title}
-              className="rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-card transition hover:-translate-y-0.5 hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800/80"
-            >
+          {BENEFITS.map(({ Icon, title, text }, i) => (
+            <AnimateIn key={title} animation="slide-up" delay={i * 80}>
+              <div className="h-full rounded-2xl border border-neutral-200/80 bg-white p-6 shadow-card transition duration-300 hover:-translate-y-1 hover:shadow-soft dark:border-neutral-700 dark:bg-neutral-800/80">
               <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-100 text-primary-700 dark:bg-primary-900/50 dark:text-primary-300">
                 <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
               </div>
               <h3 className="mt-4 font-bold text-neutral-900 dark:text-neutral-50">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">{text}</p>
-            </div>
+              </div>
+            </AnimateIn>
           ))}
         </div>
-      </section>
+      </AnimateIn>
 
       {/* Müşteri / İşletme split */}
-      <section className="grid gap-6 lg:grid-cols-2">
+      <AnimateIn as="section" className="grid gap-6 lg:grid-cols-2" animation="slide-up">
         <div className="rounded-3xl border border-neutral-200 bg-gradient-to-br from-white to-primary-50/40 p-8 dark:border-neutral-700 dark:from-neutral-800 dark:to-primary-950/20">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary-500 text-white">
             <Users className="h-6 w-6" strokeWidth={2} aria-hidden />
@@ -178,10 +178,10 @@ export function HomeBottomSections() {
             </Link>
           </div>
         </div>
-      </section>
+      </AnimateIn>
 
       {/* SSS */}
-      <section className="mx-auto max-w-3xl">
+      <AnimateIn as="section" className="mx-auto max-w-3xl" animation="slide-up">
         <div className="text-center">
           <h2 className="text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-3xl">
             Sık sorulan sorular
@@ -191,14 +191,20 @@ export function HomeBottomSections() {
           </p>
         </div>
         <div className="mt-8 space-y-3">
-          {FAQ.map(({ q, a }) => (
-            <FaqItem key={q} q={q} a={a} />
+          {FAQ.map(({ q, a }, i) => (
+            <AnimateIn key={q} animation="fade-in" delay={i * 60}>
+              <FaqItem q={q} a={a} />
+            </AnimateIn>
           ))}
         </div>
-      </section>
+      </AnimateIn>
 
       {/* Final CTA */}
-      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 py-12 text-center text-white shadow-glow sm:px-12 sm:py-14">
+      <AnimateIn
+        as="section"
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700 px-6 py-12 text-center text-white shadow-glow sm:px-12 sm:py-14"
+        animation="scale-in"
+      >
         <div
           className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-white/10 blur-2xl"
           aria-hidden
@@ -226,7 +232,7 @@ export function HomeBottomSections() {
             Ücretsiz başla
           </Link>
         </div>
-      </section>
+      </AnimateIn>
     </div>
   );
 }
