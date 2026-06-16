@@ -15,16 +15,8 @@ interface HomeHeroProps {
 
 export function HomeHero({ slides }: HomeHeroProps) {
   return (
-    <section className="relative -mx-4 overflow-hidden px-4 pb-14 pt-6 sm:-mx-6 sm:px-6 sm:pb-16 lg:-mx-8 lg:px-8 lg:pb-20 lg:pt-10">
-      {/* Arka plan — mesh gradient */}
-      <div className="pointer-events-none absolute inset-0" aria-hidden>
-        <div className="absolute -left-24 top-0 h-72 w-72 rounded-full bg-primary-400/25 blur-3xl dark:bg-primary-600/20" />
-        <div className="absolute right-0 top-1/4 h-80 w-80 rounded-full bg-emerald-300/20 blur-3xl dark:bg-emerald-800/15" />
-        <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-amber-200/25 blur-3xl dark:bg-amber-900/10" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-white/80 via-transparent to-transparent dark:from-neutral-900/50" />
-      </div>
-
-      <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14 xl:gap-16">
+    <section className="relative -mx-4 px-4 pb-14 pt-6 sm:-mx-6 sm:px-6 sm:pb-16 lg:-mx-8 lg:px-8 lg:pb-20 lg:pt-10">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-[minmax(0,0.88fr)_minmax(0,1.12fr)] lg:gap-12 xl:gap-14">
         <div className="max-w-xl lg:max-w-none">
           <AnimateIn immediate animation="fade-in">
             <span className="inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-primary-700 shadow-sm backdrop-blur-sm dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300">
@@ -35,11 +27,7 @@ export function HomeHero({ slides }: HomeHeroProps) {
 
           <AnimateIn immediate animation="slide-up" delay={80}>
             <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]">
-              Dakikalar içinde{' '}
-              <span className="bg-gradient-to-r from-primary-600 via-emerald-600 to-primary-700 bg-clip-text text-transparent dark:from-primary-400 dark:via-emerald-400 dark:to-primary-300">
-                randevu
-              </span>{' '}
-              alın
+              Dakikalar içinde randevu alın
             </h1>
           </AnimateIn>
 
@@ -100,7 +88,7 @@ export function HomeHero({ slides }: HomeHeroProps) {
           </AnimateIn>
         </div>
 
-        <AnimateIn immediate animation="slide-in-right" delay={200} className="lg:justify-self-end">
+        <AnimateIn immediate animation="slide-in-right" delay={200} className="w-full lg:min-w-0">
           <HeroPromoCarousel slides={slides} />
         </AnimateIn>
       </div>

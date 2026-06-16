@@ -48,20 +48,17 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
 
   return (
     <div
-      className="relative mx-auto w-full max-w-md lg:mx-0 lg:max-w-none"
+      className="relative w-full"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/* Arka plan — yumuşak glow */}
-      <div
-        className="absolute -inset-3 animate-pulse-soft rounded-[2.25rem] bg-gradient-to-br from-primary-400/30 via-emerald-300/15 to-amber-200/25 blur-2xl dark:from-primary-600/25 dark:via-emerald-900/20 dark:to-amber-900/15"
-        aria-hidden
-      />
+      <p className="mb-3 text-center text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400 lg:text-left">
+        Sponsorlu işletmeler
+      </p>
 
       <div className="relative">
-        {/* Dış çerçeve — “kart” hissi */}
-        <div className="overflow-hidden rounded-[2rem] bg-neutral-900/5 p-1.5 shadow-2xl shadow-neutral-900/15 ring-1 ring-black/[0.06] dark:bg-white/5 dark:shadow-black/50 dark:ring-white/10">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[1.65rem] sm:aspect-[5/6] lg:aspect-[4/5]">
+        <div className="overflow-hidden rounded-[1.75rem] bg-neutral-900/5 p-2 shadow-2xl shadow-neutral-900/15 ring-1 ring-black/[0.06] dark:bg-white/5 dark:shadow-black/50 dark:ring-white/10 sm:rounded-[2rem] sm:p-2.5">
+          <div className="relative aspect-[4/5] min-h-[320px] overflow-hidden rounded-[1.35rem] sm:aspect-[3/4] sm:min-h-[380px] lg:aspect-[5/6] lg:min-h-[460px] xl:min-h-[520px]">
             <div
               className="flex h-full w-full transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
               style={{ transform: `translateX(-${safeIndex * 100}%)` }}
@@ -87,26 +84,26 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                       fill
                       priority={slide.id === slides[0].id}
                       className="object-cover"
-                      sizes="(max-width: 1024px) 100vw, min(520px, 42vw)"
+                      sizes="(max-width: 1024px) 100vw, 55vw"
                     />
                   )}
                   <div
                     className="absolute inset-0 bg-gradient-to-t from-neutral-950/90 via-neutral-950/25 to-neutral-950/10"
                     aria-hidden
                   />
-                  <div className="absolute left-0 right-0 top-4 flex justify-center px-4">
-                    <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-white backdrop-blur-md">
+                  <div className="absolute left-0 right-0 top-4 flex justify-center px-4 sm:top-5">
+                    <span className="rounded-full bg-white/20 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wider text-white backdrop-blur-md sm:text-[13px]">
                       {slide.badge}
                     </span>
                   </div>
-                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6">
-                    <p className="text-lg font-bold leading-snug text-white drop-shadow-sm sm:text-xl">
+                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:p-8">
+                    <p className="text-xl font-bold leading-snug text-white drop-shadow-sm sm:text-2xl lg:text-[1.65rem]">
                       {slide.title}
                     </p>
                     {slide.subtitle && (
-                      <p className="mt-1.5 line-clamp-2 text-sm text-white/85">{slide.subtitle}</p>
+                      <p className="mt-2 line-clamp-2 text-sm text-white/90 sm:text-base">{slide.subtitle}</p>
                     )}
-                    <span className="mt-3 inline-flex items-center text-sm font-semibold text-primary-200">
+                    <span className="mt-4 inline-flex items-center text-sm font-semibold text-white/95 sm:text-base">
                       Detaya git →
                     </span>
                   </div>
@@ -119,21 +116,21 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
         {/* Kontroller */}
         {len > 1 && (
           <>
-            <div className="absolute left-2 top-1/2 z-10 -translate-y-1/2">
+            <div className="absolute left-3 top-1/2 z-10 -translate-y-1/2 sm:left-4">
               <button
                 type="button"
                 onClick={() => go(-1)}
-                className="rounded-full bg-black/40 p-2 text-white shadow-lg backdrop-blur-md transition hover:bg-black/55"
+                className="rounded-full bg-black/45 p-2.5 text-white shadow-lg backdrop-blur-md transition hover:bg-black/60 sm:p-3"
                 aria-label="Önceki slayt"
               >
                 <ChevronLeft className="h-5 w-5" strokeWidth={2} aria-hidden />
               </button>
             </div>
-            <div className="absolute right-2 top-1/2 z-10 -translate-y-1/2">
+            <div className="absolute right-3 top-1/2 z-10 -translate-y-1/2 sm:right-4">
               <button
                 type="button"
                 onClick={() => go(1)}
-                className="rounded-full bg-black/40 p-2 text-white shadow-lg backdrop-blur-md transition hover:bg-black/55"
+                className="rounded-full bg-black/45 p-2.5 text-white shadow-lg backdrop-blur-md transition hover:bg-black/60 sm:p-3"
                 aria-label="Sonraki slayt"
               >
                 <ChevronRight className="h-5 w-5" strokeWidth={2} aria-hidden />
@@ -177,7 +174,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
         )}
       </div>
 
-      <p className="mt-3 text-center text-xs text-neutral-500 dark:text-neutral-400">
+      <p className="mt-4 text-center text-sm text-neutral-500 dark:text-neutral-400 lg:text-left">
         {len > 1
           ? 'Sponsor işletmeler ve platform önerileri — tıklayarak detaya gidin.'
           : `${current.title} — detay için görsele tıklayın.`}
