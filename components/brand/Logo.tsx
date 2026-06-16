@@ -36,11 +36,8 @@ export function Logo({ size = 'md', href = '/', className = '' }: LogoProps) {
   const inner = (
     <span className={`inline-flex items-center gap-2.5 ${className}`}>
       <LogoMark className={iconClass} />
-      <span className={`font-bold ${textClass}`}>
-        <span className="bg-gradient-to-r from-primary-600 to-primary-800 bg-clip-text text-transparent dark:from-primary-400 dark:to-primary-200">
-          Randevu
-        </span>
-        <span className="text-neutral-800 dark:text-neutral-100">cum</span>
+      <span className={`font-bold text-primary-700 dark:text-primary-400 ${textClass}`}>
+        Randevucum
       </span>
     </span>
   );
