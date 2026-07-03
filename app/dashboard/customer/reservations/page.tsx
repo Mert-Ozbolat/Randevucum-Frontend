@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ClipboardList } from 'lucide-react';
 import { isBefore, parseISO, startOfDay } from 'date-fns';
-import { api } from '@/lib/api';
+import { api, getApiErrorMessage } from '@/lib/api';
+import { canCustomerCancelReservation } from '@/lib/reservationFilters';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import {
@@ -93,8 +94,7 @@ export default function CustomerReservationsPage() {
 
   const stats = useMemo(() => {
     const upcoming = reservations.filter(isUpcomingReservation).length;
-    const pending = reservations.filter((r) => r.status === 'pending').length;
-    return { total: reservations.length, upcoming, pending };
+    return { total: reservations.length, upcoming };
   }, [reservations]);
 
   const filtered = useMemo(() => {
@@ -106,13 +106,18 @@ export default function CustomerReservationsPage() {
 
   const handleCancel = async (id: string) => {
     const r = reservations.find((x) => x._id === id);
-    if (r && isPastReservation(r)) return;
+    if (!r) return;
+    if (!canCustomerCancelReservation(r)) {
+      setError('Randevu başlangıcına 12 saatten az kaldığı için iptal edilemez.');
+      return;
+    }
     if (!confirm('Randevuyu iptal etmek istediğinize emin misiniz?')) return;
+    setError('');
     try {
       await api.delete(`/reservations/${id}`);
-      setReservations((prev) => prev.map((r) => (r._id === id ? { ...r, status: 'canceled' } : r)));
-    } catch {
-      setError('İptal edilemedi.');
+      setReservations((prev) => prev.map((item) => (item._id === id ? { ...item, status: 'canceled' } : item)));
+    } catch (err) {
+      setError(getApiErrorMessage(err));
     }
   };
 
@@ -150,10 +155,6 @@ export default function CustomerReservationsPage() {
           <div className="rounded-2xl bg-white/15 px-4 py-3 backdrop-blur-sm">
             <p className="text-xs font-medium text-primary-100">Yaklaşan</p>
             <p className="text-2xl font-bold tabular-nums">{stats.upcoming}</p>
-          </div>
-          <div className="rounded-2xl bg-white/15 px-4 py-3 backdrop-blur-sm">
-            <p className="text-xs font-medium text-primary-100">Onay bekleyen</p>
-            <p className="text-2xl font-bold tabular-nums">{stats.pending}</p>
           </div>
         </div>
       </div>

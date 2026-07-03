@@ -3,8 +3,7 @@
 import { format, startOfDay, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
-import { isActionablePending } from '@/lib/reservationFilters';
-import { CalendarDays, Hourglass } from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
 import { AdminReservationCard } from './AdminReservationCard';
 
 interface Reservation {
@@ -23,7 +22,6 @@ interface AdminCalendarProps {
   selectedDate: Date;
   onDateChange: (date: Date) => void;
   reservations: Reservation[];
-  onApprove?: (id: string) => void;
   onCancel?: (id: string) => void;
 }
 
@@ -51,7 +49,6 @@ export function AdminCalendar({
   selectedDate,
   onDateChange,
   reservations,
-  onApprove,
   onCancel,
 }: AdminCalendarProps) {
   const todayStart = startOfDay(new Date());
@@ -70,7 +67,6 @@ export function AdminCalendar({
     });
   });
 
-  const pendingCount = reservations.filter(isActionablePending).length;
   const todayStr = format(todayStart, 'yyyy-MM-dd');
   const todayCount = reservations.filter((r) => {
     const raw = typeof r.date === 'string' ? r.date : String(r.date);
@@ -142,10 +138,6 @@ export function AdminCalendar({
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 ring-1 ring-amber-200/80 dark:bg-amber-950/40 dark:text-amber-200 dark:ring-amber-800/50">
-            <Hourglass className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            Bekleyen onay: {pendingCount}
-          </span>
           <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50">
             <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             Bugün: {todayCount}
@@ -237,7 +229,6 @@ export function AdminCalendar({
                               <AdminReservationCard
                                 variant="compact"
                                 reservation={r}
-                                onApprove={onApprove}
                                 onCancel={onCancel}
                               />
                             </li>

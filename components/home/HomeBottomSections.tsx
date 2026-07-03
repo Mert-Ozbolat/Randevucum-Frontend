@@ -52,7 +52,7 @@ const FAQ = [
   },
   {
     q: 'Randevumu nasıl iptal ederim?',
-    a: 'Giriş yaptıktan sonra Randevularım sayfasından bekleyen veya onaylı randevunuzu iptal edebilirsiniz.',
+    a: 'Giriş yaptıktan sonra Randevularım sayfasından randevunuzu iptal edebilirsiniz. Başlangıç saatinden en geç 12 saat öncesine kadar iptal mümkündür.',
   },
   {
     q: 'İşletme olarak nasıl kayıt olurum?',
@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: 'WhatsApp bildirimleri nasıl çalışır?',
-    a: 'İşletme randevunuzu onayladığında ve randevu yaklaştığında telefonunuza otomatik hatırlatma gider (PRO paket).',
+    a: 'Randevunuz oluşturulduğunda ve randevu yaklaştığında telefonunuza otomatik hatırlatma gidebilir (PRO paket).',
   },
 ] as const;
 

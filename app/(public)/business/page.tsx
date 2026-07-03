@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { BUSINESS_TYPES, KKTC_CITIES } from '@/lib/constants';
 import { BUSINESS_TYPE_LABELS } from '@/lib/businessCategories';
 import { BusinessCard } from '@/components/business/BusinessCard';
+import { BusinessDiscoverSection } from '@/components/business/BusinessDiscoverSection';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 
 interface Business {
@@ -113,6 +114,12 @@ function BusinessListPage() {
     }
     return list;
   }, [businesses, searchQuery, locationFilter, todayOnly, sortBy, areaFilter, professionFilter]);
+
+  const DISCOVER_AFTER = 6;
+  const listBeforeDiscover = filteredAndSorted.slice(0, DISCOVER_AFTER);
+  const listAfterDiscover = filteredAndSorted.slice(DISCOVER_AFTER);
+  const showDiscoverSection =
+    !loading && !error && filteredAndSorted.length > DISCOVER_AFTER;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
@@ -234,7 +241,27 @@ function BusinessListPage() {
             </div>
           ) : (
             <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredAndSorted.map((b) => (
+              {listBeforeDiscover.map((b) => (
+                <BusinessCard
+                  key={b._id}
+                  _id={b._id}
+                  name={b.name}
+                  businessType={b.businessType}
+                  address={b.address}
+                  description={b.description}
+                  imageUrl={b.imageUrl}
+                  rating={b.averageRating ?? b.rating}
+                  reviewCount={b.reviewCount}
+                  isPopular={
+                    (b.averageRating ?? b.rating ?? 0) >= 4.5 && (b.reviewCount ?? 0) > 0
+                  }
+                  isNew={b.createdAt ? new Date(b.createdAt) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) : false}
+                />
+              ))}
+              {showDiscoverSection && (
+                <BusinessDiscoverSection businesses={filteredAndSorted} />
+              )}
+              {listAfterDiscover.map((b) => (
                 <BusinessCard
                   key={b._id}
                   _id={b._id}

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { phoneInputFromStored } from '@/lib/phone';
+import { CUSTOMER_CANCEL_POLICY_NOTICE } from '@/lib/reservationFilters';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -69,10 +70,10 @@ export function ReservationModal({
       />
       <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft animate-slide-up dark:border-neutral-700 dark:bg-neutral-900">
         <h2 id="reservation-modal-title" className="text-xl font-bold text-neutral-900 dark:text-neutral-50">
-          Randevu Onayı
+          Randevu özeti
         </h2>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-          Lütfen bilgileri kontrol edip onaylayın.
+          Bilgileri kontrol edip randevunuzu oluşturun.
         </p>
 
         {/* Bilgi alanları kutu içinde */}
@@ -100,6 +101,10 @@ export function ReservationModal({
               <span className="font-bold">Personel:</span> {staffLabel}
             </p>
           ) : null}
+        </div>
+
+        <div className="mt-4 rounded-xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-100">
+          {CUSTOMER_CANCEL_POLICY_NOTICE}
         </div>
 
         <div className="mt-4">
@@ -150,7 +155,7 @@ export function ReservationModal({
             loading={loading}
             onClick={() => onConfirm(showPhone ? localPhone : undefined)}
           >
-            Randevuyu Onayla
+            Randevuyu oluştur
           </Button>
         </div>
       </div>

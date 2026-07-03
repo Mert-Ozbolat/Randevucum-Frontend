@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
 import { Building2, CalendarOff, UserX } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { fetchMyBusinesses } from '@/lib/businessApi';
@@ -11,35 +10,147 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useToast } from '@/components/ui/Toast';
 import {
-  addExceptionDay,
-  exceptionDayFromApi,
-  exceptionDaysToApi,
-  removeExceptionDay,
-  sortExceptionDays,
-  type ExceptionDay,
+  addExceptionRange,
+  countDaysInRange,
+  exceptionRangesFromApi,
+  exceptionRangesToApi,
+  formatExceptionRangeLabel,
+  removeExceptionRange,
+  type ExceptionRange,
 } from '@/lib/exceptionDays';
 
 interface StaffMember {
   _id: string;
   name: string;
   title?: string;
-  leaveDays?: { date: string; reason?: string }[];
+  leaveDays?: {
+    date?: string;
+    startDate?: string;
+    endDate?: string;
+    reason?: string;
+  }[];
+}
+
+function DateRangeFields({
+  startDate,
+  endDate,
+  minDate,
+  onStartChange,
+  onEndChange,
+}: {
+  startDate: string;
+  endDate: string;
+  minDate: string;
+  onStartChange: (v: string) => void;
+  onEndChange: (v: string) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div>
+        <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+          Başlangıç
+        </label>
+        <Input
+          type="date"
+          min={minDate}
+          value={startDate}
+          onChange={(e) => {
+            const next = e.target.value;
+            onStartChange(next);
+            if (endDate && next > endDate) onEndChange(next);
+          }}
+          className="w-44"
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+          Bitiş
+        </label>
+        <Input
+          type="date"
+          min={startDate || minDate}
+          value={endDate}
+          onChange={(e) => onEndChange(e.target.value)}
+          className="w-44"
+        />
+      </div>
+    </div>
+  );
+}
+
+function ExceptionRangeList({
+  ranges,
+  saving,
+  onRemove,
+  tone,
+}: {
+  ranges: ExceptionRange[];
+  saving: boolean;
+  onRemove: (id: string) => void;
+  tone: 'neutral' | 'amber';
+}) {
+  if (ranges.length === 0) {
+    return <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">Kayıt yok.</p>;
+  }
+
+  const itemClass =
+    tone === 'amber'
+      ? 'border-amber-200/80 bg-amber-50/50 dark:border-amber-900/40 dark:bg-amber-950/20'
+      : 'border-neutral-200 bg-neutral-50/80 dark:border-neutral-700 dark:bg-neutral-900/40';
+
+  return (
+    <ul className="mt-4 space-y-2">
+      {ranges.map((range) => {
+        const days = countDaysInRange(range);
+        return (
+          <li
+            key={range.id}
+            className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${itemClass}`}
+          >
+            <div>
+              <p className="font-medium text-neutral-900 dark:text-neutral-100">
+                {formatExceptionRangeLabel(range)}
+              </p>
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                {days === 1 ? '1 gün' : `${days} gün`}
+              </p>
+              {range.reason && (
+                <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{range.reason}</p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
+              onClick={() => onRemove(range.id)}
+              disabled={saving}
+            >
+              Kaldır
+            </Button>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 export default function SpecialDaysPage() {
   const { addToast } = useToast();
   const [businessId, setBusinessId] = useState<string | null>(null);
-  const [closedDays, setClosedDays] = useState<ExceptionDay[]>([]);
+  const [closedRanges, setClosedRanges] = useState<ExceptionRange[]>([]);
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const [newClosedDate, setNewClosedDate] = useState('');
-  const [newClosedReason, setNewClosedReason] = useState('');
+  const [closedStart, setClosedStart] = useState('');
+  const [closedEnd, setClosedEnd] = useState('');
+  const [closedReason, setClosedReason] = useState('');
   const [selectedStaffId, setSelectedStaffId] = useState('');
-  const [newLeaveDate, setNewLeaveDate] = useState('');
-  const [newLeaveReason, setNewLeaveReason] = useState('');
+  const [leaveStart, setLeaveStart] = useState('');
+  const [leaveEnd, setLeaveEnd] = useState('');
+  const [leaveReason, setLeaveReason] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +158,10 @@ export default function SpecialDaysPage() {
     (async () => {
       try {
         const bizRes = await fetchMyBusinesses<{
-          data: { _id: string; closedDays?: { date: string; reason?: string }[] }[];
+          data: {
+            _id: string;
+            closedDays?: StaffMember['leaveDays'];
+          }[];
         }>();
         const business = bizRes.data.data?.[0];
         if (!business || cancelled) {
@@ -55,9 +169,7 @@ export default function SpecialDaysPage() {
           return;
         }
         setBusinessId(business._id);
-        setClosedDays(
-          sortExceptionDays((business.closedDays || []).map(exceptionDayFromApi))
-        );
+        setClosedRanges(exceptionRangesFromApi(business.closedDays));
 
         const staffRes = await api.get<{ data: StaffMember[] }>(
           `/staff/business/${business._id}?active=false`
@@ -84,22 +196,22 @@ export default function SpecialDaysPage() {
     [staff, selectedStaffId]
   );
 
-  const selectedStaffLeaveDays = useMemo(
-    () => sortExceptionDays((selectedStaff?.leaveDays || []).map(exceptionDayFromApi)),
+  const staffLeaveRanges = useMemo(
+    () => exceptionRangesFromApi(selectedStaff?.leaveDays),
     [selectedStaff]
   );
 
   const minDate = format(new Date(), 'yyyy-MM-dd');
 
-  const saveBusinessClosedDays = async (nextDays: ExceptionDay[]) => {
+  const saveBusinessClosedRanges = async (next: ExceptionRange[]) => {
     if (!businessId) return;
     setSaving(true);
     setError('');
     try {
       await api.put(`/business/${businessId}`, {
-        closedDays: exceptionDaysToApi(nextDays),
+        closedDays: exceptionRangesToApi(next),
       });
-      setClosedDays(nextDays);
+      setClosedRanges(next);
       addToast('success', 'İşletme kapalı günleri güncellendi.');
     } catch (err) {
       setError(getApiErrorMessage(err));
@@ -108,17 +220,14 @@ export default function SpecialDaysPage() {
     }
   };
 
-  const saveStaffLeaveDays = async (staffId: string, nextDays: ExceptionDay[]) => {
+  const saveStaffLeaveRanges = async (staffId: string, next: ExceptionRange[]) => {
     setSaving(true);
     setError('');
     try {
-      await api.put(`/staff/${staffId}`, {
-        leaveDays: exceptionDaysToApi(nextDays),
-      });
+      const payload = exceptionRangesToApi(next);
+      await api.put(`/staff/${staffId}`, { leaveDays: payload });
       setStaff((prev) =>
-        prev.map((s) =>
-          s._id === staffId ? { ...s, leaveDays: exceptionDaysToApi(nextDays) } : s
-        )
+        prev.map((s) => (s._id === staffId ? { ...s, leaveDays: payload } : s))
       );
       addToast('success', 'Personel izin günleri güncellendi.');
     } catch (err) {
@@ -128,29 +237,32 @@ export default function SpecialDaysPage() {
     }
   };
 
-  const handleAddClosedDay = async () => {
-    if (!newClosedDate) return;
-    const next = addExceptionDay(closedDays, newClosedDate, newClosedReason);
-    await saveBusinessClosedDays(next);
-    setNewClosedDate('');
-    setNewClosedReason('');
+  const handleAddClosedRange = async () => {
+    if (!closedStart) return;
+    const next = addExceptionRange(
+      closedRanges,
+      closedStart,
+      closedEnd || closedStart,
+      closedReason
+    );
+    await saveBusinessClosedRanges(next);
+    setClosedStart('');
+    setClosedEnd('');
+    setClosedReason('');
   };
 
-  const handleRemoveClosedDay = async (date: string) => {
-    await saveBusinessClosedDays(removeExceptionDay(closedDays, date));
-  };
-
-  const handleAddLeaveDay = async () => {
-    if (!selectedStaffId || !newLeaveDate) return;
-    const next = addExceptionDay(selectedStaffLeaveDays, newLeaveDate, newLeaveReason);
-    await saveStaffLeaveDays(selectedStaffId, next);
-    setNewLeaveDate('');
-    setNewLeaveReason('');
-  };
-
-  const handleRemoveLeaveDay = async (date: string) => {
-    if (!selectedStaffId) return;
-    await saveStaffLeaveDays(selectedStaffId, removeExceptionDay(selectedStaffLeaveDays, date));
+  const handleAddLeaveRange = async () => {
+    if (!selectedStaffId || !leaveStart) return;
+    const next = addExceptionRange(
+      staffLeaveRanges,
+      leaveStart,
+      leaveEnd || leaveStart,
+      leaveReason
+    );
+    await saveStaffLeaveRanges(selectedStaffId, next);
+    setLeaveStart('');
+    setLeaveEnd('');
+    setLeaveReason('');
   };
 
   if (loading) {
@@ -174,8 +286,8 @@ export default function SpecialDaysPage() {
       <div>
         <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Özel günler</h1>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
-          İşletmeyi veya personeli belirli tarihlerde kapalı/izinli işaretleyin. Bu günlerde randevu
-          alınamaz.
+          İşletmeyi veya personeli tek gün veya tarih aralığı olarak kapalı/izinli işaretleyin. Bu
+          günlerde randevu alınamaz.
         </p>
       </div>
 
@@ -193,71 +305,50 @@ export default function SpecialDaysPage() {
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">İşletme kapalı günleri</h2>
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Tatil, bayram veya özel kapanış — tüm işletme o gün randevu kabul etmez.
+              Tatil veya özel kapanış — tek gün için bitişi boş bırakabilirsiniz.
             </p>
           </div>
         </div>
 
-        <div className="mt-5 flex flex-wrap items-end gap-3">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              Tarih
-            </label>
-            <Input
-              type="date"
-              min={minDate}
-              value={newClosedDate}
-              onChange={(e) => setNewClosedDate(e.target.value)}
-              className="w-44"
-            />
+        <div className="mt-5 space-y-3">
+          <DateRangeFields
+            startDate={closedStart}
+            endDate={closedEnd}
+            minDate={minDate}
+            onStartChange={setClosedStart}
+            onEndChange={setClosedEnd}
+          />
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="min-w-[12rem] flex-1">
+              <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                Açıklama (isteğe bağlı)
+              </label>
+              <Input
+                value={closedReason}
+                onChange={(e) => setClosedReason(e.target.value)}
+                placeholder="Örn. Bayram tatili"
+              />
+            </div>
+            <Button
+              type="button"
+              onClick={() => void handleAddClosedRange()}
+              loading={saving}
+              disabled={!closedStart}
+            >
+              Ekle
+            </Button>
           </div>
-          <div className="min-w-[12rem] flex-1">
-            <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-              Açıklama (isteğe bağlı)
-            </label>
-            <Input
-              value={newClosedReason}
-              onChange={(e) => setNewClosedReason(e.target.value)}
-              placeholder="Örn. Bayram tatili"
-            />
-          </div>
-          <Button type="button" onClick={() => void handleAddClosedDay()} loading={saving} disabled={!newClosedDate}>
-            Ekle
-          </Button>
         </div>
 
-        {closedDays.length === 0 ? (
+        {closedRanges.length === 0 ? (
           <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">Kapalı gün tanımlı değil.</p>
         ) : (
-          <ul className="mt-4 space-y-2">
-            {closedDays.map((day) => {
-              const [y, mo, d] = day.date.split('-').map(Number);
-              const label = format(new Date(y, mo - 1, d), 'd MMMM yyyy, EEEE', { locale: tr });
-              return (
-                <li
-                  key={day.date}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-neutral-200 bg-neutral-50/80 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900/40"
-                >
-                  <div>
-                    <p className="font-medium text-neutral-900 dark:text-neutral-100">{label}</p>
-                    {day.reason && (
-                      <p className="text-sm text-neutral-500 dark:text-neutral-400">{day.reason}</p>
-                    )}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                    onClick={() => void handleRemoveClosedDay(day.date)}
-                    disabled={saving}
-                  >
-                    Kaldır
-                  </Button>
-                </li>
-              );
-            })}
-          </ul>
+          <ExceptionRangeList
+            ranges={closedRanges}
+            saving={saving}
+            tone="neutral"
+            onRemove={(id) => void saveBusinessClosedRanges(removeExceptionRange(closedRanges, id))}
+          />
         )}
       </Card>
 
@@ -269,8 +360,7 @@ export default function SpecialDaysPage() {
           <div className="min-w-0 flex-1">
             <h2 className="font-semibold text-neutral-900 dark:text-neutral-100">Personel izin günleri</h2>
             <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-              Seçilen personel bu günlerde randevu alamaz. Kendiniz personel listesindeyse kendi
-              kaydınızı seçin.
+              Seçilen personel bu tarih aralığında randevu alamaz.
             </p>
           </div>
         </div>
@@ -303,73 +393,52 @@ export default function SpecialDaysPage() {
               </select>
             </div>
 
-            <div className="mt-4 flex flex-wrap items-end gap-3">
-              <div>
-                <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  İzin tarihi
-                </label>
-                <Input
-                  type="date"
-                  min={minDate}
-                  value={newLeaveDate}
-                  onChange={(e) => setNewLeaveDate(e.target.value)}
-                  className="w-44"
-                />
+            <div className="mt-4 space-y-3">
+              <DateRangeFields
+                startDate={leaveStart}
+                endDate={leaveEnd}
+                minDate={minDate}
+                onStartChange={setLeaveStart}
+                onEndChange={setLeaveEnd}
+              />
+              <div className="flex flex-wrap items-end gap-3">
+                <div className="min-w-[12rem] flex-1">
+                  <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
+                    Açıklama (isteğe bağlı)
+                  </label>
+                  <Input
+                    value={leaveReason}
+                    onChange={(e) => setLeaveReason(e.target.value)}
+                    placeholder="Örn. Yıllık izin"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => void handleAddLeaveRange()}
+                  loading={saving}
+                  disabled={!leaveStart || !selectedStaffId}
+                >
+                  Ekle
+                </Button>
               </div>
-              <div className="min-w-[12rem] flex-1">
-                <label className="mb-1 block text-xs font-medium text-neutral-600 dark:text-neutral-400">
-                  Açıklama (isteğe bağlı)
-                </label>
-                <Input
-                  value={newLeaveReason}
-                  onChange={(e) => setNewLeaveReason(e.target.value)}
-                  placeholder="Örn. Yıllık izin"
-                />
-              </div>
-              <Button
-                type="button"
-                onClick={() => void handleAddLeaveDay()}
-                loading={saving}
-                disabled={!newLeaveDate || !selectedStaffId}
-              >
-                Ekle
-              </Button>
             </div>
 
-            {selectedStaffLeaveDays.length === 0 ? (
+            {staffLeaveRanges.length === 0 ? (
               <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">
-                {selectedStaff?.name} için izin günü yok.
+                {selectedStaff?.name} için izin kaydı yok.
               </p>
             ) : (
-              <ul className="mt-4 space-y-2">
-                {selectedStaffLeaveDays.map((day) => {
-                  const [y, mo, d] = day.date.split('-').map(Number);
-                  const label = format(new Date(y, mo - 1, d), 'd MMMM yyyy, EEEE', { locale: tr });
-                  return (
-                    <li
-                      key={day.date}
-                      className="flex items-center justify-between gap-3 rounded-xl border border-amber-200/80 bg-amber-50/50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20"
-                    >
-                      <div>
-                        <p className="font-medium text-neutral-900 dark:text-neutral-100">{label}</p>
-                        {day.reason && (
-                          <p className="text-sm text-neutral-500 dark:text-neutral-400">{day.reason}</p>
-                        )}
-                      </div>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30"
-                        onClick={() => void handleRemoveLeaveDay(day.date)}
-                        disabled={saving}
-                      >
-                        Kaldır
-                      </Button>
-                    </li>
-                  );
-                })}
-              </ul>
+              <ExceptionRangeList
+                ranges={staffLeaveRanges}
+                saving={saving}
+                tone="amber"
+                onRemove={(id) =>
+                  void saveStaffLeaveRanges(
+                    selectedStaffId,
+                    removeExceptionRange(staffLeaveRanges, id)
+                  )
+                }
+              />
             )}
           </>
         )}
@@ -382,7 +451,7 @@ export default function SpecialDaysPage() {
           <a href="/dashboard/business/working-hours" className="font-medium text-primary-600 hover:underline">
             Çalışma Saatleri
           </a>{' '}
-          sayfasını kullanın. Burada yalnızca belirli tarihler tanımlanır.
+          sayfasını kullanın.
         </p>
       </div>
     </div>

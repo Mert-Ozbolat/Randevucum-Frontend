@@ -19,8 +19,8 @@ const STEPS = [
   },
   {
     step: '03',
-    title: 'Onay alın',
-    text: 'Randevunuz kaydedilir; işletme onayladığında bildirim alırsınız.',
+    title: 'Randevunuz hazır',
+    text: 'Randevunuz anında onaylanır. Başlangıç saatinden en geç 12 saat öncesine kadar iptal edebilirsiniz.',
     Icon: Check,
   },
 ] as const;

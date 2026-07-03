@@ -12,6 +12,7 @@ import { Logo } from '@/components/brand/Logo';
 const publicLinks = [
   { href: '/', label: 'Ana Sayfa' },
   { href: '/business', label: 'İşletmeler' },
+  { href: '/business/discover', label: 'Keşfet' },
   { href: '/pricing', label: 'Fiyatlar' },
 ] as const;
 

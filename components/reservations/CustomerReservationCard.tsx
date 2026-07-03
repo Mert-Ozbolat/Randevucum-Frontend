@@ -6,6 +6,10 @@ import { format, parseISO } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Button } from '@/components/ui/Button';
 import { ReservationStatusBadge, reservationAccentClass } from './ReservationStatusBadge';
+import {
+  canCustomerCancelReservation,
+  CUSTOMER_CANCEL_POLICY_NOTICE,
+} from '@/lib/reservationFilters';
 
 export interface CustomerReservationItem {
   _id: string;
@@ -42,8 +46,8 @@ export function CustomerReservationCard({
   const weekday = d ? format(d, 'EEE', { locale: tr }) : '';
   const dateLine = d ? format(d, 'd MMMM yyyy', { locale: tr }) : raw;
 
-  const canCancel =
-    !readOnly && (r.status === 'pending' || r.status === 'approved');
+  const canCancel = !readOnly && canCustomerCancelReservation(r);
+  const isActiveReservation = !readOnly && (r.status === 'pending' || r.status === 'approved');
   const customerName = [r.customerId?.firstName, r.customerId?.lastName]
     .filter(Boolean)
     .join(' ')
@@ -115,12 +119,17 @@ export function CustomerReservationCard({
             </span>
           </div>
 
-          {(canCancel || (readOnly && r.businessId?._id)) && (
-            <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/80">
+          {(canCancel || (isActiveReservation && !canCancel) || (readOnly && r.businessId?._id) || r.businessId?._id) && (
+            <div className="mt-5 flex flex-col gap-2 border-t border-neutral-100 pt-4 dark:border-neutral-700/80">
               {canCancel && (
                 <Button size="sm" variant="danger" onClick={() => onCancel(r._id)}>
                   Randevuyu iptal et
                 </Button>
+              )}
+              {isActiveReservation && !canCancel && (
+                <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                  {CUSTOMER_CANCEL_POLICY_NOTICE}
+                </p>
               )}
               {r.businessId?._id && (
                 <Link href={`/business/${r.businessId._id}`}>

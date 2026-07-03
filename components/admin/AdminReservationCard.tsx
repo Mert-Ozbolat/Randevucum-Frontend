@@ -2,7 +2,7 @@
 
 import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
 import { Button } from '@/components/ui/Button';
-import { isActionablePending, isExpiredPending } from '@/lib/reservationFilters';
+import { canBusinessCancelReservation } from '@/lib/reservationFilters';
 
 interface Reservation {
   _id: string;
@@ -17,7 +17,6 @@ interface Reservation {
 
 interface AdminReservationCardProps {
   reservation: Reservation;
-  onApprove?: (id: string) => void;
   onCancel?: (id: string) => void;
   /** Takvim sütununda daha az yer kaplar */
   variant?: 'default' | 'compact';
@@ -32,14 +31,12 @@ function initials(first?: string, last?: string): string {
 
 export function AdminReservationCard({
   reservation,
-  onApprove,
   onCancel,
   variant = 'default',
 }: AdminReservationCardProps) {
   const c = reservation.customerId;
   const customerName = c ? `${c.firstName} ${c.lastName}`.trim() : '';
-  const canActOnPending = isActionablePending(reservation);
-  const expiredPending = isExpiredPending(reservation);
+  const canCancel = canBusinessCancelReservation(reservation);
   const compact = variant === 'compact';
 
   if (compact) {
@@ -75,35 +72,15 @@ export function AdminReservationCard({
               </div>
               <ReservationStatusBadge status={reservation.status} />
             </div>
-            {expiredPending && (
-              <p className="mt-1 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
-                Onay süresi geçti
-              </p>
-            )}
-            {canActOnPending && onApprove && onCancel && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                <Button size="sm" className="!px-2.5 !py-1 text-xs" onClick={() => onApprove(reservation._id)}>
-                  Onayla
-                </Button>
+            {canCancel && onCancel && (
+              <div className="mt-2">
                 <Button
                   size="sm"
                   variant="danger"
                   className="!px-2.5 !py-1 text-xs"
                   onClick={() => onCancel(reservation._id)}
                 >
-                  İptal
-                </Button>
-              </div>
-            )}
-            {expiredPending && onCancel && (
-              <div className="mt-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="!px-2.5 !py-1 text-xs"
-                  onClick={() => onCancel(reservation._id)}
-                >
-                  Kapat / İptal
+                  İptal et
                 </Button>
               </div>
             )}
@@ -114,7 +91,7 @@ export function AdminReservationCard({
   }
 
   return (
-      <article className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-primary-200/70 hover:shadow-soft dark:border-neutral-600 dark:bg-neutral-900/70 dark:hover:border-primary-700/40">
+    <article className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-primary-200/70 hover:shadow-soft dark:border-neutral-600 dark:bg-neutral-900/70 dark:hover:border-primary-700/40">
       <div className="flex gap-3 p-4">
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-sm"
@@ -153,26 +130,10 @@ export function AdminReservationCard({
             <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">{c.email}</p>
           )}
 
-          {expiredPending && (
-            <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
-              Randevu saati geçti — onay verilemez. İsterseniz kaydı iptal ederek kapatabilirsiniz.
-            </p>
-          )}
-
-          {canActOnPending && onApprove && onCancel && (
+          {canCancel && onCancel && (
             <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-700/80">
-              <Button size="sm" className="rounded-lg" onClick={() => onApprove(reservation._id)}>
-                Onayla
-              </Button>
               <Button size="sm" variant="danger" className="rounded-lg" onClick={() => onCancel(reservation._id)}>
-                Reddet / İptal
-              </Button>
-            </div>
-          )}
-          {expiredPending && onCancel && (
-            <div className="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3 dark:border-neutral-700/80">
-              <Button size="sm" variant="outline" className="rounded-lg" onClick={() => onCancel(reservation._id)}>
-                Kapat / İptal
+                Randevuyu iptal et
               </Button>
             </div>
           )}
