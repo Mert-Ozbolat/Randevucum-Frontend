@@ -15,6 +15,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Check, Users } from 'lucide-react';
 import { formatTrMobile, phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
+import { fetchBlockedDates } from '@/lib/blockedDates';
 
 interface Service {
   _id: string;
@@ -95,6 +96,7 @@ export default function ReservePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [blockedDateKeys, setBlockedDateKeys] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [reserveLoading, setReserveLoading] = useState(false);
   const [reserveError, setReserveError] = useState('');
@@ -170,6 +172,30 @@ export default function ReservePage() {
   useEffect(() => {
     setSelectedTime(null);
   }, [selectedStaffId]);
+
+  useEffect(() => {
+    if (!serviceId) {
+      setBlockedDateKeys(new Set());
+      return;
+    }
+    void fetchBlockedDates({
+      businessId,
+      serviceId,
+      staffId: selectedStaffId,
+      daysCount: 14,
+    })
+      .then(setBlockedDateKeys)
+      .catch(() => setBlockedDateKeys(new Set()));
+  }, [businessId, serviceId, selectedStaffId]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const key = format(selectedDate, 'yyyy-MM-dd');
+    if (blockedDateKeys.has(key)) {
+      setSelectedDate(null);
+      setSelectedTime(null);
+    }
+  }, [blockedDateKeys, selectedDate]);
 
   useEffect(() => {
     if (!serviceId || !selectedDate) return;
@@ -400,6 +426,7 @@ export default function ReservePage() {
           onSelectDate={setSelectedDate}
           minDate={new Date()}
           daysCount={14}
+          disabledDateKeys={blockedDateKeys}
         />
       </Card>
 

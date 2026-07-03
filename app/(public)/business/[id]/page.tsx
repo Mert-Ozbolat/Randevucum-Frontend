@@ -20,6 +20,7 @@ import { useToast } from '@/components/ui/Toast';
 import { formatServicePriceLabel } from '@/lib/servicePrice';
 import { Clock, Mail, MapPin, Phone, Star, Users, X } from 'lucide-react';
 import { FavoriteButton } from '@/components/favorites/FavoriteButton';
+import { fetchBlockedDates } from '@/lib/blockedDates';
 import {
   formatPhoneDisplay,
   formatTrMobile,
@@ -146,6 +147,7 @@ export default function BusinessDetailPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [availableSlots, setAvailableSlots] = useState<string[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [blockedDateKeys, setBlockedDateKeys] = useState<Set<string>>(new Set());
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [notes, setNotes] = useState('');
@@ -233,6 +235,30 @@ export default function BusinessDetailPage() {
   useEffect(() => {
     setSelectedTime(null);
   }, [selectedStaffId]);
+
+  useEffect(() => {
+    if (!selectedServiceId) {
+      setBlockedDateKeys(new Set());
+      return;
+    }
+    void fetchBlockedDates({
+      businessId: id,
+      serviceId: selectedServiceId,
+      staffId: selectedStaffId,
+      daysCount: 14,
+    })
+      .then(setBlockedDateKeys)
+      .catch(() => setBlockedDateKeys(new Set()));
+  }, [id, selectedServiceId, selectedStaffId]);
+
+  useEffect(() => {
+    if (!selectedDate) return;
+    const key = format(selectedDate, 'yyyy-MM-dd');
+    if (blockedDateKeys.has(key)) {
+      setSelectedDate(null);
+      setSelectedTime(null);
+    }
+  }, [blockedDateKeys, selectedDate]);
 
   useEffect(() => {
     if (!selectedServiceId || !selectedDate) {
@@ -814,6 +840,7 @@ export default function BusinessDetailPage() {
                   onSelectDate={setSelectedDate}
                   minDate={new Date()}
                   daysCount={14}
+                  disabledDateKeys={blockedDateKeys}
                 />
               </div>
 
