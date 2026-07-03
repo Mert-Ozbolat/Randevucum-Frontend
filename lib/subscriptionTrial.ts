@@ -24,7 +24,7 @@ export const PLAN_FEATURES = {
     'Sınırsız personel',
     'WhatsApp bildirimleri (müşteri + işletme)',
     'Öncelikli destek',
-    'Ana sayfa slider reklamı',
+    'Keşfet’e video paylaşma',
     'Gelişmiş raporlama (yakında)',
   ],
 } as const;
