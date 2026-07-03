@@ -24,6 +24,9 @@ interface SubStatus {
   staffLimit?: number | null;
   staffCount?: number;
   canAddStaff?: boolean;
+  reservationLimit?: number | null;
+  reservationCount?: number;
+  canAcceptMoreReservations?: boolean;
   isTrial?: boolean;
   trialExpired?: boolean;
   needsRenewal?: boolean;
@@ -374,6 +377,24 @@ export default function SubscriptionPage() {
             )}
             {subscription.staffLimit == null && subscription.hasProAccess && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">Personel: sınırsız (Pro)</p>
+            )}
+            {subscription.reservationLimit != null && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                Bu ay randevu:{' '}
+                <span
+                  className={
+                    subscription.canAcceptMoreReservations
+                      ? 'font-medium text-neutral-800 dark:text-neutral-200'
+                      : 'font-semibold text-red-600 dark:text-red-400'
+                  }
+                >
+                  {subscription.reservationCount ?? 0} / {subscription.reservationLimit}
+                </span>
+                {!subscription.canAcceptMoreReservations && ' — limit doldu'}
+              </p>
+            )}
+            {subscription.reservationLimit == null && subscription.hasProAccess && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Randevu: sınırsız (Pro)</p>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2">

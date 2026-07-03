@@ -12,7 +12,7 @@ export function isTrialBlockingPurchase(sub?: {
 
 export const PLAN_FEATURES = {
   standard: [
-    'Sınırsız randevu',
+    'Ayda 30 randevu',
     'En fazla 1 personel',
     'Hizmet yönetimi',
     'Müşteri paneli',
@@ -20,6 +20,7 @@ export const PLAN_FEATURES = {
   ],
   pro: [
     'Başlangıç paketindeki her şey',
+    'Sınırsız randevu',
     'Sınırsız personel',
     'WhatsApp bildirimleri (müşteri + işletme)',
     'Öncelikli destek',
