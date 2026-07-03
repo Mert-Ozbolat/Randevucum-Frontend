@@ -1,10 +1,14 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { format, startOfDay, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
-import { CalendarDays } from 'lucide-react';
+import { CalendarDays, Clock, Mail, Scissors, User, UserRound, X } from 'lucide-react';
+import { Button } from '@/components/ui/Button';
 import { AdminReservationCard } from './AdminReservationCard';
+import { canBusinessCancelReservation } from '@/lib/reservationFilters';
+import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
 
 interface Reservation {
   _id: string;
@@ -13,7 +17,8 @@ interface Reservation {
   endTime?: string;
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
-  customerId?: { firstName: string; lastName: string; email?: string };
+  staffId?: { name: string };
+  customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
 }
 
 interface AdminCalendarProps {
@@ -43,6 +48,168 @@ function groupByHour(sorted: Reservation[]): { hourKey: string; label: string; i
     }));
 }
 
+function customerName(r: Reservation): string {
+  const c = r.customerId;
+  return c ? `${c.firstName} ${c.lastName}`.trim() || 'Müşteri' : 'Müşteri';
+}
+
+function reservationDayLabel(raw: string): string {
+  const key = reservationLocalCalendarKey(raw);
+  if (!key) return '—';
+  const [year, month, day] = key.split('-').map(Number);
+  return format(new Date(year, month - 1, day), 'd MMMM yyyy, EEEE', { locale: tr });
+}
+
+function ReservationClickCard({
+  reservation,
+  onSelect,
+}: {
+  reservation: Reservation;
+  onSelect: (reservation: Reservation) => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(reservation)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onSelect(reservation);
+        }
+      }}
+      className="cursor-pointer rounded-xl outline-none transition hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-2 focus-visible:ring-primary-500/40"
+      aria-label={`${customerName(reservation)} randevu detayını aç`}
+    >
+      <AdminReservationCard variant="compact" reservation={reservation} />
+    </div>
+  );
+}
+
+function ReservationDetailModal({
+  reservation,
+  onClose,
+  onCancel,
+}: {
+  reservation: Reservation;
+  onClose: () => void;
+  onCancel?: (id: string) => void;
+}) {
+  const c = reservation.customerId;
+  const canCancel = canBusinessCancelReservation(reservation);
+
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-[2px] sm:items-center"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Randevu detayı"
+    >
+      <div
+        className="w-full max-w-lg animate-slide-up rounded-2xl bg-white p-5 shadow-xl dark:bg-neutral-900 sm:animate-fade-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Randevu detayı</p>
+            <h3 className="mt-1 text-xl font-bold text-neutral-900 dark:text-white">
+              {customerName(reservation)}
+            </h3>
+            <p className="mt-1 text-sm capitalize text-neutral-500 dark:text-neutral-400">
+              {reservationDayLabel(String(reservation.date))}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label="Kapat"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+        </div>
+
+        <div className="mt-4">
+          <ReservationStatusBadge status={reservation.status} />
+        </div>
+
+        <div className="mt-5 grid gap-3">
+          <DetailRow
+            icon={Clock}
+            label="Saat"
+            value={`${reservation.time}${reservation.endTime ? ` – ${reservation.endTime}` : ''}${
+              reservation.serviceId?.durationMinutes ? ` (${reservation.serviceId.durationMinutes} dk)` : ''
+            }`}
+          />
+          <DetailRow icon={Scissors} label="Hizmet" value={reservation.serviceId?.name || '—'} />
+          {reservation.staffId?.name && (
+            <DetailRow icon={UserRound} label="Personel" value={reservation.staffId.name} />
+          )}
+          <DetailRow icon={User} label="Müşteri" value={customerName(reservation)} />
+          {c?.email && <DetailRow icon={Mail} label="E-posta" value={c.email} />}
+          {c?.phone && <DetailRow icon={User} label="Telefon" value={c.phone} />}
+        </div>
+
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" fullWidth className="sm:w-auto" onClick={onClose}>
+            Kapat
+          </Button>
+          {canCancel && onCancel && (
+            <Button
+              type="button"
+              variant="danger"
+              fullWidth
+              className="sm:w-auto"
+              onClick={() => {
+                onCancel(reservation._id);
+                onClose();
+              }}
+            >
+              Randevuyu iptal et
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Clock;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 rounded-xl bg-neutral-50 px-3 py-3 dark:bg-neutral-800/60">
+      <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary-500" strokeWidth={1.75} aria-hidden />
+      <div className="min-w-0">
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">{label}</p>
+        <p className="mt-0.5 break-words text-sm font-medium text-neutral-900 dark:text-neutral-100">
+          {value}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function AdminCalendar({
   view,
   onViewChange,
@@ -53,6 +220,7 @@ export function AdminCalendar({
 }: AdminCalendarProps) {
   const todayStart = startOfDay(new Date());
   const dayStart = view === 'weekly' ? todayStart : startOfDay(selectedDate);
+  const [selectedReservation, setSelectedReservation] = useState<Reservation | null>(null);
   const days =
     view === 'weekly'
       ? Array.from({ length: 7 }, (_, i) => addDays(todayStart, i))
@@ -154,7 +322,7 @@ export function AdminCalendar({
       <div
         className={`mx-auto grid w-full gap-4 sm:gap-6 ${
           view === 'daily'
-            ? 'max-w-2xl grid-cols-1'
+            ? 'max-w-4xl grid-cols-1'
             : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
         }`}
       >
@@ -223,14 +391,10 @@ export function AdminCalendar({
                           </span>
                           <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
                         </div>
-                        <ul className="space-y-2">
+                        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                           {group.items.map((r) => (
                             <li key={r._id}>
-                              <AdminReservationCard
-                                variant="compact"
-                                reservation={r}
-                                onCancel={onCancel}
-                              />
+                              <ReservationClickCard reservation={r} onSelect={setSelectedReservation} />
                             </li>
                           ))}
                         </ul>
@@ -249,6 +413,13 @@ export function AdminCalendar({
           );
         })}
       </div>
+      {selectedReservation && (
+        <ReservationDetailModal
+          reservation={selectedReservation}
+          onClose={() => setSelectedReservation(null)}
+          onCancel={onCancel}
+        />
+      )}
     </div>
   );
 }
