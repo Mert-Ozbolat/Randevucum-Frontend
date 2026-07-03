@@ -48,6 +48,7 @@ export interface DiscoverBusiness {
   promoVideoUrl?: string | null;
   promoVideoCaption?: string | null;
   promoVideoViews?: number | null;
+  updatedAt?: string;
 }
 
 export function hasPromoVideo(business: Pick<DiscoverBusiness, 'promoVideoUrl'>): boolean {
@@ -67,11 +68,25 @@ export function filterBusinessesWithPromoVideo<T extends DiscoverBusiness>(list:
   return list.filter(hasPromoVideo);
 }
 
-/** Keşfet akışı — önce gerçek videolar, karışık sıra */
+/** Keşfet akışı — karışık sıra (tam Keşfet sayfası) */
 export function buildDiscoverFeed<T extends DiscoverBusiness>(list: T[], count = 20): T[] {
   const withVideo = filterBusinessesWithPromoVideo(list);
   const shuffled = [...withVideo].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+}
+
+/** Son eklenen videolar — updatedAt azalan (ana sayfa vb.) */
+export function getLatestDiscoverVideos<T extends DiscoverBusiness & { updatedAt?: string }>(
+  list: T[],
+  count = 5
+): T[] {
+  return filterBusinessesWithPromoVideo(list)
+    .sort((a, b) => {
+      const at = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+      const bt = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+      return bt - at;
+    })
+    .slice(0, count);
 }
 
 /** İzlenme sayısı gösterimi — 1.2K, 3.4M */

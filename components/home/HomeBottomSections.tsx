@@ -160,7 +160,7 @@ export function HomeBottomSections() {
             başlayın.
           </p>
           <ul className="mt-4 space-y-2 text-sm text-neutral-200">
-            {['Randevu paneli', 'WhatsApp entegrasyonu', 'Ana sayfa reklamı'].map((item) => (
+            {['Randevu paneli', 'WhatsApp entegrasyonu', 'Ana sayfa slider reklamı'].map((item) => (
               <li key={item} className="flex items-center gap-2">
                 <Bell className="h-4 w-4 shrink-0 text-primary-400" aria-hidden />
                 {item}

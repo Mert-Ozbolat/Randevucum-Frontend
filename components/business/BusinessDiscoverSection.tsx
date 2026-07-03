@@ -5,7 +5,7 @@ import { AnimateIn } from '@/components/ui/AnimateIn';
 import { BusinessDiscoverReels } from '@/components/business/BusinessDiscoverReels';
 import {
   type DiscoverBusiness,
-  buildDiscoverFeed,
+  getLatestDiscoverVideos,
 } from '@/lib/businessDiscoverMedia';
 
 interface BusinessDiscoverSectionProps {
@@ -14,7 +14,7 @@ interface BusinessDiscoverSectionProps {
 
 /** İşletmeler listesinde kaydırınca görünen video keşfet şeridi (sadece yüklenmiş videolar) */
 export function BusinessDiscoverSection({ businesses }: BusinessDiscoverSectionProps) {
-  const discoverList = useMemo(() => buildDiscoverFeed(businesses, 10), [businesses]);
+  const discoverList = useMemo(() => getLatestDiscoverVideos(businesses, 5), [businesses]);
 
   if (discoverList.length < 1) return null;
 

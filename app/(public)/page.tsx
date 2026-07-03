@@ -11,6 +11,7 @@ import {
 import { HomeHero } from '@/components/home/HomeHero';
 import { HomeCategoriesBento } from '@/components/home/HomeCategoriesBento';
 import { HomeFeaturedBusinesses, type HomeBusiness } from '@/components/home/HomeFeaturedBusinesses';
+import { HomeDiscoverVideos } from '@/components/home/HomeDiscoverVideos';
 import { HomeHowItWorks } from '@/components/home/HomeHowItWorks';
 import { HomeBottomSections } from '@/components/home/HomeBottomSections';
 
@@ -46,6 +47,7 @@ export default function HomePage() {
 
       <div className="space-y-20 lg:space-y-28">
         <HomeCategoriesBento />
+        <HomeDiscoverVideos />
         <HomeFeaturedBusinesses businesses={businesses} loading={loading} error={error} />
         <HomeHowItWorks />
         <HomeBottomSections />

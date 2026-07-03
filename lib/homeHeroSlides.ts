@@ -20,7 +20,7 @@ export const HOME_PLATFORM_SLIDES: HeroSlide[] = [
     title: 'Sağlık ve bakım tek yerde',
     subtitle: 'Klinikten güzellik merkezine güvenle randevu alın.',
     href: '/business?area=Sağlık',
-    badge: 'Keşfet',
+    badge: 'Kategori',
   },
   {
     id: 'platform-2',
@@ -29,7 +29,7 @@ export const HOME_PLATFORM_SLIDES: HeroSlide[] = [
     title: 'Güzellik ve profesyonel hizmet',
     subtitle: 'Kuaför, SPA ve estetik için müsait saatleri görün.',
     href: '/business?area=Güzellik%20%26%20Bakım',
-    badge: 'Keşfet',
+    badge: 'Kategori',
   },
   {
     id: 'platform-3',
@@ -38,7 +38,7 @@ export const HOME_PLATFORM_SLIDES: HeroSlide[] = [
     title: 'Eğitim ve danışmanlık',
     subtitle: 'Ders ve seanslar için online randevu.',
     href: '/business?area=Eğitim',
-    badge: 'Keşfet',
+    badge: 'Kategori',
   },
   {
     id: 'platform-4',

@@ -155,11 +155,11 @@ export default function DiscoverVideoPage() {
           Keşfet videosu
         </h2>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-          Kısa bir tanıtım videosu yükleyin. Müşteriler{' '}
+          Kısa bir tanıtım videosu yükleyin — tüm paketlerde ücretsiz. Müşteriler{' '}
           <Link href="/business/discover" className="font-medium text-primary-600 hover:underline">
             Keşfet
           </Link>{' '}
-          bölümünde Reels gibi izleyebilir.
+          ve ana sayfada son eklenen videolar arasında görür.
         </p>
         {hasVideo && (
           <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
@@ -262,7 +262,8 @@ export default function DiscoverVideoPage() {
         <ul className="mt-2 list-inside list-disc space-y-1">
           <li>15–60 saniyelik dikey video en iyi sonucu verir</li>
           <li>MP4 formatı, en fazla 30 MB</li>
-          <li>Video kaydedildikten sonra Keşfet akışında görünür</li>
+          <li>Video kaydedildikten sonra Keşfet ve ana sayfada görünür (ücretsiz)</li>
+          <li>Ana sayfa slider reklamı ayrı bir ücretli Pro özelliğidir</li>
         </ul>
       </Card>
     </div>
