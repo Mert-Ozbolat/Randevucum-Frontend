@@ -1,19 +1,23 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { format, startOfDay, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
+import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
+import { Button } from '@/components/ui/Button';
+import { canBusinessCancelReservation } from '@/lib/reservationFilters';
 import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
   Clock,
+  Mail,
   Scissors,
   User,
+  UserCircle,
   X,
 } from 'lucide-react';
-import { AdminReservationCard } from './AdminReservationCard';
 
 interface Reservation {
   _id: string;
@@ -23,7 +27,7 @@ interface Reservation {
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
   staffId?: { name: string };
-  customerId?: { firstName: string; lastName: string; email?: string };
+  customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
 }
 
 interface AdminCalendarProps {
@@ -56,7 +60,6 @@ function sortByTime(list: Reservation[]): Reservation[] {
   return [...list].sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
 }
 
-/** Saat başlıklarına göre grupla */
 function groupByHour(sorted: Reservation[]): { hourKey: string; label: string; items: Reservation[] }[] {
   const map = new Map<string, Reservation[]>();
   for (const r of sorted) {
@@ -69,47 +72,244 @@ function groupByHour(sorted: Reservation[]): { hourKey: string; label: string; i
     .map(([hourKey, items]) => ({ hourKey, label: `${hourKey}:00`, items }));
 }
 
-const STATUS_ACCENT: Record<string, string> = {
-  approved: 'border-l-emerald-400 dark:border-l-emerald-500',
-  pending: 'border-l-amber-400 dark:border-l-amber-500',
-  completed: 'border-l-sky-400 dark:border-l-sky-500',
+const STATUS_BORDER: Record<string, string> = {
+  approved: 'border-l-emerald-500',
+  pending: 'border-l-amber-500',
+  completed: 'border-l-sky-500',
   canceled: 'border-l-neutral-300 dark:border-l-neutral-600',
 };
 
-const STATUS_DOT: Record<string, string> = {
-  approved: 'bg-emerald-500',
-  pending: 'bg-amber-500',
-  completed: 'bg-sky-500',
-  canceled: 'bg-neutral-400',
-};
-
-/** Haftalık görünümdeki kompakt randevu çipi */
-function WeekChip({ r, onSelect }: { r: Reservation; onSelect: (r: Reservation) => void }) {
+/** Büyük, okunaklı randevu kartı — tıklanınca modal açılır */
+function AppointmentCard({
+  r,
+  onSelect,
+  size = 'default',
+}: {
+  r: Reservation;
+  onSelect: (r: Reservation) => void;
+  size?: 'default' | 'large';
+}) {
   const canceled = r.status === 'canceled';
+  const large = size === 'large';
+
   return (
     <button
       type="button"
       onClick={() => onSelect(r)}
-      className={`group flex w-full items-center gap-2 rounded-lg border border-l-[3px] px-2 py-1.5 text-left transition hover:shadow-sm ${
-        STATUS_ACCENT[r.status] || 'border-l-neutral-300'
+      className={`group w-full rounded-2xl border border-l-[5px] bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300/80 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/80 dark:hover:border-primary-700/60 ${
+        STATUS_BORDER[r.status] || 'border-l-neutral-300'
       } ${
         canceled
-          ? 'border-neutral-200/70 bg-neutral-50 opacity-55 dark:border-neutral-700 dark:bg-neutral-900/40'
-          : 'border-neutral-200/80 bg-white hover:border-primary-300/70 dark:border-neutral-700 dark:bg-neutral-900/70 dark:hover:border-primary-700/60'
-      }`}
+          ? 'border-neutral-200/80 opacity-60 dark:border-neutral-700'
+          : 'border-neutral-200/90 dark:border-neutral-700'
+      } ${large ? 'p-5' : 'p-4'}`}
     >
-      <span className="shrink-0 font-mono text-[11px] font-bold tabular-nums text-neutral-800 dark:text-neutral-100">
-        {r.time}
-      </span>
-      <span className="min-w-0 flex-1">
-        <span className={`block truncate text-[11px] font-semibold ${canceled ? 'line-through' : ''} text-neutral-800 dark:text-neutral-100`}>
-          {customerName(r)}
-        </span>
-        <span className="block truncate text-[10px] text-neutral-500 dark:text-neutral-400">
-          {r.serviceId?.name || 'Hizmet'}
-        </span>
-      </span>
+      <div className="flex items-start gap-4">
+        <div
+          className={`flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 font-bold text-white shadow-sm ${
+            large ? 'h-14 w-14 text-base' : 'h-12 w-12 text-sm'
+          }`}
+          aria-hidden
+        >
+          {initials(r.customerId?.firstName, r.customerId?.lastName)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span
+              className={`font-mono font-bold tabular-nums text-neutral-900 dark:text-white ${
+                large ? 'text-xl' : 'text-lg'
+              }`}
+            >
+              {r.time}
+              {r.endTime && (
+                <span className="font-semibold text-neutral-400 dark:text-neutral-500"> – {r.endTime}</span>
+              )}
+            </span>
+            {r.serviceId?.durationMinutes != null && (
+              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                {r.serviceId.durationMinutes} dk
+              </span>
+            )}
+          </div>
+          <p
+            className={`mt-1.5 font-semibold text-neutral-900 dark:text-neutral-50 ${
+              large ? 'text-lg' : 'text-base'
+            } ${canceled ? 'line-through' : ''}`}
+          >
+            {customerName(r)}
+          </p>
+          <p className={`mt-0.5 text-neutral-600 dark:text-neutral-400 ${large ? 'text-base' : 'text-sm'}`}>
+            {r.serviceId?.name || 'Hizmet'}
+            {r.staffId?.name && (
+              <span className="text-neutral-400 dark:text-neutral-500"> · {r.staffId.name}</span>
+            )}
+          </p>
+          <p className="mt-2 text-xs font-medium text-primary-600 opacity-0 transition group-hover:opacity-100 dark:text-primary-400">
+            Detayları gör →
+          </p>
+        </div>
+      </div>
     </button>
+  );
+}
+
+/** Detay modalı */
+function ReservationDetailModal({
+  reservation,
+  onClose,
+  onCancel,
+}: {
+  reservation: Reservation;
+  onClose: () => void;
+  onCancel?: (id: string) => void;
+}) {
+  const canCancel = canBusinessCancelReservation(reservation);
+  const c = reservation.customerId;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
+  const dateLabel = (() => {
+    const key = reservationLocalCalendarKey(String(reservation.date));
+    if (!key) return '—';
+    const [y, mo, d] = key.split('-').map(Number);
+    return format(new Date(y, mo - 1, d), 'd MMMM yyyy, EEEE', { locale: tr });
+  })();
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reservation-detail-title"
+    >
+      <div
+        className="w-full max-w-lg animate-slide-up rounded-t-3xl bg-white shadow-2xl dark:bg-neutral-900 sm:animate-fade-in sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Üst başlık */}
+        <div className="relative border-b border-neutral-200/80 px-6 pb-5 pt-6 dark:border-neutral-700">
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-4 top-4 rounded-xl p-2 text-neutral-500 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            aria-label="Kapat"
+          >
+            <X className="h-5 w-5" aria-hidden />
+          </button>
+
+          <div className="flex items-start gap-4 pr-10">
+            <div
+              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-lg font-bold text-white shadow-md"
+              aria-hidden
+            >
+              {initials(c?.firstName, c?.lastName)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p id="reservation-detail-title" className="text-xl font-bold text-neutral-900 dark:text-white">
+                {customerName(reservation)}
+              </p>
+              <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{dateLabel}</p>
+              <div className="mt-2">
+                <ReservationStatusBadge status={reservation.status} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Detay satırları */}
+        <div className="space-y-1 px-6 py-5">
+          <DetailRow
+            icon={Clock}
+            label="Saat"
+            value={
+              <>
+                <span className="font-mono text-lg font-bold tabular-nums">{reservation.time}</span>
+                {reservation.endTime && (
+                  <span className="font-mono text-lg font-semibold text-neutral-400">
+                    {' '}
+                    – {reservation.endTime}
+                  </span>
+                )}
+                {reservation.serviceId?.durationMinutes != null && (
+                  <span className="ml-2 text-sm font-normal text-neutral-500">
+                    ({reservation.serviceId.durationMinutes} dakika)
+                  </span>
+                )}
+              </>
+            }
+          />
+          <DetailRow
+            icon={Scissors}
+            label="Hizmet"
+            value={reservation.serviceId?.name || '—'}
+          />
+          {reservation.staffId?.name && (
+            <DetailRow icon={UserCircle} label="Personel" value={reservation.staffId.name} />
+          )}
+          {c?.email && (
+            <DetailRow icon={Mail} label="E-posta" value={c.email} />
+          )}
+          {c?.phone && (
+            <DetailRow icon={User} label="Telefon" value={c.phone} />
+          )}
+        </div>
+
+        {/* Alt aksiyonlar */}
+        <div className="flex flex-col gap-2 border-t border-neutral-200/80 px-6 py-5 dark:border-neutral-700 sm:flex-row sm:justify-end">
+          <Button variant="outline" fullWidth className="sm:w-auto sm:min-w-[7rem]" onClick={onClose}>
+            Kapat
+          </Button>
+          {canCancel && onCancel && (
+            <Button
+              variant="danger"
+              fullWidth
+              className="sm:w-auto sm:min-w-[9rem]"
+              onClick={() => {
+                onCancel(reservation._id);
+                onClose();
+              }}
+            >
+              Randevuyu iptal et
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DetailRow({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Clock;
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex gap-4 rounded-xl px-3 py-3.5 transition hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
+        <Icon className="h-5 w-5 text-neutral-500 dark:text-neutral-400" strokeWidth={1.75} aria-hidden />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+          {label}
+        </p>
+        <div className="mt-0.5 text-base font-medium text-neutral-900 dark:text-neutral-100">{value}</div>
+      </div>
+    </div>
   );
 }
 
@@ -155,11 +355,11 @@ export function AdminCalendar({
   }).length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {/* Kontrol çubuğu */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200/90 bg-white p-3 shadow-card dark:border-neutral-700 dark:bg-neutral-900/70 sm:flex-row sm:items-center sm:justify-between sm:p-4">
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="inline-flex rounded-xl bg-neutral-100 p-1 dark:bg-neutral-800">
+      <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-card dark:border-neutral-700 dark:bg-neutral-900/70 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="inline-flex rounded-xl bg-neutral-100 p-1.5 dark:bg-neutral-800">
             {(['daily', 'weekly'] as const).map((v) => (
               <button
                 key={v}
@@ -168,7 +368,7 @@ export function AdminCalendar({
                   if (v === 'weekly') onDateChange(todayStart);
                   onViewChange(v);
                 }}
-                className={`rounded-lg px-4 py-1.5 text-sm font-semibold transition ${
+                className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
                   view === v
                     ? 'bg-white text-primary-700 shadow-sm dark:bg-neutral-900 dark:text-primary-400'
                     : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
@@ -180,22 +380,22 @@ export function AdminCalendar({
           </div>
 
           {view === 'daily' ? (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => onDateChange(addDays(selectedDate, -1))}
-                className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-600 transition hover:bg-neutral-50 hover:text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                className="rounded-xl border border-neutral-200 bg-white p-2.5 text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 aria-label="Önceki gün"
               >
-                <ChevronLeft className="h-4 w-4" aria-hidden />
+                <ChevronLeft className="h-5 w-5" aria-hidden />
               </button>
               <button
                 type="button"
                 onClick={() => onDateChange(startOfDay(new Date()))}
-                className={`rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
                   isSameDay(selectedDate, todayStart)
                     ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
-                    : 'border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
+                    : 'border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200'
                 }`}
               >
                 Bugün
@@ -203,331 +403,211 @@ export function AdminCalendar({
               <button
                 type="button"
                 onClick={() => onDateChange(addDays(selectedDate, 1))}
-                className="rounded-lg border border-neutral-200 bg-white p-2 text-neutral-600 transition hover:bg-neutral-50 hover:text-neutral-900 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
+                className="rounded-xl border border-neutral-200 bg-white p-2.5 text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
                 aria-label="Sonraki gün"
               >
-                <ChevronRight className="h-4 w-4" aria-hidden />
+                <ChevronRight className="h-5 w-5" aria-hidden />
               </button>
             </div>
           ) : (
-            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
-              {format(todayStart, 'd MMM', { locale: tr })} –{' '}
-              {format(addDays(todayStart, 6), 'd MMM yyyy', { locale: tr })}
+            <p className="text-base font-medium text-neutral-700 dark:text-neutral-200">
+              {format(todayStart, 'd MMMM', { locale: tr })} –{' '}
+              {format(addDays(todayStart, 6), 'd MMMM yyyy', { locale: tr })}
             </p>
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="hidden items-center gap-3 text-[11px] text-neutral-500 dark:text-neutral-400 md:flex">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" /> Onaylı
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="h-2 w-2 rounded-full bg-neutral-400" /> İptal
-            </span>
-          </div>
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50">
-            <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
-            Bugün: {todayCount}
-          </span>
-        </div>
+        <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50">
+          <CalendarDays className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+          Bugün: {todayCount} randevu
+        </span>
       </div>
 
-      {/* ——— GÜNLÜK: zaman çizelgesi ——— */}
+      {/* Günlük */}
       {view === 'daily' && (
-        <DailyTimeline
+        <DailyView
           day={days[0]}
           items={reservationsByDay[0]}
           isToday={isSameDay(days[0], new Date())}
-          onCancel={onCancel}
+          onSelect={setSelected}
         />
       )}
 
-      {/* ——— HAFTALIK: 7 gün ızgara ——— */}
+      {/* Haftalık */}
       {view === 'weekly' && (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-          {days.map((d, i) => {
-            const isToday = isSameDay(d, new Date());
-            const items = reservationsByDay[i];
-            const activeCount = items.filter((r) => r.status !== 'canceled').length;
-
-            return (
-              <div
-                key={d.toISOString()}
-                className={`flex min-h-[10rem] flex-col overflow-hidden rounded-2xl border shadow-card transition dark:shadow-none ${
-                  isToday
-                    ? 'border-primary-300/80 ring-1 ring-primary-200/60 dark:border-primary-700/60 dark:ring-primary-900/40'
-                    : 'border-neutral-200/90 dark:border-neutral-700'
-                }`}
-              >
-                <div
-                  className={`flex items-center justify-between gap-2 border-b px-3 py-2.5 ${
-                    isToday
-                      ? 'border-primary-200/70 bg-primary-50/80 dark:border-primary-800/50 dark:bg-primary-950/40'
-                      : 'border-neutral-200/70 bg-neutral-50/80 dark:border-neutral-700/70 dark:bg-neutral-900/60'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold tabular-nums ${
-                        isToday
-                          ? 'bg-primary-500 text-white dark:bg-primary-600'
-                          : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
-                      }`}
-                    >
-                      {format(d, 'd')}
-                    </span>
-                    <span className="text-xs font-semibold capitalize leading-tight text-neutral-700 dark:text-neutral-200">
-                      {format(d, 'EEEE', { locale: tr })}
-                      <span className="block text-[10px] font-medium text-neutral-500 dark:text-neutral-400">
-                        {format(d, 'MMMM', { locale: tr })}
-                      </span>
-                    </span>
-                  </div>
-                  {activeCount > 0 && (
-                    <span className="rounded-full bg-primary-100 px-2 py-0.5 text-[10px] font-bold tabular-nums text-primary-800 dark:bg-primary-900/60 dark:text-primary-200">
-                      {activeCount}
-                    </span>
-                  )}
-                </div>
-
-                <div className="flex-1 bg-white p-2 dark:bg-neutral-900/50">
-                  {items.length === 0 ? (
-                    <p className="flex h-full min-h-[4rem] items-center justify-center text-[11px] text-neutral-400 dark:text-neutral-500">
-                      Randevu yok
-                    </p>
-                  ) : (
-                    <div className="max-h-72 space-y-1.5 overflow-y-auto pr-0.5 [scrollbar-width:thin]">
-                      {items.map((r) => (
-                        <WeekChip key={r._id} r={r} onSelect={setSelected} />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <WeeklyView days={days} reservationsByDay={reservationsByDay} onSelect={setSelected} />
       )}
 
-      {/* Haftalık çip detayı */}
       {selected && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 backdrop-blur-[2px] sm:items-center"
-          onClick={() => setSelected(null)}
-        >
-          <div
-            className="w-full max-w-md animate-slide-up rounded-2xl bg-white p-4 shadow-xl dark:bg-neutral-900 sm:animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
+        <ReservationDetailModal
+          reservation={selected}
+          onClose={() => setSelected(null)}
+          onCancel={onCancel}
+        />
+      )}
+    </div>
+  );
+}
+
+function DailyView({
+  day,
+  items,
+  isToday,
+  onSelect,
+}: {
+  day: Date;
+  items: Reservation[];
+  isToday: boolean;
+  onSelect: (r: Reservation) => void;
+}) {
+  const grouped = groupByHour(items);
+  const activeCount = items.filter((r) => r.status !== 'canceled').length;
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/60">
+      <div
+        className={`flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 ${
+          isToday
+            ? 'border-primary-200/70 bg-gradient-to-r from-primary-50/90 to-white dark:border-primary-800/50 dark:from-primary-950/40 dark:to-neutral-900/0'
+            : 'border-neutral-200/80 bg-neutral-50/70 dark:border-neutral-700/80 dark:bg-neutral-900/60'
+        }`}
+      >
+        <div className="flex items-center gap-4">
+          <span
+            className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl text-center ${
+              isToday
+                ? 'bg-primary-500 text-white shadow-md dark:bg-primary-600'
+                : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
+            }`}
           >
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">
-                {format(new Date(selected.date), 'd MMMM yyyy, EEEE', { locale: tr })}
-              </p>
-              <button
-                type="button"
-                onClick={() => setSelected(null)}
-                className="rounded-lg p-1.5 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                aria-label="Kapat"
-              >
-                <X className="h-4 w-4" aria-hidden />
-              </button>
-            </div>
-            <AdminReservationCard
-              reservation={selected}
-              onCancel={
-                onCancel
-                  ? (id) => {
-                      onCancel(id);
-                      setSelected(null);
-                    }
-                  : undefined
-              }
-            />
+            <span className="text-2xl font-bold leading-none tabular-nums">{format(day, 'd')}</span>
+            <span className="mt-1 text-[10px] font-bold uppercase leading-none opacity-90">
+              {format(day, 'MMM', { locale: tr })}
+            </span>
+          </span>
+          <div>
+            <p className="text-xl font-bold capitalize text-neutral-900 dark:text-neutral-50">
+              {format(day, 'EEEE', { locale: tr })}
+              {isToday && (
+                <span className="ml-2 rounded-full bg-primary-500 px-2.5 py-0.5 align-middle text-xs font-bold uppercase tracking-wide text-white">
+                  Bugün
+                </span>
+              )}
+            </p>
+            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
+              {format(day, 'd MMMM yyyy', { locale: tr })}
+            </p>
           </div>
+        </div>
+        <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-600">
+          <Clock className="h-4 w-4 text-primary-500" strokeWidth={2} aria-hidden />
+          {activeCount} aktif randevu
+        </span>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="px-6 py-20 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+            <CalendarDays className="h-8 w-8 text-neutral-400" strokeWidth={1.5} aria-hidden />
+          </div>
+          <p className="mt-5 text-base font-medium text-neutral-600 dark:text-neutral-300">
+            Bu gün için randevu yok
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-8 px-5 py-6 sm:px-8 sm:py-8">
+          {grouped.map((group) => (
+            <section key={group.hourKey}>
+              <h3 className="mb-4 flex items-center gap-3 text-base font-bold text-neutral-700 dark:text-neutral-200">
+                <span className="font-mono tabular-nums">{group.label}</span>
+                <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
+                <span className="text-sm font-medium text-neutral-400">
+                  {group.items.length} randevu
+                </span>
+              </h3>
+              <div className="space-y-4">
+                {group.items.map((r) => (
+                  <AppointmentCard key={r._id} r={r} onSelect={onSelect} size="large" />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-/** Günlük görünüm: saat rayı + kartlar */
-function DailyTimeline({
-  day,
-  items,
-  isToday,
-  onCancel,
+function WeeklyView({
+  days,
+  reservationsByDay,
+  onSelect,
 }: {
-  day: Date;
-  items: Reservation[];
-  isToday: boolean;
-  onCancel?: (id: string) => void;
+  days: Date[];
+  reservationsByDay: Reservation[][];
+  onSelect: (r: Reservation) => void;
 }) {
-  const grouped = groupByHour(items);
-  const activeCount = items.filter((r) => r.status !== 'canceled').length;
-  const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
-
   return (
-    <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/60">
-      {/* Gün başlığı */}
-      <div
-        className={`flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4 ${
-          isToday
-            ? 'border-primary-200/70 bg-gradient-to-r from-primary-50/90 to-white dark:border-primary-800/50 dark:from-primary-950/40 dark:to-neutral-900/0'
-            : 'border-neutral-200/80 bg-neutral-50/70 dark:border-neutral-700/80 dark:bg-neutral-900/60'
-        }`}
-      >
-        <div className="flex items-center gap-3">
-          <span
-            className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl text-center ${
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+      {days.map((d, i) => {
+        const isToday = isSameDay(d, new Date());
+        const items = reservationsByDay[i];
+        const activeCount = items.filter((r) => r.status !== 'canceled').length;
+
+        return (
+          <section
+            key={d.toISOString()}
+            className={`overflow-hidden rounded-2xl border shadow-card dark:shadow-none ${
               isToday
-                ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
-                : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
+                ? 'border-primary-300/80 ring-2 ring-primary-200/50 dark:border-primary-700/60 dark:ring-primary-900/40'
+                : 'border-neutral-200/90 dark:border-neutral-700'
             }`}
           >
-            <span className="text-lg font-bold leading-none tabular-nums">{format(day, 'd')}</span>
-            <span className="mt-0.5 text-[9px] font-semibold uppercase leading-none opacity-90">
-              {format(day, 'MMM', { locale: tr })}
-            </span>
-          </span>
-          <div>
-            <p className="text-base font-bold capitalize text-neutral-900 dark:text-neutral-50">
-              {format(day, 'EEEE', { locale: tr })}
-              {isToday && (
-                <span className="ml-2 rounded-full bg-primary-500 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-white">
-                  Bugün
+            <header
+              className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${
+                isToday
+                  ? 'border-primary-200/70 bg-primary-50/80 dark:border-primary-800/50 dark:bg-primary-950/40'
+                  : 'border-neutral-200/70 bg-neutral-50/80 dark:border-neutral-700/70 dark:bg-neutral-900/60'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold tabular-nums ${
+                    isToday
+                      ? 'bg-primary-500 text-white dark:bg-primary-600'
+                      : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
+                  }`}
+                >
+                  {format(d, 'd')}
+                </span>
+                <div>
+                  <p className="text-base font-bold capitalize text-neutral-900 dark:text-neutral-50">
+                    {format(d, 'EEEE', { locale: tr })}
+                  </p>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
+                    {format(d, 'MMMM yyyy', { locale: tr })}
+                  </p>
+                </div>
+              </div>
+              {activeCount > 0 && (
+                <span className="rounded-full bg-primary-100 px-3 py-1 text-sm font-bold tabular-nums text-primary-800 dark:bg-primary-900/60 dark:text-primary-200">
+                  {activeCount}
                 </span>
               )}
-            </p>
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              {format(day, 'd MMMM yyyy', { locale: tr })}
-            </p>
-          </div>
-        </div>
-        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-xs font-semibold text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-600">
-          <Clock className="h-3.5 w-3.5 text-primary-500" strokeWidth={2} aria-hidden />
-          {activeCount} aktif randevu
-        </span>
-      </div>
+            </header>
 
-      {/* Zaman çizelgesi */}
-      {items.length === 0 ? (
-        <div className="px-6 py-16 text-center">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-            <CalendarDays className="h-7 w-7 text-neutral-400" strokeWidth={1.5} aria-hidden />
-          </div>
-          <p className="mt-4 text-sm font-medium text-neutral-600 dark:text-neutral-300">
-            Bu gün için randevu yok
-          </p>
-          <p className="mt-1 text-xs text-neutral-400 dark:text-neutral-500">
-            Yeni randevular geldiğinde burada görünür.
-          </p>
-        </div>
-      ) : (
-        <div className="max-h-[70vh] overflow-y-auto px-4 py-5 sm:px-6 [scrollbar-gutter:stable]">
-          <ol className="relative space-y-6 before:absolute before:bottom-2 before:left-[3.05rem] before:top-2 before:w-px before:bg-gradient-to-b before:from-primary-200 before:via-neutral-200 before:to-neutral-100 dark:before:from-primary-800/60 dark:before:via-neutral-700 dark:before:to-neutral-800 sm:before:left-[3.3rem]">
-            {grouped.map((group) => {
-              const hourMin = Number(group.hourKey) * 60;
-              const hourPassed = isToday && nowMinutes >= hourMin + 60;
-              return (
-                <li key={group.hourKey} className="relative">
-                  <div className="flex gap-3 sm:gap-4">
-                    {/* Saat rayı */}
-                    <div className="flex w-10 shrink-0 flex-col items-end pt-0.5 sm:w-11">
-                      <span
-                        className={`font-mono text-xs font-bold tabular-nums ${
-                          hourPassed
-                            ? 'text-neutral-400 dark:text-neutral-500'
-                            : 'text-neutral-700 dark:text-neutral-200'
-                        }`}
-                      >
-                        {group.label}
-                      </span>
-                    </div>
-
-                    {/* Nokta */}
-                    <div className="relative flex w-2 shrink-0 justify-center">
-                      <span
-                        className={`absolute top-1.5 h-2.5 w-2.5 rounded-full ring-4 ring-white dark:ring-neutral-900 ${
-                          hourPassed ? 'bg-neutral-300 dark:bg-neutral-600' : 'bg-primary-500'
-                        }`}
-                      />
-                    </div>
-
-                    {/* Randevular */}
-                    <div className="min-w-0 flex-1 space-y-2.5 pb-1">
-                      {group.items.map((r) => {
-                        const canceled = r.status === 'canceled';
-                        const past = isToday && timeToMin(r.endTime || r.time) < nowMinutes;
-                        return (
-                          <article
-                            key={r._id}
-                            className={`rounded-xl border border-l-4 bg-white shadow-sm transition hover:shadow-md dark:bg-neutral-900/80 ${
-                              STATUS_ACCENT[r.status] || 'border-l-neutral-300'
-                            } ${
-                              canceled || past
-                                ? 'border-neutral-200/70 opacity-55 dark:border-neutral-700'
-                                : 'border-neutral-200/90 hover:border-primary-200 dark:border-neutral-700 dark:hover:border-primary-800/60'
-                            }`}
-                          >
-                            <div className="flex items-start gap-3 p-3">
-                              <div
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-xs font-bold text-white"
-                                aria-hidden
-                              >
-                                {initials(r.customerId?.firstName, r.customerId?.lastName)}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                                  <span className="font-mono text-sm font-bold tabular-nums text-neutral-900 dark:text-white">
-                                    {r.time}
-                                    {r.endTime && (
-                                      <span className="font-normal text-neutral-400"> – {r.endTime}</span>
-                                    )}
-                                  </span>
-                                  {r.serviceId?.durationMinutes != null && (
-                                    <span className="rounded-full bg-neutral-100 px-1.5 py-0.5 text-[10px] font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                                      {r.serviceId.durationMinutes} dk
-                                    </span>
-                                  )}
-                                  <span
-                                    className={`ml-auto inline-flex h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[r.status] || 'bg-neutral-400'}`}
-                                    title={r.status}
-                                  />
-                                </div>
-                                <p className={`mt-0.5 flex items-center gap-1.5 truncate text-sm font-semibold ${canceled ? 'line-through' : ''} text-neutral-800 dark:text-neutral-100`}>
-                                  <User className="h-3.5 w-3.5 shrink-0 text-neutral-400" strokeWidth={2} aria-hidden />
-                                  {customerName(r)}
-                                </p>
-                                <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-neutral-500 dark:text-neutral-400">
-                                  <Scissors className="h-3 w-3 shrink-0" strokeWidth={2} aria-hidden />
-                                  {r.serviceId?.name || 'Hizmet'}
-                                  {r.staffId?.name && (
-                                    <span className="truncate text-neutral-400">· {r.staffId.name}</span>
-                                  )}
-                                </p>
-                              </div>
-                              {!canceled && onCancel && (
-                                <button
-                                  type="button"
-                                  onClick={() => onCancel(r._id)}
-                                  className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
-                                >
-                                  İptal
-                                </button>
-                              )}
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ol>
-        </div>
-      )}
+            <div className="space-y-3 bg-white p-4 dark:bg-neutral-900/50">
+              {items.length === 0 ? (
+                <p className="py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">
+                  Randevu yok
+                </p>
+              ) : (
+                items.map((r) => <AppointmentCard key={r._id} r={r} onSelect={onSelect} />)
+              )}
+            </div>
+          </section>
+        );
+      })}
     </div>
   );
 }
