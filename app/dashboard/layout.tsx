@@ -11,8 +11,8 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardBackButton } from '@/components/layout/DashboardBackButton';
 import { StaffPanelProvider, useStaffPanel } from '@/contexts/StaffPanelContext';
 import { DashboardShellProvider, useDashboardShell } from '@/contexts/DashboardShellContext';
-import { useAuthStore } from '@/store/authStore';
-import { clearAuth, isBusinessOwner } from '@/lib/auth';
+import { useAuthStore, hydrateAuthStore } from '@/store/authStore';
+import { clearAuth, getStoredToken, isBusinessOwner } from '@/lib/auth';
 import {
   BUSINESS_SETUP_PUBLISHED_EVENT,
   isBusinessSetupPublishedCached,
@@ -41,9 +41,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const { canViewStaffPanel } = useStaffPanel();
   const { openSidebar } = useDashboardShell();
   const [setupPublished, setSetupPublished] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   useEffect(() => {
-    useAuthStore.persist.rehydrate();
+    void hydrateAuthStore().finally(() => setAuthReady(true));
   }, []);
 
   useEffect(() => {
@@ -63,10 +64,10 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   }, [user?._id]);
 
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const t = useAuthStore.getState().token;
+    if (!authReady) return;
+    const t = useAuthStore.getState().token || getStoredToken();
     if (!t) router.replace('/login?from=/dashboard');
-  }, [router]);
+  }, [authReady, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -100,7 +101,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
     router.push('/');
   };
 
-  if (!token || !user) {
+  if (!authReady || !token || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-10 w-10 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />

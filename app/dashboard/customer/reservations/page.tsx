@@ -6,7 +6,7 @@ import { ClipboardList } from 'lucide-react';
 import { isBefore, parseISO, startOfDay } from 'date-fns';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { canCustomerCancelReservation } from '@/lib/reservationFilters';
-import { useAuthStore } from '@/store/authStore';
+import { useAuthStore, hydrateAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/Button';
 import {
   CustomerReservationCard,
@@ -78,19 +78,29 @@ function sortReservations(list: CustomerReservationItem[]): CustomerReservationI
 export default function CustomerReservationsPage() {
   const user = useAuthStore((s) => s.user);
   const customerId = user?._id;
+  const [authReady, setAuthReady] = useState(false);
   const [reservations, setReservations] = useState<CustomerReservationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<FilterTab>('all');
 
   useEffect(() => {
-    if (!customerId) return;
+    void hydrateAuthStore().finally(() => setAuthReady(true));
+  }, []);
+
+  useEffect(() => {
+    if (!authReady) return;
+    if (!customerId) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     api
       .get<{ data: CustomerReservationItem[] }>(`/reservations/customer/${customerId}`)
       .then((res) => setReservations(res.data.data || []))
       .catch(() => setError('Randevular yüklenemedi.'))
       .finally(() => setLoading(false));
-  }, [customerId]);
+  }, [authReady, customerId]);
 
   const stats = useMemo(() => {
     const upcoming = reservations.filter(isUpcomingReservation).length;

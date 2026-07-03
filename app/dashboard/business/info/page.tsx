@@ -53,7 +53,7 @@ function defaultFormState(): Partial<Business> {
     subCategory: '',
     businessType: 'other',
     location: { lat: 35.1856, lng: 33.3823 },
-    address: { street: '', city: '', district: '' },
+    address: { street: '', city: '' },
     description: '',
     imageUrl: '',
   };
@@ -83,7 +83,7 @@ function businessToForm(b: Business): Partial<Business> {
     mainCategory: b.area || b.mainCategory,
     subCategory: b.profession || b.subCategory,
     location: b.location || { lat: 35.1856, lng: 33.3823 },
-    address: b.address || { street: '', city: '', district: '' },
+    address: b.address || { street: '', city: '' },
     phone: phoneInputFromStored(b.phone),
     email: b.email || '',
     description: b.description || '',
@@ -390,14 +390,6 @@ export default function BusinessInfoPage() {
 
           <div className="space-y-3">
             <span className="block text-sm font-medium text-neutral-900 dark:text-neutral-200">Adres</span>
-            <Input
-              label="İlçe"
-              value={form.address?.district || ''}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, address: { ...f.address, district: e.target.value } }))
-              }
-              placeholder="Örn. İskele"
-            />
             <div>
               <label className="mb-1.5 block text-sm font-medium text-neutral-900 dark:text-neutral-200">Şehir</label>
               <select
@@ -406,6 +398,7 @@ export default function BusinessInfoPage() {
                   setForm((f) => ({ ...f, address: { ...f.address, city: e.target.value } }))
                 }
                 className="w-full rounded-lg border border-neutral-300 bg-white px-4 py-2.5 text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
+                required
               >
                 <option value="">Şehir seçin</option>
                 {KKTC_CITIES.map((city) => (

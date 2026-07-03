@@ -34,8 +34,12 @@ interface Staff {
   email?: string;
   imageUrl?: string;
   canViewOwnReservations?: boolean;
+  allowConcurrentBookings?: boolean | null;
+  concurrentBookingLimit?: number | null;
   userId?: { _id: string; email?: string; firstName?: string; lastName?: string } | null;
 }
+
+type StaffConcurrentMode = 'inherit' | 'single' | 'multiple';
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
@@ -78,6 +82,8 @@ export default function StaffPage() {
     imageUrl: '',
     canViewOwnReservations: false,
     linkUserEmail: '',
+    concurrentMode: 'inherit' as StaffConcurrentMode,
+    concurrentBookingLimit: 2,
   });
   const [editSaving, setEditSaving] = useState(false);
   const [editPhotoUploading, setEditPhotoUploading] = useState(false);
@@ -207,6 +213,9 @@ export default function StaffPage() {
       typeof s.userId === 'object' && s.userId && 'email' in s.userId && s.userId.email
         ? String(s.userId.email)
         : '';
+    let concurrentMode: StaffConcurrentMode = 'inherit';
+    if (s.allowConcurrentBookings === false) concurrentMode = 'single';
+    if (s.allowConcurrentBookings === true) concurrentMode = 'multiple';
     setEditForm({
       name: s.name,
       title: s.title || '',
@@ -215,6 +224,11 @@ export default function StaffPage() {
       imageUrl: s.imageUrl || '',
       canViewOwnReservations: s.canViewOwnReservations ?? false,
       linkUserEmail: linkedEmail,
+      concurrentMode,
+      concurrentBookingLimit:
+        typeof s.concurrentBookingLimit === 'number' && s.concurrentBookingLimit >= 2
+          ? s.concurrentBookingLimit
+          : 2,
     });
     setError('');
   };
@@ -228,9 +242,20 @@ export default function StaffPage() {
     setEditSaving(true);
     setError('');
     try {
+      const { concurrentMode, concurrentBookingLimit, linkUserEmail, ...rest } = editForm;
+      const concurrentPayload =
+        concurrentMode === 'inherit'
+          ? { allowConcurrentBookings: null, concurrentBookingLimit: null }
+          : concurrentMode === 'single'
+            ? { allowConcurrentBookings: false, concurrentBookingLimit: null }
+            : {
+                allowConcurrentBookings: true,
+                concurrentBookingLimit: Math.min(50, Math.max(2, concurrentBookingLimit || 2)),
+              };
       const res = await api.put<{ status: string; message?: string; data: Staff }>(`/staff/${editingId}`, {
-        ...editForm,
-        linkUserEmail: editForm.linkUserEmail.trim(),
+        ...rest,
+        ...concurrentPayload,
+        linkUserEmail: linkUserEmail.trim(),
       });
       const updated = res.data.data;
       setStaff((list) => list.map((x) => (x._id === editingId ? updated : x)));
@@ -553,6 +578,51 @@ export default function StaffPage() {
                           />
                         </div>
                       </div>
+                    </div>
+                    <div className="rounded-2xl border border-neutral-200 bg-neutral-50/80 p-4 dark:border-neutral-600 dark:bg-neutral-900/50">
+                      <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
+                        Eşzamanlı randevu
+                      </p>
+                      <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
+                        İşletme ayarını geçersiz kılabilirsiniz. Kapalıyken aynı saatte yalnızca bir müşteri alınır.
+                      </p>
+                      <select
+                        value={editForm.concurrentMode}
+                        onChange={(e) =>
+                          setEditForm((f) => ({
+                            ...f,
+                            concurrentMode: e.target.value as StaffConcurrentMode,
+                          }))
+                        }
+                        className="mt-3 w-full rounded-lg border border-neutral-300 bg-white px-3 py-2.5 text-sm text-neutral-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/20 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
+                      >
+                        <option value="inherit">İşletme ayarını kullan</option>
+                        <option value="single">Aynı saatte tek müşteri</option>
+                        <option value="multiple">Aynı saatte birden fazla müşteri</option>
+                      </select>
+                      {editForm.concurrentMode === 'multiple' && (
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <label className="text-sm text-neutral-700 dark:text-neutral-300" htmlFor={`staff-conc-${editingId}`}>
+                            En fazla
+                          </label>
+                          <Input
+                            id={`staff-conc-${editingId}`}
+                            type="number"
+                            min={2}
+                            max={50}
+                            value={editForm.concurrentBookingLimit}
+                            onChange={(e) => {
+                              const n = parseInt(e.target.value, 10);
+                              setEditForm((f) => ({
+                                ...f,
+                                concurrentBookingLimit: Number.isFinite(n) ? n : 2,
+                              }));
+                            }}
+                            className="w-24"
+                          />
+                          <span className="text-sm text-neutral-600 dark:text-neutral-400">eşzamanlı randevu</span>
+                        </div>
+                      )}
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <Button type="button" loading={editSaving} onClick={() => void saveEdit()}>

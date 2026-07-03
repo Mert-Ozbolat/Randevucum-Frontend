@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { api } from '@/lib/api';
 import { fetchMyBusinesses } from '@/lib/businessApi';
+import { BUSINESS_SETUP_REFRESH_EVENT } from '@/lib/businessSetupRefresh';
 import { useToast } from '@/components/ui/Toast';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
 import {
@@ -114,36 +115,47 @@ export function BusinessReservationsLiveProvider({ children }: { children: React
     setReservations((prev) => prev.map((r) => (r._id === id ? { ...r, ...patch } : r)));
   }, []);
 
+  const loadBusiness = useCallback(async () => {
+    try {
+      const res = await fetchMyBusinesses<{ data: { _id: string }[] }>();
+      const bid = res.data.data?.[0]?._id ?? null;
+      setBusinessId(bid);
+      businessIdRef.current = bid;
+      if (!bid) {
+        setReservations([]);
+        knownIdsRef.current = new Set();
+        initialLoadDoneRef.current = false;
+        return null;
+      }
+      return fetchReservations(bid);
+    } catch {
+      setError('Randevular yüklenemedi.');
+      return null;
+    }
+  }, [fetchReservations]);
+
   useEffect(() => {
     attachNotificationAudioUnlock();
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-
-    fetchMyBusinesses<{ data: { _id: string }[] }>()
-      .then((res) => {
-        const bid = res.data.data?.[0]?._id ?? null;
-        if (cancelled) return null;
-        setBusinessId(bid);
-        businessIdRef.current = bid;
-        if (!bid) {
-          setLoading(false);
-          return null;
-        }
-        return fetchReservations(bid);
-      })
-      .catch(() => {
-        if (!cancelled) setError('Randevular yüklenemedi.');
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
+    setLoading(true);
+    void loadBusiness().finally(() => {
+      if (!cancelled) setLoading(false);
+    });
     return () => {
       cancelled = true;
     };
-  }, [fetchReservations]);
+  }, [loadBusiness]);
+
+  useEffect(() => {
+    const onRefresh = () => {
+      void loadBusiness();
+    };
+    window.addEventListener(BUSINESS_SETUP_REFRESH_EVENT, onRefresh);
+    return () => window.removeEventListener(BUSINESS_SETUP_REFRESH_EVENT, onRefresh);
+  }, [loadBusiness]);
 
   useEffect(() => {
     const bid = businessId;
