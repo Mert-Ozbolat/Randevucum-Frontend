@@ -47,6 +47,7 @@ export interface DiscoverBusiness {
   reviewCount?: number | null;
   promoVideoUrl?: string | null;
   promoVideoCaption?: string | null;
+  promoVideoViews?: number | null;
 }
 
 export function hasPromoVideo(business: Pick<DiscoverBusiness, 'promoVideoUrl'>): boolean {
@@ -71,4 +72,44 @@ export function buildDiscoverFeed<T extends DiscoverBusiness>(list: T[], count =
   const withVideo = filterBusinessesWithPromoVideo(list);
   const shuffled = [...withVideo].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
+}
+
+/** İzlenme sayısı gösterimi — 1.2K, 3.4M */
+export function formatViewCount(count: number): string {
+  const n = Math.max(0, count);
+  if (n >= 1_000_000) {
+    const v = n / 1_000_000;
+    return `${v >= 10 ? Math.round(v) : v.toFixed(1).replace(/\.0$/, '')}M`;
+  }
+  if (n >= 10_000) {
+    const v = n / 1_000;
+    return `${Math.round(v)}K`;
+  }
+  if (n >= 1_000) {
+    const v = n / 1_000;
+    return `${v.toFixed(1).replace(/\.0$/, '')}K`;
+  }
+  return String(n);
+}
+
+const VIEW_SESSION_PREFIX = 'discover-viewed-';
+
+/** Oturumda bir kez izlenme kaydı */
+export async function recordDiscoverVideoView(
+  businessId: string
+): Promise<number | null> {
+  if (typeof window === 'undefined') return null;
+  const key = `${VIEW_SESSION_PREFIX}${businessId}`;
+  if (sessionStorage.getItem(key)) return null;
+
+  const { api } = await import('@/lib/api');
+  try {
+    const { data } = await api.post<{ data: { views: number } }>(
+      `/business/${businessId}/discover-view`
+    );
+    sessionStorage.setItem(key, '1');
+    return data.data.views;
+  } catch {
+    return null;
+  }
 }

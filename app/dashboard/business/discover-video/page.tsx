@@ -8,13 +8,15 @@ import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Clapperboard, ExternalLink, Trash2 } from 'lucide-react';
+import { Clapperboard, ExternalLink, Eye, Trash2 } from 'lucide-react';
+import { formatViewCount } from '@/lib/businessDiscoverMedia';
 
 interface Business {
   _id: string;
   name: string;
   promoVideoUrl?: string | null;
   promoVideoCaption?: string | null;
+  promoVideoViews?: number | null;
 }
 
 const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
@@ -143,6 +145,7 @@ export default function DiscoverVideoPage() {
   }
 
   const hasVideo = Boolean(promoVideoUrl.trim());
+  const viewCount = business.promoVideoViews ?? 0;
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -158,6 +161,12 @@ export default function DiscoverVideoPage() {
           </Link>{' '}
           bölümünde Reels gibi izleyebilir.
         </p>
+        {hasVideo && (
+          <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-neutral-100 px-3 py-1 text-sm font-medium text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+            <Eye className="h-4 w-4 text-neutral-500" strokeWidth={2} aria-hidden />
+            {formatViewCount(viewCount)} izlenme
+          </p>
+        )}
       </div>
 
       {error && (

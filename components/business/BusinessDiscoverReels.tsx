@@ -268,7 +268,7 @@ export function BusinessDiscoverReels({
               İşletme videoları
             </h2>
             <p className={`mt-1 text-sm ${isImmersive ? 'text-neutral-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-              Reels gibi yatay kaydır — işletmelerin paylaştığı videolar
+              Tam ekran Reels deneyimi — Keşfet&apos;e tıklayın
             </p>
           </div>
           <div className="flex items-center gap-2">
