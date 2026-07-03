@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '@/lib/api';
 import { fetchMyBusinesses } from '@/lib/businessApi';
-import { BillingNoticeBanner } from '@/components/dashboard/BillingNoticeBanner';
+import { BillingNoticeBanner, BillingSuspendedBanner } from '@/components/dashboard/BillingNoticeBanner';
 import { TrialRenewalModal } from '@/components/dashboard/TrialRenewalModal';
 
 export type BillingStatus = {
@@ -84,10 +84,21 @@ export function BusinessBillingShell({ children }: Props) {
   const showTrialModal =
     Boolean(billing?.trialExpired && billing?.needsRenewal && !billing?.billingSuspended && !trialModalDismissed);
 
-  const showBillingNotice = Boolean(billing?.billingNotice && !billing?.billingSuspended);
+  const showBillingNotice = Boolean(
+    billing?.billingNotice && !billing?.billingSuspended
+  );
+
+  const showSuspended = Boolean(billing?.billingSuspended);
 
   return (
     <>
+      {showSuspended && (
+        <BillingSuspendedBanner
+          message={billing?.billingNotice || undefined}
+          onOpenPortal={billing?.stripeSubscriptionId ? () => void openBillingPortal() : undefined}
+          portalLoading={portalLoading}
+        />
+      )}
       {showBillingNotice && billing?.billingNotice && (
         <BillingNoticeBanner
           message={billing.billingNotice}

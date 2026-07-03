@@ -16,17 +16,19 @@ import { HomeHowItWorks } from '@/components/home/HomeHowItWorks';
 import { HomeBottomSections } from '@/components/home/HomeBottomSections';
 
 export default function HomePage() {
-  const [businesses, setBusinesses] = useState<HomeBusiness[]>([]);
+  const [featuredBusinesses, setFeaturedBusinesses] = useState<HomeBusiness[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [featuredError, setFeaturedError] = useState(false);
   const [paidSliderAds, setPaidSliderAds] = useState<PaidSliderAdApi[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
 
   useEffect(() => {
     api
-      .get<{ data: HomeBusiness[] }>('/business')
-      .then((res) => setBusinesses(res.data.data || []))
-      .catch(() => setError(true))
-      .finally(() => setLoading(false));
+      .get<{ data: HomeBusiness[] }>('/business', {
+        params: { sort: 'rating', limit: 6 },
+      })
+      .then((res) => setFeaturedBusinesses(res.data.data || []))
+      .catch(() => setFeaturedError(true))
+      .finally(() => setFeaturedLoading(false));
   }, []);
 
   useEffect(() => {
@@ -48,7 +50,11 @@ export default function HomePage() {
       <div className="space-y-20 lg:space-y-28">
         <HomeCategoriesBento />
         <HomeDiscoverVideos />
-        <HomeFeaturedBusinesses businesses={businesses} loading={loading} error={error} />
+        <HomeFeaturedBusinesses
+          businesses={featuredBusinesses}
+          loading={featuredLoading}
+          error={featuredError}
+        />
         <HomeHowItWorks />
         <HomeBottomSections />
       </div>

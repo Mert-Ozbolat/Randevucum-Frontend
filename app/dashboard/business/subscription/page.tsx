@@ -286,9 +286,34 @@ export default function SubscriptionPage() {
 
       {subscription?.billingSuspended && (
         <div className="rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900 dark:bg-red-950/40">
-          <p className="text-sm font-semibold text-red-900 dark:text-red-100">Abonelik askıda</p>
+          <p className="text-sm font-semibold text-red-900 dark:text-red-100">İşletme offline</p>
           <p className="mt-1 text-sm text-red-800 dark:text-red-200">
-            Ödeme alınamadığı için işletmeniz yeni randevu alamaz. Lütfen aboneliğinizi yenileyin.
+            Ödeme alınamadı. İşletmeniz listede ve Keşfet&apos;te görünmez; yeni randevu alınamaz. Ödeme yönteminizi
+            güncelleyerek tekrar yayına alın.
+          </p>
+          {subscription.stripeSubscriptionId && (
+            <Button
+              type="button"
+              size="sm"
+              className="mt-3"
+              loading={portalLoading}
+              onClick={() => void openBillingPortal()}
+            >
+              Ödeme yöntemini güncelle
+            </Button>
+          )}
+        </div>
+      )}
+
+      {subscription?.stripeSubscriptionId && subscription.canAcceptBookings && !subscription.cancelAtPeriodEnd && (
+        <div className="rounded-2xl border border-primary-200 bg-primary-50/80 p-4 dark:border-primary-900/50 dark:bg-primary-950/30">
+          <p className="flex items-center gap-2 text-sm font-semibold text-primary-900 dark:text-primary-100">
+            <ShieldCheck className="h-4 w-4" aria-hidden />
+            Otomatik yenileme açık
+          </p>
+          <p className="mt-1 text-sm text-primary-800/90 dark:text-primary-100/80">
+            Aboneliğiniz her dönem sonunda kayıtlı kartınızdan otomatik tahsil edilir. Her ay kart bilgisi girmeniz
+            gerekmez. İptal etmediğiniz sürece kesintisiz devam eder.
           </p>
         </div>
       )}
