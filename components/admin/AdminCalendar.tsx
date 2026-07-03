@@ -1,23 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
 import { format, startOfDay, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
-import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
-import { Button } from '@/components/ui/Button';
-import { canBusinessCancelReservation } from '@/lib/reservationFilters';
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Clock,
-  Mail,
-  Scissors,
-  User,
-  UserCircle,
-  X,
-} from 'lucide-react';
+import { CalendarDays } from 'lucide-react';
+import { AdminReservationCard } from './AdminReservationCard';
 
 interface Reservation {
   _id: string;
@@ -26,8 +13,7 @@ interface Reservation {
   endTime?: string;
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
-  staffId?: { name: string };
-  customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
+  customerId?: { firstName: string; lastName: string; email?: string };
 }
 
 interface AdminCalendarProps {
@@ -39,278 +25,22 @@ interface AdminCalendarProps {
   onCancel?: (id: string) => void;
 }
 
-function initials(first?: string, last?: string): string {
-  const a = (first || '').trim().charAt(0);
-  const b = (last || '').trim().charAt(0);
-  return (a + b).toUpperCase() || '?';
-}
-
-function customerName(r: Reservation): string {
-  const c = r.customerId;
-  return c ? `${c.firstName} ${c.lastName}`.trim() : 'Müşteri';
-}
-
-function timeToMin(t?: string): number {
-  if (!t) return 0;
-  const [h, m] = t.split(':').map(Number);
-  return (h || 0) * 60 + (m || 0);
-}
-
-function sortByTime(list: Reservation[]): Reservation[] {
-  return [...list].sort((a, b) => timeToMin(a.time) - timeToMin(b.time));
-}
-
+/** Saat dilimine göre grupla (HH:mm → saat) */
 function groupByHour(sorted: Reservation[]): { hourKey: string; label: string; items: Reservation[] }[] {
   const map = new Map<string, Reservation[]>();
   for (const r of sorted) {
-    const hour = ((r.time || '00:00').split(':')[0] || '0').padStart(2, '0');
+    const t = r.time || '00:00';
+    const hour = (t.split(':')[0] || '0').padStart(2, '0');
     if (!map.has(hour)) map.set(hour, []);
     map.get(hour)!.push(r);
   }
   return Array.from(map.entries())
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([hourKey, items]) => ({ hourKey, label: `${hourKey}:00`, items }));
-}
-
-const STATUS_BORDER: Record<string, string> = {
-  approved: 'border-l-emerald-500',
-  pending: 'border-l-amber-500',
-  completed: 'border-l-sky-500',
-  canceled: 'border-l-neutral-300 dark:border-l-neutral-600',
-};
-
-/** Büyük, okunaklı randevu kartı — tıklanınca modal açılır */
-function AppointmentCard({
-  r,
-  onSelect,
-  size = 'default',
-}: {
-  r: Reservation;
-  onSelect: (r: Reservation) => void;
-  size?: 'default' | 'large';
-}) {
-  const canceled = r.status === 'canceled';
-  const large = size === 'large';
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(r)}
-      className={`group w-full rounded-2xl border border-l-[5px] bg-white text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300/80 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/80 dark:hover:border-primary-700/60 ${
-        STATUS_BORDER[r.status] || 'border-l-neutral-300'
-      } ${
-        canceled
-          ? 'border-neutral-200/80 opacity-60 dark:border-neutral-700'
-          : 'border-neutral-200/90 dark:border-neutral-700'
-      } ${large ? 'p-5' : 'p-4'}`}
-    >
-      <div className="flex items-start gap-4">
-        <div
-          className={`flex shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 font-bold text-white shadow-sm ${
-            large ? 'h-14 w-14 text-base' : 'h-12 w-12 text-sm'
-          }`}
-          aria-hidden
-        >
-          {initials(r.customerId?.firstName, r.customerId?.lastName)}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span
-              className={`font-mono font-bold tabular-nums text-neutral-900 dark:text-white ${
-                large ? 'text-xl' : 'text-lg'
-              }`}
-            >
-              {r.time}
-              {r.endTime && (
-                <span className="font-semibold text-neutral-400 dark:text-neutral-500"> – {r.endTime}</span>
-              )}
-            </span>
-            {r.serviceId?.durationMinutes != null && (
-              <span className="rounded-full bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                {r.serviceId.durationMinutes} dk
-              </span>
-            )}
-          </div>
-          <p
-            className={`mt-1.5 font-semibold text-neutral-900 dark:text-neutral-50 ${
-              large ? 'text-lg' : 'text-base'
-            } ${canceled ? 'line-through' : ''}`}
-          >
-            {customerName(r)}
-          </p>
-          <p className={`mt-0.5 text-neutral-600 dark:text-neutral-400 ${large ? 'text-base' : 'text-sm'}`}>
-            {r.serviceId?.name || 'Hizmet'}
-            {r.staffId?.name && (
-              <span className="text-neutral-400 dark:text-neutral-500"> · {r.staffId.name}</span>
-            )}
-          </p>
-          <p className="mt-2 text-xs font-medium text-primary-600 opacity-0 transition group-hover:opacity-100 dark:text-primary-400">
-            Detayları gör →
-          </p>
-        </div>
-      </div>
-    </button>
-  );
-}
-
-/** Detay modalı */
-function ReservationDetailModal({
-  reservation,
-  onClose,
-  onCancel,
-}: {
-  reservation: Reservation;
-  onClose: () => void;
-  onCancel?: (id: string) => void;
-}) {
-  const canCancel = canBusinessCancelReservation(reservation);
-  const c = reservation.customerId;
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.body.style.overflow = 'hidden';
-    window.addEventListener('keydown', onKey);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', onKey);
-    };
-  }, [onClose]);
-
-  const dateLabel = (() => {
-    const key = reservationLocalCalendarKey(String(reservation.date));
-    if (!key) return '—';
-    const [y, mo, d] = key.split('-').map(Number);
-    return format(new Date(y, mo - 1, d), 'd MMMM yyyy, EEEE', { locale: tr });
-  })();
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/55 p-0 backdrop-blur-sm sm:items-center sm:p-6"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="reservation-detail-title"
-    >
-      <div
-        className="w-full max-w-lg animate-slide-up rounded-t-3xl bg-white shadow-2xl dark:bg-neutral-900 sm:animate-fade-in sm:rounded-3xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Üst başlık */}
-        <div className="relative border-b border-neutral-200/80 px-6 pb-5 pt-6 dark:border-neutral-700">
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute right-4 top-4 rounded-xl p-2 text-neutral-500 transition hover:bg-neutral-100 dark:hover:bg-neutral-800"
-            aria-label="Kapat"
-          >
-            <X className="h-5 w-5" aria-hidden />
-          </button>
-
-          <div className="flex items-start gap-4 pr-10">
-            <div
-              className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-400 to-primary-600 text-lg font-bold text-white shadow-md"
-              aria-hidden
-            >
-              {initials(c?.firstName, c?.lastName)}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p id="reservation-detail-title" className="text-xl font-bold text-neutral-900 dark:text-white">
-                {customerName(reservation)}
-              </p>
-              <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">{dateLabel}</p>
-              <div className="mt-2">
-                <ReservationStatusBadge status={reservation.status} />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Detay satırları */}
-        <div className="space-y-1 px-6 py-5">
-          <DetailRow
-            icon={Clock}
-            label="Saat"
-            value={
-              <>
-                <span className="font-mono text-lg font-bold tabular-nums">{reservation.time}</span>
-                {reservation.endTime && (
-                  <span className="font-mono text-lg font-semibold text-neutral-400">
-                    {' '}
-                    – {reservation.endTime}
-                  </span>
-                )}
-                {reservation.serviceId?.durationMinutes != null && (
-                  <span className="ml-2 text-sm font-normal text-neutral-500">
-                    ({reservation.serviceId.durationMinutes} dakika)
-                  </span>
-                )}
-              </>
-            }
-          />
-          <DetailRow
-            icon={Scissors}
-            label="Hizmet"
-            value={reservation.serviceId?.name || '—'}
-          />
-          {reservation.staffId?.name && (
-            <DetailRow icon={UserCircle} label="Personel" value={reservation.staffId.name} />
-          )}
-          {c?.email && (
-            <DetailRow icon={Mail} label="E-posta" value={c.email} />
-          )}
-          {c?.phone && (
-            <DetailRow icon={User} label="Telefon" value={c.phone} />
-          )}
-        </div>
-
-        {/* Alt aksiyonlar */}
-        <div className="flex flex-col gap-2 border-t border-neutral-200/80 px-6 py-5 dark:border-neutral-700 sm:flex-row sm:justify-end">
-          <Button variant="outline" fullWidth className="sm:w-auto sm:min-w-[7rem]" onClick={onClose}>
-            Kapat
-          </Button>
-          {canCancel && onCancel && (
-            <Button
-              variant="danger"
-              fullWidth
-              className="sm:w-auto sm:min-w-[9rem]"
-              onClick={() => {
-                onCancel(reservation._id);
-                onClose();
-              }}
-            >
-              Randevuyu iptal et
-            </Button>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DetailRow({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: typeof Clock;
-  label: string;
-  value: React.ReactNode;
-}) {
-  return (
-    <div className="flex gap-4 rounded-xl px-3 py-3.5 transition hover:bg-neutral-50 dark:hover:bg-neutral-800/50">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-neutral-100 dark:bg-neutral-800">
-        <Icon className="h-5 w-5 text-neutral-500 dark:text-neutral-400" strokeWidth={1.75} aria-hidden />
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-          {label}
-        </p>
-        <div className="mt-0.5 text-base font-medium text-neutral-900 dark:text-neutral-100">{value}</div>
-      </div>
-    </div>
-  );
+    .map(([hourKey, items]) => ({
+      hourKey,
+      label: `${hourKey}:00`,
+      items,
+    }));
 }
 
 export function AdminCalendar({
@@ -323,43 +53,37 @@ export function AdminCalendar({
 }: AdminCalendarProps) {
   const todayStart = startOfDay(new Date());
   const dayStart = view === 'weekly' ? todayStart : startOfDay(selectedDate);
-  const [selected, setSelected] = useState<Reservation | null>(null);
+  const days =
+    view === 'weekly'
+      ? Array.from({ length: 7 }, (_, i) => addDays(todayStart, i))
+      : [dayStart];
 
-  const days = useMemo(
-    () =>
-      view === 'weekly'
-        ? Array.from({ length: 7 }, (_, i) => addDays(todayStart, i))
-        : [dayStart],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [view, dayStart.getTime(), todayStart.getTime()]
-  );
-
-  const reservationsByDay = useMemo(
-    () =>
-      days.map((d) => {
-        const dateStr = format(d, 'yyyy-MM-dd');
-        return sortByTime(
-          reservations.filter((r) => {
-            const raw = typeof r.date === 'string' ? r.date : String(r.date);
-            return reservationLocalCalendarKey(raw) === dateStr;
-          })
-        );
-      }),
-    [days, reservations]
-  );
+  const reservationsByDay = days.map((d) => {
+    const dateStr = format(d, 'yyyy-MM-dd');
+    return reservations.filter((r) => {
+      const raw = typeof r.date === 'string' ? r.date : String(r.date);
+      const key = reservationLocalCalendarKey(raw);
+      return key === dateStr;
+    });
+  });
 
   const todayStr = format(todayStart, 'yyyy-MM-dd');
   const todayCount = reservations.filter((r) => {
     const raw = typeof r.date === 'string' ? r.date : String(r.date);
-    return reservationLocalCalendarKey(raw) === todayStr && r.status !== 'canceled';
+    return reservationLocalCalendarKey(raw) === todayStr;
   }).length;
+
+  /** Günlük tek sütunda daha fazla dikey alan */
+  const listMaxHeightClass =
+    view === 'daily'
+      ? 'max-h-[min(72vh,720px)]'
+      : 'max-h-[min(52vh,480px)]';
 
   return (
     <div className="space-y-6">
-      {/* Kontrol çubuğu */}
-      <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200/90 bg-white p-4 shadow-card dark:border-neutral-700 dark:bg-neutral-900/70 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200/90 bg-gradient-to-r from-white to-neutral-50/80 p-4 shadow-card dark:border-neutral-700 dark:from-neutral-900/80 dark:to-neutral-900/40 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex rounded-xl bg-neutral-100 p-1.5 dark:bg-neutral-800">
+          <div className="inline-flex rounded-xl border border-neutral-200 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800">
             {(['daily', 'weekly'] as const).map((v) => (
               <button
                 key={v}
@@ -368,246 +92,163 @@ export function AdminCalendar({
                   if (v === 'weekly') onDateChange(todayStart);
                   onViewChange(v);
                 }}
-                className={`rounded-lg px-5 py-2 text-sm font-semibold transition ${
+                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
                   view === v
-                    ? 'bg-white text-primary-700 shadow-sm dark:bg-neutral-900 dark:text-primary-400'
-                    : 'text-neutral-500 hover:text-neutral-800 dark:text-neutral-400 dark:hover:text-neutral-200'
+                    ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
+                    : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-700/50'
                 }`}
               >
                 {v === 'daily' ? 'Günlük' : 'Haftalık'}
               </button>
             ))}
           </div>
-
-          {view === 'daily' ? (
-            <div className="flex items-center gap-2">
+          {view === 'weekly' && (
+            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
+              {format(todayStart, 'd MMMM', { locale: tr })} –{' '}
+              {format(addDays(todayStart, 6), 'd MMMM yyyy', { locale: tr })}
+              <span className="ml-1 font-normal text-neutral-500 dark:text-neutral-400">
+                (bugünden itibaren 7 gün)
+              </span>
+            </p>
+          )}
+          {view === 'daily' && (
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={() => onDateChange(addDays(selectedDate, -1))}
-                className="rounded-xl border border-neutral-200 bg-white p-2.5 text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                aria-label="Önceki gün"
+                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700"
               >
-                <ChevronLeft className="h-5 w-5" aria-hidden />
+                ← Önceki gün
               </button>
               <button
                 type="button"
                 onClick={() => onDateChange(startOfDay(new Date()))}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-                  isSameDay(selectedDate, todayStart)
-                    ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
-                    : 'border border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200'
-                }`}
+                className="rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-800 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-200 dark:hover:bg-primary-900/40"
               >
                 Bugün
               </button>
               <button
                 type="button"
                 onClick={() => onDateChange(addDays(selectedDate, 1))}
-                className="rounded-xl border border-neutral-200 bg-white p-2.5 text-neutral-600 transition hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
-                aria-label="Sonraki gün"
+                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700"
               >
-                <ChevronRight className="h-5 w-5" aria-hidden />
+                Sonraki gün →
               </button>
             </div>
-          ) : (
-            <p className="text-base font-medium text-neutral-700 dark:text-neutral-200">
-              {format(todayStart, 'd MMMM', { locale: tr })} –{' '}
-              {format(addDays(todayStart, 6), 'd MMMM yyyy', { locale: tr })}
-            </p>
           )}
         </div>
-
-        <span className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50">
-          <CalendarDays className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
-          Bugün: {todayCount} randevu
-        </span>
+        <div className="flex flex-wrap gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50">
+            <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+            Bugün: {todayCount}
+          </span>
+        </div>
       </div>
 
-      {/* Günlük */}
-      {view === 'daily' && (
-        <DailyView
-          day={days[0]}
-          items={reservationsByDay[0]}
-          isToday={isSameDay(days[0], new Date())}
-          onSelect={setSelected}
-        />
-      )}
+      <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 sm:text-left">
+        {view === 'weekly'
+          ? 'Haftalık görünüm bugünden başlayarak önümüzdeki 7 günü gösterir.'
+          : 'Çok sayıda randevuda her gün kutusu içinde kaydırarak tüm listeyi görebilirsiniz; saat dilimlerine göre gruplanır.'}
+      </p>
 
-      {/* Haftalık */}
-      {view === 'weekly' && (
-        <WeeklyView days={days} reservationsByDay={reservationsByDay} onSelect={setSelected} />
-      )}
-
-      {selected && (
-        <ReservationDetailModal
-          reservation={selected}
-          onClose={() => setSelected(null)}
-          onCancel={onCancel}
-        />
-      )}
-    </div>
-  );
-}
-
-function DailyView({
-  day,
-  items,
-  isToday,
-  onSelect,
-}: {
-  day: Date;
-  items: Reservation[];
-  isToday: boolean;
-  onSelect: (r: Reservation) => void;
-}) {
-  const grouped = groupByHour(items);
-  const activeCount = items.filter((r) => r.status !== 'canceled').length;
-
-  return (
-    <div className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/60">
       <div
-        className={`flex flex-wrap items-center justify-between gap-4 border-b px-6 py-5 ${
-          isToday
-            ? 'border-primary-200/70 bg-gradient-to-r from-primary-50/90 to-white dark:border-primary-800/50 dark:from-primary-950/40 dark:to-neutral-900/0'
-            : 'border-neutral-200/80 bg-neutral-50/70 dark:border-neutral-700/80 dark:bg-neutral-900/60'
+        className={`mx-auto grid w-full gap-4 sm:gap-6 ${
+          view === 'daily'
+            ? 'max-w-2xl grid-cols-1'
+            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
         }`}
       >
-        <div className="flex items-center gap-4">
-          <span
-            className={`flex h-16 w-16 shrink-0 flex-col items-center justify-center rounded-2xl text-center ${
-              isToday
-                ? 'bg-primary-500 text-white shadow-md dark:bg-primary-600'
-                : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
-            }`}
-          >
-            <span className="text-2xl font-bold leading-none tabular-nums">{format(day, 'd')}</span>
-            <span className="mt-1 text-[10px] font-bold uppercase leading-none opacity-90">
-              {format(day, 'MMM', { locale: tr })}
-            </span>
-          </span>
-          <div>
-            <p className="text-xl font-bold capitalize text-neutral-900 dark:text-neutral-50">
-              {format(day, 'EEEE', { locale: tr })}
-              {isToday && (
-                <span className="ml-2 rounded-full bg-primary-500 px-2.5 py-0.5 align-middle text-xs font-bold uppercase tracking-wide text-white">
-                  Bugün
-                </span>
-              )}
-            </p>
-            <p className="mt-0.5 text-sm text-neutral-500 dark:text-neutral-400">
-              {format(day, 'd MMMM yyyy', { locale: tr })}
-            </p>
-          </div>
-        </div>
-        <span className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-600">
-          <Clock className="h-4 w-4 text-primary-500" strokeWidth={2} aria-hidden />
-          {activeCount} aktif randevu
-        </span>
-      </div>
+        {days.map((d, i) => {
+          const isToday = isSameDay(d, new Date());
+          const dayRes = reservationsByDay[i];
+          const sorted = [...dayRes].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+          const grouped = groupByHour(sorted);
+          const count = dayRes.length;
 
-      {items.length === 0 ? (
-        <div className="px-6 py-20 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
-            <CalendarDays className="h-8 w-8 text-neutral-400" strokeWidth={1.5} aria-hidden />
-          </div>
-          <p className="mt-5 text-base font-medium text-neutral-600 dark:text-neutral-300">
-            Bu gün için randevu yok
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-8 px-5 py-6 sm:px-8 sm:py-8">
-          {grouped.map((group) => (
-            <section key={group.hourKey}>
-              <h3 className="mb-4 flex items-center gap-3 text-base font-bold text-neutral-700 dark:text-neutral-200">
-                <span className="font-mono tabular-nums">{group.label}</span>
-                <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-700" />
-                <span className="text-sm font-medium text-neutral-400">
-                  {group.items.length} randevu
-                </span>
-              </h3>
-              <div className="space-y-4">
-                {group.items.map((r) => (
-                  <AppointmentCard key={r._id} r={r} onSelect={onSelect} size="large" />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function WeeklyView({
-  days,
-  reservationsByDay,
-  onSelect,
-}: {
-  days: Date[];
-  reservationsByDay: Reservation[][];
-  onSelect: (r: Reservation) => void;
-}) {
-  return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-      {days.map((d, i) => {
-        const isToday = isSameDay(d, new Date());
-        const items = reservationsByDay[i];
-        const activeCount = items.filter((r) => r.status !== 'canceled').length;
-
-        return (
-          <section
-            key={d.toISOString()}
-            className={`overflow-hidden rounded-2xl border shadow-card dark:shadow-none ${
-              isToday
-                ? 'border-primary-300/80 ring-2 ring-primary-200/50 dark:border-primary-700/60 dark:ring-primary-900/40'
-                : 'border-neutral-200/90 dark:border-neutral-700'
-            }`}
-          >
-            <header
-              className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${
+          return (
+            <div
+              key={d.toISOString()}
+              className={`flex min-h-0 flex-col rounded-2xl border p-4 shadow-card transition dark:shadow-none ${
                 isToday
-                  ? 'border-primary-200/70 bg-primary-50/80 dark:border-primary-800/50 dark:bg-primary-950/40'
-                  : 'border-neutral-200/70 bg-neutral-50/80 dark:border-neutral-700/70 dark:bg-neutral-900/60'
+                  ? 'border-primary-300/80 bg-gradient-to-b from-primary-50/90 to-white dark:border-primary-700/50 dark:from-primary-950/30 dark:to-neutral-900/60'
+                  : 'border-neutral-200/90 bg-neutral-50/40 dark:border-neutral-700 dark:bg-neutral-900/40'
               }`}
             >
-              <div className="flex items-center gap-3">
-                <span
-                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl text-lg font-bold tabular-nums ${
-                    isToday
-                      ? 'bg-primary-500 text-white dark:bg-primary-600'
-                      : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
-                  }`}
-                >
-                  {format(d, 'd')}
-                </span>
-                <div>
-                  <p className="text-base font-bold capitalize text-neutral-900 dark:text-neutral-50">
-                    {format(d, 'EEEE', { locale: tr })}
-                  </p>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {format(d, 'MMMM yyyy', { locale: tr })}
-                  </p>
+              <div className="shrink-0 border-b border-neutral-200/80 pb-3 dark:border-neutral-700/80">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="text-sm font-bold leading-tight text-neutral-900 dark:text-white">
+                    {format(d, 'd MMMM', { locale: tr })}
+                    <span className="block text-xs font-medium capitalize text-neutral-500 dark:text-neutral-400">
+                      {format(d, 'EEEE', { locale: tr })}
+                    </span>
+                  </h3>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    {isToday && (
+                      <span className="rounded-full bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                        Bugün
+                      </span>
+                    )}
+                    {count > 0 && (
+                      <span className="rounded-full bg-neutral-200/90 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+                        {count} randevu
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-              {activeCount > 0 && (
-                <span className="rounded-full bg-primary-100 px-3 py-1 text-sm font-bold tabular-nums text-primary-800 dark:bg-primary-900/60 dark:text-primary-200">
-                  {activeCount}
-                </span>
-              )}
-            </header>
 
-            <div className="space-y-3 bg-white p-4 dark:bg-neutral-900/50">
-              {items.length === 0 ? (
-                <p className="py-8 text-center text-sm text-neutral-400 dark:text-neutral-500">
-                  Randevu yok
-                </p>
+              {count === 0 ? (
+                <div className="mt-4 shrink-0 rounded-xl border border-dashed border-neutral-200 bg-white/60 py-10 text-center dark:border-neutral-600 dark:bg-neutral-900/30">
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Bu gün randevu yok</p>
+                </div>
               ) : (
-                items.map((r) => <AppointmentCard key={r._id} r={r} onSelect={onSelect} />)
+                <div
+                  className={`mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden scroll-smooth pr-1 ${listMaxHeightClass} [scrollbar-gutter:stable] [overscroll-behavior:contain]`}
+                  style={{ WebkitOverflowScrolling: 'touch' }}
+                >
+                  <div className="space-y-4 pb-1">
+                    {grouped.map((group) => (
+                      <div key={group.hourKey}>
+                        <div
+                          className={`sticky top-0 z-[1] -mx-1 mb-2 flex items-center gap-2 px-1 py-1 ${
+                            isToday
+                              ? 'bg-primary-50/95 dark:bg-primary-950/90'
+                              : 'bg-neutral-50/95 dark:bg-neutral-900/90'
+                          } backdrop-blur-sm`}
+                        >
+                          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
+                          <span className="shrink-0 text-[11px] font-bold tabular-nums text-neutral-500 dark:text-neutral-400">
+                            {group.label}
+                            <span className="ml-1 font-normal text-neutral-400">({group.items.length})</span>
+                          </span>
+                          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
+                        </div>
+                        <ul className="space-y-2">
+                          {group.items.map((r) => (
+                            <li key={r._id}>
+                              <AdminReservationCard
+                                variant="compact"
+                                reservation={r}
+                                onCancel={onCancel}
+                              />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {count > 4 && (
+                <p className="mt-2 shrink-0 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
+                  Liste uzunsa bu alan içinde kaydırın
+                </p>
               )}
             </div>
-          </section>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
