@@ -1,4 +1,4 @@
-/** İşletme keşfet videoları — türe göre stok promo (ileride promoVideoUrl ile değiştirilebilir) */
+/** İşletme keşfet — stok videolar (promoVideoUrl yoksa önizleme için) */
 
 const VIDEOS = {
   salon: 'https://videos.pexels.com/video-files/3997988/3997988-hd_1080_1920_25fps.mp4',
@@ -46,17 +46,29 @@ export interface DiscoverBusiness {
   rating?: number | null;
   reviewCount?: number | null;
   promoVideoUrl?: string | null;
+  promoVideoCaption?: string | null;
 }
 
-export function getDiscoverVideoUrl(business: Pick<DiscoverBusiness, 'businessType' | 'promoVideoUrl'>): string {
+export function hasPromoVideo(business: Pick<DiscoverBusiness, 'promoVideoUrl'>): boolean {
+  return Boolean(business.promoVideoUrl?.trim());
+}
+
+export function getDiscoverVideoUrl(
+  business: Pick<DiscoverBusiness, 'businessType' | 'promoVideoUrl'>
+): string | null {
   if (business.promoVideoUrl?.trim()) return business.promoVideoUrl.trim();
   const key = TYPE_TO_VIDEO[business.businessType] ?? 'default';
   return VIDEOS[key];
 }
 
-/** Keşfet şeridinde gösterilecek işletmeleri karıştır (deterministik değil, her yüklemede farklı) */
-export function pickDiscoverBusinesses<T extends DiscoverBusiness>(list: T[], count = 12): T[] {
-  if (list.length <= count) return [...list];
-  const shuffled = [...list].sort(() => Math.random() - 0.5);
+/** Sadece işletmenin yüklediği videolar */
+export function filterBusinessesWithPromoVideo<T extends DiscoverBusiness>(list: T[]): T[] {
+  return list.filter(hasPromoVideo);
+}
+
+/** Keşfet akışı — önce gerçek videolar, karışık sıra */
+export function buildDiscoverFeed<T extends DiscoverBusiness>(list: T[], count = 20): T[] {
+  const withVideo = filterBusinessesWithPromoVideo(list);
+  const shuffled = [...withVideo].sort(() => Math.random() - 0.5);
   return shuffled.slice(0, count);
 }

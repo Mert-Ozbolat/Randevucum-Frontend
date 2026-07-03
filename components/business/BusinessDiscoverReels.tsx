@@ -3,9 +3,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import {
+  Calendar,
   ChevronLeft,
   ChevronRight,
   MapPin,
+  Share2,
   Star,
   Volume2,
   VolumeX,
@@ -15,7 +17,9 @@ import { BUSINESS_TYPE_LABELS } from '@/lib/businessCategories';
 import {
   type DiscoverBusiness,
   getDiscoverVideoUrl,
+  hasPromoVideo,
 } from '@/lib/businessDiscoverMedia';
+import { FavoriteButton } from '@/components/favorites/FavoriteButton';
 
 export type DiscoverReelsVariant = 'immersive' | 'embedded';
 
@@ -31,19 +35,25 @@ function DiscoverSlide({
   variant,
   isActive,
   muted,
+  onShare,
 }: {
   business: DiscoverBusiness;
   variant: DiscoverReelsVariant;
   isActive: boolean;
   muted: boolean;
+  onShare: (business: DiscoverBusiness) => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [progress, setProgress] = useState(0);
   const rating = business.averageRating ?? business.rating;
   const location = [business.address?.district, business.address?.city].filter(Boolean).join(', ');
   const category =
     BUSINESS_TYPE_LABELS[business.businessType] ||
     BUSINESS_TYPES[business.businessType] ||
     business.businessType;
+  const videoSrc = getDiscoverVideoUrl(business);
+  const caption = business.promoVideoCaption?.trim() || business.description;
+  const isRealVideo = hasPromoVideo(business);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -53,6 +63,7 @@ function DiscoverSlide({
     } else {
       video.pause();
       video.currentTime = 0;
+      setProgress(0);
     }
   }, [isActive]);
 
@@ -61,19 +72,40 @@ function DiscoverSlide({
     if (video) video.muted = muted;
   }, [muted]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !isActive) return;
+    const onTime = () => {
+      if (video.duration) setProgress(video.currentTime / video.duration);
+    };
+    video.addEventListener('timeupdate', onTime);
+    return () => video.removeEventListener('timeupdate', onTime);
+  }, [isActive]);
+
   const slideClass =
     variant === 'immersive'
-      ? 'h-[min(78dvh,720px)] w-[min(88vw,400px)] snap-center shrink-0'
-      : 'h-[min(62dvh,520px)] w-[min(78vw,320px)] snap-center shrink-0';
+      ? 'h-[min(85dvh,780px)] w-[min(92vw,420px)] snap-center shrink-0'
+      : 'h-[min(62dvh,520px)] w-[min(78vw,300px)] snap-center shrink-0';
+
+  if (!videoSrc) return null;
 
   return (
     <article
       data-discover-slide
-      className={`relative overflow-hidden rounded-3xl bg-neutral-900 shadow-2xl ring-1 ring-white/10 ${slideClass}`}
+      className={`relative overflow-hidden rounded-3xl bg-black shadow-2xl ring-1 ring-white/10 ${slideClass}`}
     >
+      {isActive && (
+        <div className="absolute inset-x-0 top-0 z-20 h-0.5 bg-white/20">
+          <div
+            className="h-full bg-white transition-[width] duration-150 ease-linear"
+            style={{ width: `${progress * 100}%` }}
+          />
+        </div>
+      )}
+
       <video
         ref={videoRef}
-        src={getDiscoverVideoUrl(business)}
+        src={videoSrc}
         poster={business.imageUrl || undefined}
         className="absolute inset-0 h-full w-full object-cover"
         muted={muted}
@@ -81,12 +113,41 @@ function DiscoverSlide({
         playsInline
         preload={isActive ? 'auto' : 'metadata'}
       />
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-black/30" />
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-black/40" />
 
-      <div className="absolute inset-x-0 bottom-0 p-5 text-white">
-        <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur">
-          {category}
-        </span>
+      {/* Reels tarzı sağ aksiyonlar */}
+      <div className="absolute bottom-24 right-3 z-20 flex flex-col items-center gap-4">
+        <div className="pointer-events-auto">
+          <FavoriteButton businessId={business._id} size="sm" className="!bg-black/40 !text-white backdrop-blur" />
+        </div>
+        <button
+          type="button"
+          onClick={() => onShare(business)}
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur transition hover:bg-black/55"
+          aria-label="Paylaş"
+        >
+          <Share2 className="h-5 w-5" strokeWidth={2} />
+        </button>
+        <Link
+          href={`/business/${business._id}/reserve`}
+          className="pointer-events-auto flex h-11 w-11 items-center justify-center rounded-full bg-primary-500 text-white shadow-lg transition hover:bg-primary-600"
+          aria-label="Randevu al"
+        >
+          <Calendar className="h-5 w-5" strokeWidth={2} />
+        </Link>
+      </div>
+
+      <div className="absolute inset-x-0 bottom-0 z-10 p-5 pr-16 text-white">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="inline-block rounded-full bg-white/20 px-2.5 py-1 text-xs font-medium backdrop-blur">
+            {category}
+          </span>
+          {isRealVideo && (
+            <span className="inline-block rounded-full bg-primary-500/90 px-2.5 py-1 text-xs font-semibold backdrop-blur">
+              İşletme videosu
+            </span>
+          )}
+        </div>
         <h3 className="mt-2 text-xl font-bold leading-tight">{business.name}</h3>
         {location && (
           <p className="mt-1 flex items-center gap-1 text-sm text-white/85">
@@ -103,14 +164,16 @@ function DiscoverSlide({
             )}
           </p>
         )}
-        {business.description && variant === 'immersive' && (
-          <p className="mt-2 line-clamp-2 text-sm text-white/80">{business.description}</p>
+        {caption && (
+          <p className={`mt-2 text-sm text-white/85 ${variant === 'embedded' ? 'line-clamp-2' : 'line-clamp-3'}`}>
+            {caption}
+          </p>
         )}
         <Link
           href={`/business/${business._id}`}
-          className="pointer-events-auto mt-4 inline-flex w-full items-center justify-center rounded-xl bg-primary-500 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-primary-600"
+          className="pointer-events-auto mt-4 inline-flex w-full items-center justify-center rounded-xl bg-white/15 py-2.5 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/25 sm:w-auto sm:px-8"
         >
-          Randevu al
+          İşletmeyi gör
         </Link>
       </div>
     </article>
@@ -126,6 +189,9 @@ export function BusinessDiscoverReels({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const [muted, setMuted] = useState(true);
+  const [shareHint, setShareHint] = useState('');
+
+  const playable = businesses.filter((b) => getDiscoverVideoUrl(b));
 
   const updateActiveSlide = useCallback(() => {
     const container = scrollRef.current;
@@ -156,24 +222,40 @@ export function BusinessDiscoverReels({
     updateActiveSlide();
     container.addEventListener('scroll', updateActiveSlide, { passive: true });
     return () => container.removeEventListener('scroll', updateActiveSlide);
-  }, [businesses.length, updateActiveSlide]);
+  }, [playable.length, updateActiveSlide]);
 
   const scrollBySlide = (dir: -1 | 1) => {
     const container = scrollRef.current;
     if (!container) return;
     const slide = container.querySelector<HTMLElement>('[data-discover-slide]');
-    const gap = 16;
+    const gap = 12;
     const amount = (slide?.offsetWidth ?? 320) + gap;
     container.scrollBy({ left: dir * amount, behavior: 'smooth' });
   };
 
-  if (!businesses.length) return null;
+  const handleShare = async (business: DiscoverBusiness) => {
+    const url = `${typeof window !== 'undefined' ? window.location.origin : ''}/business/${business._id}`;
+    const text = `${business.name} — Randevucum Keşfet`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: business.name, text, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareHint('Link kopyalandı!');
+        setTimeout(() => setShareHint(''), 2000);
+      }
+    } catch {
+      /* kullanıcı iptal etti */
+    }
+  };
+
+  if (!playable.length) return null;
 
   const isImmersive = variant === 'immersive';
 
   return (
     <section
-      className={`${isImmersive ? 'bg-neutral-950 text-white' : ''} ${className}`}
+      className={`${isImmersive ? 'bg-black text-white' : ''} ${className}`}
       aria-label="İşletme keşfet videoları"
     >
       {showHeader && (
@@ -183,13 +265,16 @@ export function BusinessDiscoverReels({
               Keşfet
             </p>
             <h2 className={`text-2xl font-bold ${isImmersive ? 'text-white' : 'text-neutral-900 dark:text-neutral-50'}`}>
-              İşletmeleri izle
+              İşletme videoları
             </h2>
             <p className={`mt-1 text-sm ${isImmersive ? 'text-neutral-400' : 'text-neutral-600 dark:text-neutral-400'}`}>
-              Reels gibi yatay kaydır — sağa sola geç
+              Reels gibi yatay kaydır — işletmelerin paylaştığı videolar
             </p>
           </div>
           <div className="flex items-center gap-2">
+            {shareHint && (
+              <span className="text-xs font-medium text-primary-400">{shareHint}</span>
+            )}
             <button
               type="button"
               onClick={() => setMuted((m) => !m)}
@@ -215,7 +300,7 @@ export function BusinessDiscoverReels({
       )}
 
       <div className="relative">
-        {!isImmersive && businesses.length > 1 && (
+        {!isImmersive && playable.length > 1 && (
           <>
             <button
               type="button"
@@ -238,25 +323,26 @@ export function BusinessDiscoverReels({
 
         <div
           ref={scrollRef}
-          className={`flex gap-4 overflow-x-auto overscroll-x-contain pb-2 scrollbar-hide snap-x snap-mandatory ${
+          className={`flex gap-3 overflow-x-auto overscroll-x-contain pb-2 scrollbar-hide snap-x snap-mandatory ${
             isImmersive ? 'px-4 sm:px-6' : '-mx-1 px-1'
           }`}
           style={{ WebkitOverflowScrolling: 'touch' }}
         >
-          {businesses.map((b, i) => (
+          {playable.map((b, i) => (
             <DiscoverSlide
               key={b._id}
               business={b}
               variant={variant}
               isActive={i === activeIndex}
               muted={muted}
+              onShare={handleShare}
             />
           ))}
         </div>
 
-        {businesses.length > 1 && (
-          <div className={`mt-4 flex justify-center gap-1.5 ${isImmersive ? '' : ''}`}>
-            {businesses.map((b, i) => (
+        {playable.length > 1 && (
+          <div className="mt-4 flex justify-center gap-1.5">
+            {playable.map((b, i) => (
               <span
                 key={b._id}
                 className={`h-1.5 rounded-full transition-all ${

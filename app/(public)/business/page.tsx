@@ -24,6 +24,8 @@ interface Business {
   averageRating?: number | null;
   rating?: number | null;
   reviewCount?: number | null;
+  promoVideoUrl?: string | null;
+  promoVideoCaption?: string | null;
   createdAt?: string;
 }
 
@@ -118,8 +120,9 @@ function BusinessListPage() {
   const DISCOVER_AFTER = 6;
   const listBeforeDiscover = filteredAndSorted.slice(0, DISCOVER_AFTER);
   const listAfterDiscover = filteredAndSorted.slice(DISCOVER_AFTER);
+  const hasDiscoverVideos = filteredAndSorted.some((b) => Boolean(b.promoVideoUrl?.trim()));
   const showDiscoverSection =
-    !loading && !error && filteredAndSorted.length > DISCOVER_AFTER;
+    !loading && !error && filteredAndSorted.length > 0 && hasDiscoverVideos;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">

@@ -31,7 +31,7 @@ function assertEnv() {
 
 /**
  * ImageKit’e doğrudan yükleme; imza API üzerinden alınır (JWT gerekir).
- * Dönüş: kalıcı HTTPS görsel URL’si.
+ * Görsel ve video için kullanılabilir. Dönüş: kalıcı HTTPS URL’si.
  */
 export async function uploadFileToImageKit(file: File, options?: ImageKitUploadOptions): Promise<string> {
   assertEnv();

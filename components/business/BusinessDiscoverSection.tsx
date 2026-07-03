@@ -5,21 +5,18 @@ import { AnimateIn } from '@/components/ui/AnimateIn';
 import { BusinessDiscoverReels } from '@/components/business/BusinessDiscoverReels';
 import {
   type DiscoverBusiness,
-  pickDiscoverBusinesses,
+  buildDiscoverFeed,
 } from '@/lib/businessDiscoverMedia';
 
 interface BusinessDiscoverSectionProps {
   businesses: DiscoverBusiness[];
 }
 
-/** İşletmeler listesinde kaydırınca görünen video keşfet şeridi */
+/** İşletmeler listesinde kaydırınca görünen video keşfet şeridi (sadece yüklenmiş videolar) */
 export function BusinessDiscoverSection({ businesses }: BusinessDiscoverSectionProps) {
-  const discoverList = useMemo(
-    () => pickDiscoverBusinesses(businesses, 10),
-    [businesses]
-  );
+  const discoverList = useMemo(() => buildDiscoverFeed(businesses, 10), [businesses]);
 
-  if (discoverList.length < 2) return null;
+  if (discoverList.length < 1) return null;
 
   return (
     <AnimateIn animation="slide-in-right" className="col-span-full">
