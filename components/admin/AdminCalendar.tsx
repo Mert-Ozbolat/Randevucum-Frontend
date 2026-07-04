@@ -17,7 +17,7 @@ interface Reservation {
   endTime?: string;
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
-  staffId?: { name: string };
+  staffId?: { _id?: string; name: string; title?: string } | string | null;
   customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
 }
 
@@ -156,7 +156,7 @@ function ReservationDetailModal({
             }`}
           />
           <DetailRow icon={Scissors} label="Hizmet" value={reservation.serviceId?.name || '—'} />
-          {reservation.staffId?.name && (
+          {typeof reservation.staffId === 'object' && reservation.staffId?.name && (
             <DetailRow icon={UserRound} label="Personel" value={reservation.staffId.name} />
           )}
           <DetailRow icon={User} label="Müşteri" value={customerName(reservation)} />
@@ -210,6 +210,222 @@ function DetailRow({
   );
 }
 
+function staffName(r: Reservation): string | null {
+  const s = r.staffId;
+  if (!s) return null;
+  if (typeof s === 'string') return null;
+  return s.name || null;
+}
+
+const STATUS_ACCENT: Record<string, string> = {
+  approved: 'bg-emerald-500',
+  pending: 'bg-amber-500',
+  completed: 'bg-sky-500',
+  canceled: 'bg-neutral-300 dark:bg-neutral-600',
+};
+
+/** Günlük agenda satırı: solda büyük saat, sağda randevu kartı */
+function DayAgendaRow({
+  group,
+  isToday,
+  onSelect,
+}: {
+  group: { hourKey: string; label: string; items: Reservation[] };
+  isToday: boolean;
+  onSelect: (reservation: Reservation) => void;
+}) {
+  return (
+    <div className="flex gap-3 sm:gap-5">
+      {/* Saat sütunu */}
+      <div className="flex w-14 shrink-0 flex-col items-center pt-1 sm:w-20">
+        <span
+          className={`font-mono text-lg font-extrabold tabular-nums leading-none sm:text-2xl ${
+            isToday ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-800 dark:text-neutral-100'
+          }`}
+        >
+          {group.hourKey}
+          <span className="text-neutral-400 dark:text-neutral-500">:00</span>
+        </span>
+        <span className="mt-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+          {group.items.length}
+        </span>
+      </div>
+
+      {/* Dikey çizgi + kartlar */}
+      <div className="relative min-w-0 flex-1 border-l-2 border-neutral-200 pb-5 pl-4 dark:border-neutral-700 sm:pl-5">
+        <span
+          className={`absolute -left-[7px] top-2 h-3 w-3 rounded-full ring-4 ring-white dark:ring-neutral-900 ${
+            isToday ? 'bg-primary-500' : 'bg-neutral-300 dark:bg-neutral-600'
+          }`}
+          aria-hidden
+        />
+        <div className="space-y-2.5">
+          {group.items.map((r) => (
+            <DayAgendaCard key={r._id} reservation={r} onSelect={onSelect} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Günlük görünümde okunaklı, büyük randevu kartı */
+function DayAgendaCard({
+  reservation,
+  onSelect,
+}: {
+  reservation: Reservation;
+  onSelect: (reservation: Reservation) => void;
+}) {
+  const c = reservation.customerId;
+  const canceled = reservation.status === 'canceled';
+  const sName = staffName(reservation);
+  const initials =
+    `${(c?.firstName || '').charAt(0)}${(c?.lastName || '').charAt(0)}`.toUpperCase() || '?';
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(reservation)}
+      className={`group flex w-full items-center gap-3 rounded-2xl border bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/70 sm:p-4 ${
+        canceled
+          ? 'border-neutral-200 opacity-60 dark:border-neutral-700'
+          : 'border-neutral-200/90 dark:border-neutral-700'
+      }`}
+    >
+      {/* Durum şeridi */}
+      <span
+        className={`h-12 w-1.5 shrink-0 rounded-full ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
+        aria-hidden
+      />
+
+      {/* Saat bloğu */}
+      <div className="flex w-[4.5rem] shrink-0 flex-col items-center rounded-xl bg-neutral-50 px-2 py-1.5 dark:bg-neutral-800/70">
+        <span className="font-mono text-base font-bold tabular-nums text-neutral-900 dark:text-white">
+          {reservation.time}
+        </span>
+        {reservation.endTime && (
+          <span className="font-mono text-[11px] tabular-nums text-neutral-400">
+            {reservation.endTime}
+          </span>
+        )}
+      </div>
+
+      {/* Avatar */}
+      <div
+        className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white sm:flex"
+        aria-hidden
+      >
+        {initials}
+      </div>
+
+      {/* Bilgi */}
+      <div className="min-w-0 flex-1">
+        <p className={`truncate text-base font-semibold text-neutral-900 dark:text-white ${canceled ? 'line-through' : ''}`}>
+          {customerName(reservation)}
+        </p>
+        <p className="mt-0.5 truncate text-sm text-neutral-600 dark:text-neutral-300">
+          {reservation.serviceId?.name || 'Hizmet'}
+          {reservation.serviceId?.durationMinutes ? (
+            <span className="text-neutral-400"> · {reservation.serviceId.durationMinutes} dk</span>
+          ) : null}
+        </p>
+        {sName && (
+          <p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">{sName}</p>
+        )}
+      </div>
+
+      {/* Durum + ipucu */}
+      <div className="flex shrink-0 flex-col items-end gap-1.5">
+        <ReservationStatusBadge status={reservation.status} />
+        <span className="hidden text-[11px] font-medium text-primary-500 opacity-0 transition group-hover:opacity-100 sm:inline">
+          Detay →
+        </span>
+      </div>
+    </button>
+  );
+}
+
+/** Günlük görünüm: dikey zaman çizelgesi */
+function DayAgenda({
+  day,
+  reservations,
+  isToday,
+  onSelect,
+}: {
+  day: Date;
+  reservations: Reservation[];
+  isToday: boolean;
+  onSelect: (reservation: Reservation) => void;
+}) {
+  const sorted = [...reservations].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  const grouped = groupByHour(sorted);
+  const count = reservations.length;
+
+  return (
+    <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/50">
+      {/* Gün başlığı */}
+      <div
+        className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${
+          isToday
+            ? 'border-primary-200/70 bg-gradient-to-r from-primary-50/90 to-white dark:border-primary-800/50 dark:from-primary-950/30 dark:to-neutral-900/0'
+            : 'border-neutral-200/80 bg-neutral-50/70 dark:border-neutral-700/80 dark:bg-neutral-900/60'
+        }`}
+      >
+        <div className="flex items-center gap-3">
+          <span
+            className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl text-center ${
+              isToday
+                ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
+                : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
+            }`}
+          >
+            <span className="text-xl font-extrabold leading-none tabular-nums">{format(day, 'd')}</span>
+            <span className="mt-0.5 text-[10px] font-bold uppercase leading-none opacity-90">
+              {format(day, 'MMM', { locale: tr })}
+            </span>
+          </span>
+          <div>
+            <p className="text-lg font-bold capitalize text-neutral-900 dark:text-neutral-50">
+              {format(day, 'EEEE', { locale: tr })}
+              {isToday && (
+                <span className="ml-2 rounded-full bg-primary-500 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-white">
+                  Bugün
+                </span>
+              )}
+            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+              {format(day, 'd MMMM yyyy', { locale: tr })}
+            </p>
+          </div>
+        </div>
+        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-600">
+          <Clock className="h-4 w-4 text-primary-500" strokeWidth={2} aria-hidden />
+          {count} randevu
+        </span>
+      </div>
+
+      {/* Çizelge */}
+      {count === 0 ? (
+        <div className="px-6 py-16 text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+            <CalendarDays className="h-7 w-7 text-neutral-400" strokeWidth={1.5} aria-hidden />
+          </div>
+          <p className="mt-4 text-base font-medium text-neutral-600 dark:text-neutral-300">
+            Bu gün için randevu yok
+          </p>
+        </div>
+      ) : (
+        <div className="px-4 py-6 sm:px-6">
+          {grouped.map((group) => (
+            <DayAgendaRow key={group.hourKey} group={group} isToday={isToday} onSelect={onSelect} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function AdminCalendar({
   view,
   onViewChange,
@@ -241,11 +457,7 @@ export function AdminCalendar({
     return reservationLocalCalendarKey(raw) === todayStr;
   }).length;
 
-  /** Günlük tek sütunda daha fazla dikey alan */
-  const listMaxHeightClass =
-    view === 'daily'
-      ? 'max-h-[min(72vh,720px)]'
-      : 'max-h-[min(52vh,480px)]';
+  const listMaxHeightClass = 'max-h-[min(52vh,480px)]';
 
   return (
     <div className="space-y-6">
@@ -316,103 +528,100 @@ export function AdminCalendar({
       <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 sm:text-left">
         {view === 'weekly'
           ? 'Haftalık görünüm bugünden başlayarak önümüzdeki 7 günü gösterir.'
-          : 'Çok sayıda randevuda her gün kutusu içinde kaydırarak tüm listeyi görebilirsiniz; saat dilimlerine göre gruplanır.'}
+          : 'Randevular saatlerine göre sıralanır; detay için karta dokunun.'}
       </p>
 
-      <div
-        className={`mx-auto grid w-full gap-4 sm:gap-6 ${
-          view === 'daily'
-            ? 'max-w-4xl grid-cols-1'
-            : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-        }`}
-      >
-        {days.map((d, i) => {
-          const isToday = isSameDay(d, new Date());
-          const dayRes = reservationsByDay[i];
-          const sorted = [...dayRes].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
-          const grouped = groupByHour(sorted);
-          const count = dayRes.length;
+      {view === 'daily' ? (
+        <DayAgenda
+          day={days[0]}
+          reservations={reservationsByDay[0]}
+          isToday={isSameDay(days[0], new Date())}
+          onSelect={setSelectedReservation}
+        />
+      ) : (
+        <div className="mx-auto grid w-full gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {days.map((d, i) => {
+            const isToday = isSameDay(d, new Date());
+            const dayRes = reservationsByDay[i];
+            const sorted = [...dayRes].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            const grouped = groupByHour(sorted);
+            const count = dayRes.length;
 
-          return (
-            <div
-              key={d.toISOString()}
-              className={`flex min-h-0 flex-col rounded-2xl border p-4 shadow-card transition dark:shadow-none ${
-                isToday
-                  ? 'border-primary-300/80 bg-gradient-to-b from-primary-50/90 to-white dark:border-primary-700/50 dark:from-primary-950/30 dark:to-neutral-900/60'
-                  : 'border-neutral-200/90 bg-neutral-50/40 dark:border-neutral-700 dark:bg-neutral-900/40'
-              }`}
-            >
-              <div className="shrink-0 border-b border-neutral-200/80 pb-3 dark:border-neutral-700/80">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-sm font-bold leading-tight text-neutral-900 dark:text-white">
-                    {format(d, 'd MMMM', { locale: tr })}
-                    <span className="block text-xs font-medium capitalize text-neutral-500 dark:text-neutral-400">
-                      {format(d, 'EEEE', { locale: tr })}
-                    </span>
-                  </h3>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    {isToday && (
-                      <span className="rounded-full bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
-                        Bugün
+            return (
+              <div
+                key={d.toISOString()}
+                className={`flex min-h-0 flex-col rounded-2xl border p-4 shadow-card transition dark:shadow-none ${
+                  isToday
+                    ? 'border-primary-300/80 bg-gradient-to-b from-primary-50/90 to-white dark:border-primary-700/50 dark:from-primary-950/30 dark:to-neutral-900/60'
+                    : 'border-neutral-200/90 bg-neutral-50/40 dark:border-neutral-700 dark:bg-neutral-900/40'
+                }`}
+              >
+                <div className="shrink-0 border-b border-neutral-200/80 pb-3 dark:border-neutral-700/80">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-bold leading-tight text-neutral-900 dark:text-white">
+                      {format(d, 'd MMMM', { locale: tr })}
+                      <span className="block text-xs font-medium capitalize text-neutral-500 dark:text-neutral-400">
+                        {format(d, 'EEEE', { locale: tr })}
                       </span>
-                    )}
-                    {count > 0 && (
-                      <span className="rounded-full bg-neutral-200/90 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
-                        {count} randevu
-                      </span>
-                    )}
+                    </h3>
+                    <div className="flex shrink-0 flex-col items-end gap-1">
+                      {isToday && (
+                        <span className="rounded-full bg-primary-500 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          Bugün
+                        </span>
+                      )}
+                      {count > 0 && (
+                        <span className="rounded-full bg-neutral-200/90 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-neutral-700 dark:bg-neutral-700 dark:text-neutral-200">
+                          {count} randevu
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {count === 0 ? (
-                <div className="mt-4 shrink-0 rounded-xl border border-dashed border-neutral-200 bg-white/60 py-10 text-center dark:border-neutral-600 dark:bg-neutral-900/30">
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">Bu gün randevu yok</p>
-                </div>
-              ) : (
-                <div
-                  className={`mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden scroll-smooth pr-1 ${listMaxHeightClass} [scrollbar-gutter:stable] [overscroll-behavior:contain]`}
-                  style={{ WebkitOverflowScrolling: 'touch' }}
-                >
-                  <div className="space-y-4 pb-1">
-                    {grouped.map((group) => (
-                      <div key={group.hourKey}>
-                        <div
-                          className={`sticky top-0 z-[1] -mx-1 mb-2 flex items-center gap-2 px-1 py-1 ${
-                            isToday
-                              ? 'bg-primary-50/95 dark:bg-primary-950/90'
-                              : 'bg-neutral-50/95 dark:bg-neutral-900/90'
-                          } backdrop-blur-sm`}
-                        >
-                          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
-                          <span className="shrink-0 text-[11px] font-bold tabular-nums text-neutral-500 dark:text-neutral-400">
-                            {group.label}
-                            <span className="ml-1 font-normal text-neutral-400">({group.items.length})</span>
-                          </span>
-                          <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
+                {count === 0 ? (
+                  <div className="mt-4 shrink-0 rounded-xl border border-dashed border-neutral-200 bg-white/60 py-10 text-center dark:border-neutral-600 dark:bg-neutral-900/30">
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Bu gün randevu yok</p>
+                  </div>
+                ) : (
+                  <div
+                    className={`mt-3 min-h-0 flex-1 overflow-y-auto overflow-x-hidden scroll-smooth pr-1 ${listMaxHeightClass} [scrollbar-gutter:stable] [overscroll-behavior:contain]`}
+                    style={{ WebkitOverflowScrolling: 'touch' }}
+                  >
+                    <div className="space-y-4 pb-1">
+                      {grouped.map((group) => (
+                        <div key={group.hourKey}>
+                          <div
+                            className={`sticky top-0 z-[1] -mx-1 mb-2 flex items-center gap-2 px-1 py-1 ${
+                              isToday
+                                ? 'bg-primary-50/95 dark:bg-primary-950/90'
+                                : 'bg-neutral-50/95 dark:bg-neutral-900/90'
+                            } backdrop-blur-sm`}
+                          >
+                            <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
+                            <span className="shrink-0 text-[11px] font-bold tabular-nums text-neutral-500 dark:text-neutral-400">
+                              {group.label}
+                              <span className="ml-1 font-normal text-neutral-400">({group.items.length})</span>
+                            </span>
+                            <span className="h-px flex-1 bg-neutral-200 dark:bg-neutral-600" />
+                          </div>
+                          <ul className="space-y-2">
+                            {group.items.map((r) => (
+                              <li key={r._id}>
+                                <ReservationClickCard reservation={r} onSelect={setSelectedReservation} />
+                              </li>
+                            ))}
+                          </ul>
                         </div>
-                        <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                          {group.items.map((r) => (
-                            <li key={r._id}>
-                              <ReservationClickCard reservation={r} onSelect={setSelectedReservation} />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-
-              {count > 4 && (
-                <p className="mt-2 shrink-0 text-center text-[10px] text-neutral-400 dark:text-neutral-500">
-                  Liste uzunsa bu alan içinde kaydırın
-                </p>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
       {selectedReservation && (
         <ReservationDetailModal
           reservation={selectedReservation}

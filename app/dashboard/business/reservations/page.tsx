@@ -1,10 +1,10 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
-import { CalendarDays, ClipboardList, History, Radio, Store } from 'lucide-react';
+import { CalendarDays, ClipboardList, Filter, History, Radio, Store, Users } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { AdminCalendar } from '@/components/admin/AdminCalendar';
 import { AdminReservationCard } from '@/components/admin/AdminReservationCard';
@@ -23,6 +23,30 @@ import { AnimateIn } from '@/components/ui/AnimateIn';
 import { useBusinessReservationsLive } from '@/contexts/BusinessReservationsLiveContext';
 
 type PageTab = 'calendar' | 'list' | 'past';
+type StaffFilter = 'all' | 'unassigned' | string;
+
+interface StaffOption {
+  _id: string;
+  name: string;
+  title?: string;
+}
+
+function reservationStaffId(r: { staffId?: { _id?: string; name?: string } | string | null }): string | null {
+  const s = r.staffId;
+  if (!s) return null;
+  if (typeof s === 'string') return s;
+  if (s._id) return String(s._id);
+  return null;
+}
+
+function matchesStaffFilter(
+  r: { staffId?: { _id?: string; name?: string } | string | null },
+  filter: StaffFilter
+): boolean {
+  if (filter === 'all') return true;
+  if (filter === 'unassigned') return !reservationStaffId(r);
+  return reservationStaffId(r) === filter;
+}
 
 function formatReservationDay(raw: string): string {
   const key = reservationLocalCalendarKey(raw);
@@ -45,34 +69,57 @@ export default function BusinessReservationsPage() {
   const [view, setView] = useState<'daily' | 'weekly'>('daily');
   const [selectedDate, setSelectedDate] = useState<Date>(() => startOfDay(new Date()));
   const [tab, setTab] = useState<PageTab>('calendar');
+  const [staffFilter, setStaffFilter] = useState<StaffFilter>('all');
+  const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (!businessId) {
+      setStaffList([]);
+      return;
+    }
+    api
+      .get<{ data: StaffOption[] }>(`/staff/business/${businessId}`)
+      .then((res) => setStaffList(res.data.data || []))
+      .catch(() => setStaffList([]));
+  }, [businessId]);
+
+  const filteredReservations = useMemo(
+    () => reservations.filter((r) => matchesStaffFilter(r, staffFilter)),
+    [reservations, staffFilter]
+  );
+
+  const hasUnassigned = useMemo(
+    () => reservations.some((r) => !reservationStaffId(r)),
+    [reservations]
+  );
 
   const displayError = error || liveError;
 
   const stats = useMemo(() => {
     const todayStr = format(startOfDay(new Date()), 'yyyy-MM-dd');
-    const today = reservations.filter((r) => {
+    const today = filteredReservations.filter((r) => {
       const raw = typeof r.date === 'string' ? r.date : String(r.date);
       return reservationLocalCalendarKey(raw) === todayStr && r.status !== 'canceled';
     }).length;
-    const upcoming = reservations.filter(
+    const upcoming = filteredReservations.filter(
       (r) => r.status !== 'canceled' && !isReservationPast(r)
     ).length;
-    const past = reservations.filter(isPastReservationRecord).length;
-    return { today, upcoming, past, total: reservations.length };
-  }, [reservations]);
+    const past = filteredReservations.filter(isPastReservationRecord).length;
+    return { today, upcoming, past, total: filteredReservations.length };
+  }, [filteredReservations]);
 
   const upcomingList = useMemo(
     () =>
       sortByDateTimeAsc(
-        reservations.filter((r) => r.status !== 'canceled' && !isPastReservationRecord(r))
+        filteredReservations.filter((r) => r.status !== 'canceled' && !isPastReservationRecord(r))
       ),
-    [reservations]
+    [filteredReservations]
   );
 
   const pastList = useMemo(
-    () => sortByDateTimeDesc(reservations.filter(isPastReservationRecord)),
-    [reservations]
+    () => sortByDateTimeDesc(filteredReservations.filter(isPastReservationRecord)),
+    [filteredReservations]
   );
 
   const handleCancel = async (id: string) => {
@@ -191,13 +238,71 @@ export default function BusinessReservationsPage() {
             ))}
           </div>
 
+          {(staffList.length > 0 || hasUnassigned) && (
+            <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-card dark:border-neutral-700 dark:bg-neutral-900/60">
+              <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-neutral-800 dark:text-neutral-100">
+                <Filter className="h-4 w-4 text-primary-500" strokeWidth={2} aria-hidden />
+                Personel filtresi
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setStaffFilter('all')}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                    staffFilter === 'all'
+                      ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
+                      : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
+                  }`}
+                >
+                  <Users className="h-3.5 w-3.5" aria-hidden />
+                  Tüm randevular
+                </button>
+                {staffList.map((s) => (
+                  <button
+                    key={s._id}
+                    type="button"
+                    onClick={() => setStaffFilter(s._id)}
+                    className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                      staffFilter === s._id
+                        ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    {s.name}
+                    {s.title ? (
+                      <span className="ml-1 font-normal opacity-80">· {s.title}</span>
+                    ) : null}
+                  </button>
+                ))}
+                {hasUnassigned && (
+                  <button
+                    type="button"
+                    onClick={() => setStaffFilter('unassigned')}
+                    className={`rounded-full px-3.5 py-2 text-sm font-semibold transition ${
+                      staffFilter === 'unassigned'
+                        ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
+                        : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700'
+                    }`}
+                  >
+                    Atanmamış
+                  </button>
+                )}
+              </div>
+              {staffFilter !== 'all' && (
+                <p className="mt-3 text-xs text-neutral-500 dark:text-neutral-400">
+                  {filteredReservations.length} randevu gösteriliyor
+                </p>
+              )}
+            </div>
+          )}
+
           {tab === 'calendar' && (
             <AdminCalendar
               view={view}
               onViewChange={setView}
               selectedDate={selectedDate}
               onDateChange={setSelectedDate}
-              reservations={reservations}
+              reservations={filteredReservations}
               onCancel={handleCancel}
             />
           )}
@@ -206,7 +311,13 @@ export default function BusinessReservationsPage() {
             <section className="space-y-4">
               {upcomingList.length === 0 ? (
                 <Card className="rounded-2xl border-dashed p-10 text-center">
-                  <p className="text-neutral-600 dark:text-neutral-400">Yaklaşan randevu yok.</p>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    {staffFilter === 'all'
+                      ? 'Yaklaşan randevu yok.'
+                      : staffFilter === 'unassigned'
+                        ? 'Atanmamış yaklaşan randevu yok.'
+                        : 'Seçilen personel için yaklaşan randevu yok.'}
+                  </p>
                 </Card>
               ) : (
                 <ul className="space-y-4">
@@ -220,7 +331,7 @@ export default function BusinessReservationsPage() {
                           {r.time}
                           {r.endTime ? ` – ${r.endTime}` : ''}
                         </span>
-                        {r.staffId?.name && (
+                        {typeof r.staffId === 'object' && r.staffId?.name && (
                           <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
                             {r.staffId.name}
                           </span>
@@ -238,7 +349,13 @@ export default function BusinessReservationsPage() {
             <section className="space-y-4">
               {pastList.length === 0 ? (
                 <Card className="rounded-2xl border-dashed p-10 text-center">
-                  <p className="text-neutral-600 dark:text-neutral-400">Geçmiş randevu kaydı yok.</p>
+                  <p className="text-neutral-600 dark:text-neutral-400">
+                    {staffFilter === 'all'
+                      ? 'Geçmiş randevu kaydı yok.'
+                      : staffFilter === 'unassigned'
+                        ? 'Atanmamış geçmiş randevu yok.'
+                        : 'Seçilen personel için geçmiş randevu yok.'}
+                  </p>
                 </Card>
               ) : (
                 <ul className="space-y-3">

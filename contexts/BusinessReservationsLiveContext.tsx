@@ -26,7 +26,7 @@ export interface BusinessReservation {
   endTime?: string;
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
-  staffId?: { name: string };
+  staffId?: { _id?: string; name: string; title?: string } | string | null;
   customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
 }
 
