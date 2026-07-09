@@ -25,6 +25,7 @@ export const privacyPolicy: LegalPageContent = {
             'Randevu aldığınız işletme, hizmeti sunabilmesi için gerekli bilgileri görür.',
             'Oturum ve güvenlik için zorunlu çerezler kullanılır; pazarlama çerezi kullanılmaz.',
             'Verilerinize erişim, düzeltme ve silme talebinde bulunabilirsiniz.',
+            '18 yaş altı kullanıcılar da kayıt olup randevu oluşturabilir.',
             'Ödeme işlemleri Stripe altyapısı üzerinden güvenli şekilde yürütülür.',
           ],
         },
@@ -174,11 +175,23 @@ export const privacyPolicy: LegalPageContent = {
     },
     {
       id: 'cocuklar',
-      title: 'Çocukların gizliliği',
+      title: '18 yaş altı kullanıcılar',
       blocks: [
         {
           type: 'p',
-          text: 'Platform 18 yaş altı bireylere yönelik değildir. Bilerek 18 yaş altından kişisel veri toplanmaz.',
+          text: '18 yaş altı kullanıcılar da platforma kayıt olabilir ve randevu oluşturabilir. Bu kullanıcıların kişisel verileri (ad, iletişim bilgisi, randevu kayıtları) yalnızca hizmetin sunulması amacıyla işlenir.',
+        },
+        {
+          type: 'ul',
+          items: [
+            '18 yaş altı kullanıcılar için veli veya yasal vasinin bilgilendirilmesi ve onayı önerilir.',
+            'Veli veya vasi, çocuğuna ait hesap ve randevu bilgileri hakkında bizimle iletişime geçebilir.',
+            '18 yaş altı kullanıcıların verileri, yetişkin kullanıcılarla aynı güvenlik önlemleriyle korunur.',
+          ],
+        },
+        {
+          type: 'note',
+          text: `Veli/vasi başvuruları için ${LEGAL.supportEmail} adresine yazabilirsiniz.`,
         },
       ],
     },
@@ -324,7 +337,7 @@ export const termsOfService: LegalPageContent = {
           items: [
             'Kayıt bilgilerinizin doğru ve güncel olmasından siz sorumlusunuz.',
             'Hesap şifrenizi gizli tutmalısınız; hesabınız altında yapılan işlemlerden siz sorumlusunuz.',
-            '18 yaşından küçükler platformu kullanamaz.',
+            '18 yaş altı kullanıcılar platformu kullanabilir ve randevu oluşturabilir; veli veya yasal vasi onayı ile kayıt olmaları önerilir.',
             'Bir kişi yalnızca bir müşteri hesabı oluşturmalıdır (istisnai durumlar hariç).',
           ],
         },
@@ -338,6 +351,7 @@ export const termsOfService: LegalPageContent = {
           type: 'ul',
           items: [
             'Randevu saatinde işletmeye zamanında gelmek veya gelmeyecekseniz önceden iptal etmek',
+            '18 yaş altı kullanıcıların randevu oluşturması durumunda veli veya vasinin bilgilendirilmiş olması önerilir',
             'Randevu iptal kurallarına uymak (başlangıç saatinden en az 12 saat önce iptal)',
             'Tekrarlayan randevuya gelmeme durumunda katılım puanının düşürülmesini ve uyarı almayı kabul etmek',
             'Platformu yanıltıcı veya kötüye kullanım amaçlı kullanmamak',
