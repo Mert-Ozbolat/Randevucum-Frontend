@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Calendar, Heart, Shield, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { AnimateIn } from '@/components/ui/AnimateIn';
+import { LEGAL_LINKS } from '@/lib/legal/constants';
 
 const EXPLORE_LINKS = [
   { href: '/', label: 'Ana Sayfa' },
@@ -64,7 +65,7 @@ export function Footer() {
 
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
       <AnimateIn animation="slide-up">
-        <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(3,1fr)] lg:gap-12">
+        <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:gap-12">
           {/* Marka */}
           <div className="max-w-sm">
             <Logo size="sm" href="/" />
@@ -98,19 +99,23 @@ export function Footer() {
           <FooterLinkGroup title="Keşfet" links={EXPLORE_LINKS} />
           <FooterLinkGroup title="Müşteriler" links={CUSTOMER_LINKS} />
           <FooterLinkGroup title="İşletmeler" links={BUSINESS_LINKS} />
+          <FooterLinkGroup title="Yasal" links={LEGAL_LINKS} />
         </div>
 
         <div className="mt-12 flex flex-col gap-4 border-t border-neutral-200/80 pt-8 dark:border-neutral-800 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             © {year} Randevucum. Tüm hakları saklıdır.
           </p>
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-            <Link
-              href="/privacy"
-              className="text-xs font-medium text-neutral-500 transition hover:text-primary-600 dark:text-neutral-400 dark:hover:text-primary-400"
-            >
-              Gizlilik Politikası
-            </Link>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {LEGAL_LINKS.slice(0, 3).map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-xs font-medium text-neutral-500 transition hover:text-primary-600 dark:text-neutral-400 dark:hover:text-primary-400"
+              >
+                {link.label}
+              </Link>
+            ))}
             <span className="inline-flex items-center gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
               <Sparkles className="h-3.5 w-3.5 text-primary-500" aria-hidden />
               Online randevu platformu

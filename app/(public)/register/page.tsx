@@ -30,6 +30,8 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [acceptedKvkk, setAcceptedKvkk] = useState(false);
 
   useEffect(() => {
     // Allow deep-linking to business registration from pricing/upgrade flows.
@@ -48,6 +50,14 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('Devam etmek için Kullanım Koşulları ve Gizlilik Politikası\'nı kabul etmelisiniz.');
+      return;
+    }
+    if (!acceptedKvkk) {
+      setError('Devam etmek için KVKK Aydınlatma Metni\'ni okuduğunuzu onaylamalısınız.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
@@ -91,6 +101,14 @@ export default function RegisterPage() {
   };
 
   const handleGoogleCredential = async (idToken: string) => {
+    if (!acceptedTerms) {
+      setError('Devam etmek için Kullanım Koşulları ve Gizlilik Politikası\'nı kabul etmelisiniz.');
+      return;
+    }
+    if (!acceptedKvkk) {
+      setError('Devam etmek için KVKK Aydınlatma Metni\'ni okuduğunuzu onaylamalısınız.');
+      return;
+    }
     setError('');
     setGoogleLoading(true);
     try {
@@ -251,7 +269,54 @@ export default function RegisterPage() {
               onChange={setPhone}
             />
           )}
-          <Button type="submit" fullWidth loading={loading}>
+          <div className="space-y-3 rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 dark:border-neutral-700 dark:bg-neutral-800/40">
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+                <Link href="/terms" target="_blank" className="font-medium text-primary-600 hover:underline dark:text-primary-400">
+                  Kullanım Koşulları
+                </Link>
+                ’nı ve{' '}
+                <Link href="/privacy" target="_blank" className="font-medium text-primary-600 hover:underline dark:text-primary-400">
+                  Gizlilik Politikası
+                </Link>
+                ’nı okudum, kabul ediyorum.
+              </span>
+            </label>
+            <label className="flex cursor-pointer items-start gap-3">
+              <input
+                type="checkbox"
+                checked={acceptedKvkk}
+                onChange={(e) => setAcceptedKvkk(e.target.checked)}
+                className="mt-1 h-4 w-4 rounded border-neutral-300 text-primary-600 focus:ring-primary-500"
+              />
+              <span className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
+                <Link href="/kvkk" target="_blank" className="font-medium text-primary-600 hover:underline dark:text-primary-400">
+                  KVKK Aydınlatma Metni
+                </Link>
+                ’ni okudum ve kişisel verilerimin belirtilen kapsamda işlenmesini kabul ediyorum.
+              </span>
+            </label>
+            {accountType === 'business_owner' && (
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                Abonelik satın alırken{' '}
+                <Link href="/distance-sales" target="_blank" className="text-primary-600 hover:underline dark:text-primary-400">
+                  Mesafeli Satış Sözleşmesi
+                </Link>{' '}
+                ve{' '}
+                <Link href="/refund-policy" target="_blank" className="text-primary-600 hover:underline dark:text-primary-400">
+                  İptal ve İade Politikası
+                </Link>{' '}
+                geçerlidir.
+              </p>
+            )}
+          </div>
+          <Button type="submit" fullWidth loading={loading} disabled={!acceptedTerms || !acceptedKvkk}>
             Kayıt Ol
           </Button>
         </form>

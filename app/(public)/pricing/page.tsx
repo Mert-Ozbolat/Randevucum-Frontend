@@ -233,6 +233,22 @@ export default function PricingPage() {
           ))}
         </div>
       ) : null}
+
+      <p className="mx-auto mt-12 max-w-2xl text-center text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
+        Abonelik satın alarak{' '}
+        <Link href="/distance-sales" className="text-primary-600 hover:underline dark:text-primary-400">
+          Mesafeli Satış Sözleşmesi
+        </Link>
+        ,{' '}
+        <Link href="/refund-policy" className="text-primary-600 hover:underline dark:text-primary-400">
+          İptal ve İade Politikası
+        </Link>{' '}
+        ve{' '}
+        <Link href="/terms" className="text-primary-600 hover:underline dark:text-primary-400">
+          Kullanım Koşulları
+        </Link>
+        ’nı kabul etmiş olursunuz.
+      </p>
     </div>
   );
 }
