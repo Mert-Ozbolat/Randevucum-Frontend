@@ -4,11 +4,12 @@ import { useEffect, useState } from 'react';
 import { format, startOfDay, addDays, isSameDay } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
-import { CalendarDays, Clock, Mail, Scissors, User, UserRound, X } from 'lucide-react';
+import { CalendarDays, Clock, Mail, Scissors, User, UserRound, X, CheckCircle2, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AdminReservationCard } from './AdminReservationCard';
-import { canBusinessCancelReservation } from '@/lib/reservationFilters';
+import { canBusinessCancelReservation, canMarkAttendance } from '@/lib/reservationFilters';
 import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
+import { attendanceRateColor, formatAttendanceRate, type AttendanceStats } from '@/lib/attendance';
 
 interface Reservation {
   _id: string;
@@ -18,7 +19,18 @@ interface Reservation {
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
   staffId?: { _id?: string; name: string; title?: string } | string | null;
-  customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
+  customerId?: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    attendanceStats?: AttendanceStats;
+  };
+  attendance?: {
+    outcome?: 'attended' | 'no_show' | null;
+    markedAt?: string;
+    note?: string;
+  };
 }
 
 interface AdminCalendarProps {
@@ -28,6 +40,7 @@ interface AdminCalendarProps {
   onDateChange: (date: Date) => void;
   reservations: Reservation[];
   onCancel?: (id: string) => void;
+  onMarkAttendance?: (id: string, outcome: 'attended' | 'no_show') => void;
 }
 
 /** Saat dilimine göre grupla (HH:mm → saat) */
@@ -90,13 +103,18 @@ function ReservationDetailModal({
   reservation,
   onClose,
   onCancel,
+  onMarkAttendance,
 }: {
   reservation: Reservation;
   onClose: () => void;
   onCancel?: (id: string) => void;
+  onMarkAttendance?: (id: string, outcome: 'attended' | 'no_show') => void;
 }) {
   const c = reservation.customerId;
   const canCancel = canBusinessCancelReservation(reservation);
+  const canMark = canMarkAttendance(reservation);
+  const stats = c?.attendanceStats;
+  const currentOutcome = reservation.attendance?.outcome;
 
   useEffect(() => {
     const previous = document.body.style.overflow;
@@ -164,6 +182,65 @@ function ReservationDetailModal({
           {c?.phone && <DetailRow icon={User} label="Telefon" value={c.phone} />}
         </div>
 
+        {stats && (stats.totalMarked ?? 0) > 0 && (
+          <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-3 dark:border-neutral-700 dark:bg-neutral-800/60">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400">Müşteri katılım oranı</p>
+            <div className="mt-1 flex flex-wrap items-baseline gap-2">
+              <span className={`text-2xl font-bold tabular-nums ${attendanceRateColor(stats.attendanceRate ?? 100)}`}>
+                {formatAttendanceRate(stats)}
+              </span>
+              <span className="text-sm text-neutral-500 dark:text-neutral-400">
+                ({stats.attendedCount ?? 0} katıldı · {stats.noShowCount ?? 0} gelmedi)
+              </span>
+            </div>
+          </div>
+        )}
+
+        {canMark && onMarkAttendance && (
+          <div className="mt-5 rounded-xl border border-amber-200/80 bg-amber-50/60 p-4 dark:border-amber-900/50 dark:bg-amber-950/30">
+            <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+              Randevuya geldi mi?
+            </p>
+            <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-300/80">
+              Müşteri gelmediyse uyarı mesajı gönderilir ve katılım puanı güncellenir.
+            </p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant={currentOutcome === 'attended' ? 'primary' : 'outline'}
+                fullWidth
+                className="sm:flex-1"
+                onClick={() => {
+                  onMarkAttendance(reservation._id, 'attended');
+                  onClose();
+                }}
+              >
+                <CheckCircle2 className="mr-1.5 h-4 w-4" aria-hidden />
+                Katıldı
+              </Button>
+              <Button
+                type="button"
+                variant={currentOutcome === 'no_show' ? 'danger' : 'outline'}
+                fullWidth
+                className="sm:flex-1"
+                onClick={() => {
+                  if (!confirm('Müşteri randevuya gelmedi olarak işaretlensin mi? Müşteriye uyarı mesajı gönderilecek.')) return;
+                  onMarkAttendance(reservation._id, 'no_show');
+                  onClose();
+                }}
+              >
+                <UserX className="mr-1.5 h-4 w-4" aria-hidden />
+                Gelmedi
+              </Button>
+            </div>
+            {currentOutcome && (
+              <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+                Mevcut işaretleme: {currentOutcome === 'attended' ? 'Katıldı' : 'Gelmedi'} — değiştirmek için tekrar seçin.
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" fullWidth className="sm:w-auto" onClick={onClose}>
             Kapat
@@ -221,6 +298,7 @@ const STATUS_ACCENT: Record<string, string> = {
   approved: 'bg-emerald-500',
   pending: 'bg-amber-500',
   completed: 'bg-sky-500',
+  no_show: 'bg-red-500',
   canceled: 'bg-neutral-300 dark:bg-neutral-600',
 };
 
@@ -433,6 +511,7 @@ export function AdminCalendar({
   onDateChange,
   reservations,
   onCancel,
+  onMarkAttendance,
 }: AdminCalendarProps) {
   const todayStart = startOfDay(new Date());
   const dayStart = view === 'weekly' ? todayStart : startOfDay(selectedDate);
@@ -627,6 +706,7 @@ export function AdminCalendar({
           reservation={selectedReservation}
           onClose={() => setSelectedReservation(null)}
           onCancel={onCancel}
+          onMarkAttendance={onMarkAttendance}
         />
       )}
     </div>

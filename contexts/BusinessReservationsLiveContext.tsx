@@ -27,7 +27,23 @@ export interface BusinessReservation {
   status: string;
   serviceId?: { name: string; durationMinutes?: number };
   staffId?: { _id?: string; name: string; title?: string } | string | null;
-  customerId?: { firstName: string; lastName: string; email?: string; phone?: string };
+  customerId?: {
+    firstName: string;
+    lastName: string;
+    email?: string;
+    phone?: string;
+    attendanceStats?: {
+      totalMarked?: number;
+      attendedCount?: number;
+      noShowCount?: number;
+      attendanceRate?: number;
+    };
+  };
+  attendance?: {
+    outcome?: 'attended' | 'no_show' | null;
+    markedAt?: string;
+    note?: string;
+  };
 }
 
 const POLL_VISIBLE_MS = 8_000;

@@ -75,10 +75,24 @@ export function isExpiredPending(r: ReservationLike): boolean {
   return r.status === 'pending' && isReservationPast(r);
 }
 
-/** Geçmiş kayıt (iptal, tamamlanmış veya zamanı geçmiş). */
+/** Geçmiş kayıt (iptal, tamamlanmış, gelmedi veya zamanı geçmiş). */
 export function isPastReservationRecord(r: ReservationLike): boolean {
-  if (r.status === 'canceled' || r.status === 'completed') return true;
+  if (r.status === 'canceled' || r.status === 'completed' || r.status === 'no_show') return true;
   return isReservationPast(r);
+}
+
+/** İşletme katılım işaretleyebilir mi? (geçmiş + onaylı + henüz işaretlenmemiş veya değiştirilebilir) */
+export function canMarkAttendance(r: ReservationLike & { attendance?: { outcome?: string | null } }): boolean {
+  if (r.status === 'canceled') return false;
+  if (!isReservationPast(r)) return false;
+  return r.status === 'approved' || r.status === 'completed' || r.status === 'no_show';
+}
+
+/** Katılım henüz işaretlenmemiş geçmiş randevu */
+export function needsAttendanceMarking(r: ReservationLike & { attendance?: { outcome?: string | null } }): boolean {
+  if (r.status === 'canceled') return false;
+  if (!isReservationPast(r)) return false;
+  return r.status === 'approved' && !r.attendance?.outcome;
 }
 
 export function sortByDateTimeAsc<T extends ReservationLike>(list: T[]): T[] {

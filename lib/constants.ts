@@ -64,6 +64,7 @@ export const RESERVATION_STATUS: Record<string, string> = {
   approved: 'Onaylandı',
   canceled: 'İptal',
   completed: 'Tamamlandı',
+  no_show: 'Gelmedi',
 };
 
 export const SUBSCRIPTION_STATUS: Record<string, string> = {

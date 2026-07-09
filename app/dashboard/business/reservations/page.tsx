@@ -15,12 +15,13 @@ import { reservationLocalCalendarKey } from '@/lib/reservationDate';
 import {
   isPastReservationRecord,
   isReservationPast,
+  needsAttendanceMarking,
   sortByDateTimeAsc,
   sortByDateTimeDesc,
 } from '@/lib/reservationFilters';
 import { useToast } from '@/components/ui/Toast';
 import { AnimateIn } from '@/components/ui/AnimateIn';
-import { useBusinessReservationsLive } from '@/contexts/BusinessReservationsLiveContext';
+import { useBusinessReservationsLive, type BusinessReservation } from '@/contexts/BusinessReservationsLiveContext';
 
 type PageTab = 'calendar' | 'list' | 'past';
 type StaffFilter = 'all' | 'unassigned' | string;
@@ -122,6 +123,11 @@ export default function BusinessReservationsPage() {
     [filteredReservations]
   );
 
+  const unmarkedPastCount = useMemo(
+    () => filteredReservations.filter(needsAttendanceMarking).length,
+    [filteredReservations]
+  );
+
   const handleCancel = async (id: string) => {
     if (!confirm('Bu randevuyu iptal etmek istediğinize emin misiniz?')) return;
     setError('');
@@ -129,6 +135,25 @@ export default function BusinessReservationsPage() {
       await api.patch(`/reservations/${id}/status`, { status: 'canceled' });
       updateReservation(id, { status: 'canceled' });
       addToast('success', 'Randevu iptal edildi.');
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const handleMarkAttendance = async (id: string, outcome: 'attended' | 'no_show') => {
+    setError('');
+    try {
+      const res = await api.patch<{ data: BusinessReservation }>(`/reservations/${id}/attendance`, { outcome });
+      const updated = res.data.data;
+      updateReservation(id, {
+        status: updated.status,
+        attendance: updated.attendance,
+        customerId: updated.customerId,
+      });
+      addToast(
+        'success',
+        outcome === 'attended' ? 'Müşteri katıldı olarak işaretlendi.' : 'Müşteri gelmedi olarak işaretlendi. Uyarı gönderildi.'
+      );
     } catch (err) {
       setError(getApiErrorMessage(err));
     }
@@ -296,6 +321,13 @@ export default function BusinessReservationsPage() {
             </div>
           )}
 
+          {unmarkedPastCount > 0 && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
+              <strong>{unmarkedPastCount} geçmiş randevu</strong> henüz işaretlenmedi. Randevuya gelip gelmediğini
+              işaretleyerek müşteri katılım puanını güncelleyebilirsiniz.
+            </div>
+          )}
+
           {tab === 'calendar' && (
             <AdminCalendar
               view={view}
@@ -304,6 +336,7 @@ export default function BusinessReservationsPage() {
               onDateChange={setSelectedDate}
               reservations={filteredReservations}
               onCancel={handleCancel}
+              onMarkAttendance={handleMarkAttendance}
             />
           )}
 

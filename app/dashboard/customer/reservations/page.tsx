@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ClipboardList } from 'lucide-react';
+import { ClipboardList, AlertTriangle } from 'lucide-react';
 import { isBefore, parseISO, startOfDay } from 'date-fns';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { canCustomerCancelReservation } from '@/lib/reservationFilters';
@@ -12,6 +12,8 @@ import {
   CustomerReservationCard,
   type CustomerReservationItem,
 } from '@/components/reservations/CustomerReservationCard';
+import { getAttendanceWarningLevel, getAttendanceWarningMessage } from '@/lib/attendance';
+import type { User } from '@/lib/auth';
 
 type FilterTab = 'all' | 'upcoming' | 'past';
 
@@ -36,7 +38,7 @@ function isPastReservation(r: CustomerReservationItem): boolean {
     const raw = typeof r.date === 'string' ? r.date : String(r.date);
     const d = dayOnly(raw);
     const today = startOfDay(new Date());
-    if (r.status === 'canceled' || r.status === 'completed') return true;
+    if (r.status === 'canceled' || r.status === 'completed' || r.status === 'no_show') return true;
     return isBefore(d, today);
   } catch {
     return true;
@@ -83,10 +85,19 @@ export default function CustomerReservationsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<FilterTab>('all');
+  const [profile, setProfile] = useState<User | null>(null);
 
   useEffect(() => {
     void hydrateAuthStore().finally(() => setAuthReady(true));
   }, []);
+
+  useEffect(() => {
+    if (!authReady || !customerId) return;
+    api
+      .get<{ data: User }>('/auth/me')
+      .then((res) => setProfile(res.data.data))
+      .catch(() => setProfile(null));
+  }, [authReady, customerId]);
 
   useEffect(() => {
     if (!authReady) return;
@@ -113,6 +124,14 @@ export default function CustomerReservationsPage() {
     if (tab === 'past') list = reservations.filter(isPastReservation);
     return sortReservations(list);
   }, [reservations, tab]);
+
+  const attendanceWarning = useMemo(() => {
+    const stats = profile?.attendanceStats;
+    const level = getAttendanceWarningLevel(stats);
+    const message = getAttendanceWarningMessage(stats);
+    if (level === 'none' || !message) return null;
+    return { level, message, stats };
+  }, [profile]);
 
   const handleCancel = async (id: string) => {
     const r = reservations.find((x) => x._id === id);
@@ -172,6 +191,52 @@ export default function CustomerReservationsPage() {
       {error && (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-200">
           {error}
+        </div>
+      )}
+
+      {attendanceWarning && (
+        <div
+          className={`rounded-2xl border px-4 py-4 sm:px-5 ${
+            attendanceWarning.level === 'critical'
+              ? 'border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30'
+              : 'border-amber-300 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/30'
+          }`}
+        >
+          <div className="flex gap-3">
+            <AlertTriangle
+              className={`mt-0.5 h-5 w-5 shrink-0 ${
+                attendanceWarning.level === 'critical' ? 'text-red-600' : 'text-amber-600'
+              }`}
+              strokeWidth={2}
+              aria-hidden
+            />
+            <div>
+              <p
+                className={`text-sm font-semibold ${
+                  attendanceWarning.level === 'critical'
+                    ? 'text-red-900 dark:text-red-200'
+                    : 'text-amber-900 dark:text-amber-200'
+                }`}
+              >
+                Katılım uyarısı
+              </p>
+              <p
+                className={`mt-1 text-sm ${
+                  attendanceWarning.level === 'critical'
+                    ? 'text-red-800 dark:text-red-300'
+                    : 'text-amber-800 dark:text-amber-300'
+                }`}
+              >
+                {attendanceWarning.message}
+              </p>
+              {(attendanceWarning.stats?.totalMarked ?? 0) > 0 && (
+                <p className="mt-2 text-xs text-neutral-500 dark:text-neutral-400">
+                  Katılım oranınız: %{attendanceWarning.stats?.attendanceRate ?? 100} ·{' '}
+                  {attendanceWarning.stats?.noShowCount ?? 0} kez gelmediniz
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
 

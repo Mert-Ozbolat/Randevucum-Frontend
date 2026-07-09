@@ -13,6 +13,15 @@ export interface User {
   phone?: string;
   avatarUrl?: string;
   role: UserRole;
+  attendanceStats?: {
+    totalMarked?: number;
+    attendedCount?: number;
+    noShowCount?: number;
+    attendanceRate?: number;
+    warningCount?: number;
+    lastWarningAt?: string | null;
+    lastNoShowAt?: string | null;
+  };
 }
 
 export function getStoredUser(): User | null {

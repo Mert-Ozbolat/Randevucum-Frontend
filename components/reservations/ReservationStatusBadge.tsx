@@ -11,6 +11,8 @@ const styles: Record<string, string> = {
     'bg-neutral-100 text-neutral-600 ring-1 ring-inset ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-400 dark:ring-neutral-600',
   completed:
     'bg-sky-50 text-sky-800 ring-1 ring-inset ring-sky-200/80 dark:bg-sky-950/40 dark:text-sky-200 dark:ring-sky-800/50',
+  no_show:
+    'bg-red-50 text-red-800 ring-1 ring-inset ring-red-200/80 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-800/50',
 };
 
 export function ReservationStatusBadge({ status }: { status: string }) {
@@ -31,6 +33,8 @@ export function reservationAccentClass(status: string): string {
       return 'bg-emerald-500';
     case 'completed':
       return 'bg-sky-500';
+    case 'no_show':
+      return 'bg-red-500';
     case 'canceled':
       return 'bg-neutral-300 dark:bg-neutral-600';
     default:
