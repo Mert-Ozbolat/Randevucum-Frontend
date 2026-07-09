@@ -2,23 +2,25 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { format, startOfDay } from 'date-fns';
 import { CalendarDays, ClipboardList, Filter, History, Radio, Store, Users } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
-import { AdminCalendar } from '@/components/admin/AdminCalendar';
-import { AdminReservationCard } from '@/components/admin/AdminReservationCard';
+import { AdminCalendar, ReservationDetailModal } from '@/components/admin/AdminCalendar';
+import { ReservationGroupedList } from '@/components/admin/ReservationGroupedList';
+import { ReservationViewControls } from '@/components/admin/ReservationViewControls';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { startOfDay } from 'date-fns';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
 import {
   isPastReservationRecord,
   isReservationPast,
   needsAttendanceMarking,
-  sortByDateTimeAsc,
-  sortByDateTimeDesc,
 } from '@/lib/reservationFilters';
+import {
+  loadReservationViewPrefs,
+  saveReservationViewPrefs,
+  type ReservationViewPrefs,
+} from '@/lib/reservationViewPrefs';
 import { useToast } from '@/components/ui/Toast';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { useBusinessReservationsLive, type BusinessReservation } from '@/contexts/BusinessReservationsLiveContext';
@@ -49,14 +51,6 @@ function matchesStaffFilter(
   return reservationStaffId(r) === filter;
 }
 
-function formatReservationDay(raw: string): string {
-  const key = reservationLocalCalendarKey(raw);
-  if (!key) return '—';
-  const [y, mo, d] = key.split('-').map(Number);
-  const dt = new Date(y, mo - 1, d);
-  return format(dt, 'd MMMM yyyy, EEEE', { locale: tr });
-}
-
 export default function BusinessReservationsPage() {
   const {
     businessId,
@@ -72,7 +66,23 @@ export default function BusinessReservationsPage() {
   const [tab, setTab] = useState<PageTab>('calendar');
   const [staffFilter, setStaffFilter] = useState<StaffFilter>('all');
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
+  const [viewPrefs, setViewPrefs] = useState<ReservationViewPrefs>(() => loadReservationViewPrefs(null));
+  const [selectedReservation, setSelectedReservation] = useState<BusinessReservation | null>(null);
   const { addToast } = useToast();
+
+  useEffect(() => {
+    if (businessId) {
+      setViewPrefs(loadReservationViewPrefs(businessId));
+    }
+  }, [businessId]);
+
+  const updateViewPrefs = (patch: Partial<ReservationViewPrefs>) => {
+    setViewPrefs((prev) => {
+      const next = { ...prev, ...patch };
+      if (businessId) saveReservationViewPrefs(businessId, next);
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!businessId) {
@@ -111,15 +121,12 @@ export default function BusinessReservationsPage() {
   }, [filteredReservations]);
 
   const upcomingList = useMemo(
-    () =>
-      sortByDateTimeAsc(
-        filteredReservations.filter((r) => r.status !== 'canceled' && !isPastReservationRecord(r))
-      ),
+    () => filteredReservations.filter((r) => r.status !== 'canceled' && !isPastReservationRecord(r)),
     [filteredReservations]
   );
 
   const pastList = useMemo(
-    () => sortByDateTimeDesc(filteredReservations.filter(isPastReservationRecord)),
+    () => filteredReservations.filter(isPastReservationRecord),
     [filteredReservations]
   );
 
@@ -328,6 +335,17 @@ export default function BusinessReservationsPage() {
             </div>
           )}
 
+          <ReservationViewControls
+            sortMode={viewPrefs.sortMode}
+            onSortModeChange={(sortMode) => updateViewPrefs({ sortMode })}
+            calendarLayout={viewPrefs.calendarLayout}
+            onCalendarLayoutChange={(calendarLayout) => updateViewPrefs({ calendarLayout })}
+            listGroup={viewPrefs.listGroup}
+            onListGroupChange={(listGroup) => updateViewPrefs({ listGroup })}
+            showCalendarLayout={tab === 'calendar'}
+            showListGroup={tab === 'list' || tab === 'past'}
+          />
+
           {tab === 'calendar' && (
             <AdminCalendar
               view={view}
@@ -337,6 +355,8 @@ export default function BusinessReservationsPage() {
               reservations={filteredReservations}
               onCancel={handleCancel}
               onMarkAttendance={handleMarkAttendance}
+              sortMode={viewPrefs.sortMode}
+              calendarLayout={viewPrefs.calendarLayout}
             />
           )}
 
@@ -353,27 +373,13 @@ export default function BusinessReservationsPage() {
                   </p>
                 </Card>
               ) : (
-                <ul className="space-y-4">
-                  {upcomingList.map((r) => (
-                    <li key={r._id}>
-                      <div className="mb-2 flex flex-wrap items-center gap-2 text-sm">
-                        <span className="font-semibold text-neutral-900 dark:text-neutral-100">
-                          {formatReservationDay(r.date)}
-                        </span>
-                        <span className="font-mono text-neutral-500 dark:text-neutral-400">
-                          {r.time}
-                          {r.endTime ? ` – ${r.endTime}` : ''}
-                        </span>
-                        {typeof r.staffId === 'object' && r.staffId?.name && (
-                          <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                            {r.staffId.name}
-                          </span>
-                        )}
-                      </div>
-                      <AdminReservationCard reservation={r} onCancel={handleCancel} />
-                    </li>
-                  ))}
-                </ul>
+                <ReservationGroupedList
+                  reservations={upcomingList}
+                  sortMode={viewPrefs.sortMode}
+                  groupMode={viewPrefs.listGroup}
+                  onCancel={handleCancel}
+                  onSelect={(r) => setSelectedReservation(r)}
+                />
               )}
             </section>
           )}
@@ -391,22 +397,25 @@ export default function BusinessReservationsPage() {
                   </p>
                 </Card>
               ) : (
-                <ul className="space-y-3">
-                  {pastList.map((r) => (
-                    <li key={r._id} className="rounded-2xl opacity-75">
-                      <div className="mb-2 flex flex-wrap items-center gap-2 text-sm text-neutral-500 dark:text-neutral-400">
-                        <span>{formatReservationDay(r.date)}</span>
-                        <span className="font-mono">
-                          {r.time}
-                          {r.endTime ? ` – ${r.endTime}` : ''}
-                        </span>
-                      </div>
-                      <AdminReservationCard reservation={r} onCancel={handleCancel} />
-                    </li>
-                  ))}
-                </ul>
+                <ReservationGroupedList
+                  reservations={pastList}
+                  sortMode={viewPrefs.sortMode}
+                  groupMode={viewPrefs.listGroup}
+                  onCancel={handleCancel}
+                  onSelect={(r) => setSelectedReservation(r)}
+                  dimPast
+                />
               )}
             </section>
+          )}
+
+          {selectedReservation && tab !== 'calendar' && (
+            <ReservationDetailModal
+              reservation={selectedReservation}
+              onClose={() => setSelectedReservation(null)}
+              onCancel={handleCancel}
+              onMarkAttendance={handleMarkAttendance}
+            />
           )}
         </>
       )}

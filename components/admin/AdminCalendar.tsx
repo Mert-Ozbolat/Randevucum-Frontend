@@ -10,6 +10,13 @@ import { AdminReservationCard } from './AdminReservationCard';
 import { canBusinessCancelReservation, canMarkAttendance } from '@/lib/reservationFilters';
 import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
 import { attendanceRateColor, formatAttendanceRate, type AttendanceStats } from '@/lib/attendance';
+import {
+  groupByHour,
+  groupReservations,
+  sortReservations,
+  type CalendarLayoutMode,
+  type ReservationSortMode,
+} from '@/lib/reservationSort';
 
 interface Reservation {
   _id: string;
@@ -41,25 +48,11 @@ interface AdminCalendarProps {
   reservations: Reservation[];
   onCancel?: (id: string) => void;
   onMarkAttendance?: (id: string, outcome: 'attended' | 'no_show') => void;
+  sortMode?: ReservationSortMode;
+  calendarLayout?: CalendarLayoutMode;
 }
 
-/** Saat dilimine göre grupla (HH:mm → saat) */
-function groupByHour(sorted: Reservation[]): { hourKey: string; label: string; items: Reservation[] }[] {
-  const map = new Map<string, Reservation[]>();
-  for (const r of sorted) {
-    const t = r.time || '00:00';
-    const hour = (t.split(':')[0] || '0').padStart(2, '0');
-    if (!map.has(hour)) map.set(hour, []);
-    map.get(hour)!.push(r);
-  }
-  return Array.from(map.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([hourKey, items]) => ({
-      hourKey,
-      label: `${hourKey}:00`,
-      items,
-    }));
-}
+/** Saat dilimine göre grupla — groupByHour import edildi */
 
 function customerName(r: Reservation): string {
   const c = r.customerId;
@@ -99,7 +92,7 @@ function ReservationClickCard({
   );
 }
 
-function ReservationDetailModal({
+export function ReservationDetailModal({
   reservation,
   onClose,
   onCancel,
@@ -424,21 +417,87 @@ function DayAgendaCard({
   );
 }
 
-/** Günlük görünüm: dikey zaman çizelgesi */
+/** Günlük görünüm: dikey zaman çizelgesi veya alternatif düzenler */
 function DayAgenda({
   day,
   reservations,
   isToday,
   onSelect,
+  sortMode,
+  layout,
 }: {
   day: Date;
   reservations: Reservation[];
   isToday: boolean;
   onSelect: (reservation: Reservation) => void;
+  sortMode: ReservationSortMode;
+  layout: CalendarLayoutMode;
 }) {
-  const sorted = [...reservations].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  const sorted = sortReservations(reservations, sortMode);
   const grouped = groupByHour(sorted);
   const count = reservations.length;
+
+  const renderCards = (items: Reservation[]) =>
+    items.map((r) => <DayAgendaCard key={r._id} reservation={r} onSelect={onSelect} />);
+
+  const renderBody = () => {
+    if (layout === 'timeline') {
+      return grouped.map((group) => (
+        <DayAgendaRow key={group.hourKey} group={group} isToday={isToday} onSelect={onSelect} />
+      ));
+    }
+
+    if (layout === 'hour_grid') {
+      return grouped.map((group) => (
+        <div key={group.hourKey} className="mb-5">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="font-mono text-lg font-bold tabular-nums text-primary-600 dark:text-primary-400">
+              {group.label}
+            </span>
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold text-neutral-500 dark:bg-neutral-800">
+              {group.items.length}
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">{renderCards(group.items)}</div>
+        </div>
+      ));
+    }
+
+    if (layout === 'by_staff') {
+      const groups = groupReservations(sorted, 'by_staff');
+      return groups.map((g) => (
+        <div key={g.key} className="mb-6">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-neutral-800 dark:text-neutral-100">
+            <UserRound className="h-4 w-4 text-primary-500" aria-hidden />
+            {g.label}
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-normal text-neutral-500 dark:bg-neutral-800">
+              {g.items.length}
+            </span>
+          </h4>
+          <div className="space-y-2">{renderCards(g.items)}</div>
+        </div>
+      ));
+    }
+
+    if (layout === 'by_service') {
+      const groups = groupReservations(sorted, 'by_service');
+      return groups.map((g) => (
+        <div key={g.key} className="mb-6">
+          <h4 className="mb-3 flex items-center gap-2 text-sm font-bold text-neutral-800 dark:text-neutral-100">
+            <Scissors className="h-4 w-4 text-primary-500" aria-hidden />
+            {g.label}
+            <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-normal text-neutral-500 dark:bg-neutral-800">
+              {g.items.length}
+            </span>
+          </h4>
+          <div className="space-y-2">{renderCards(g.items)}</div>
+        </div>
+      ));
+    }
+
+    // compact
+    return <div className="space-y-2">{renderCards(sorted)}</div>;
+  };
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/50">
@@ -494,11 +553,7 @@ function DayAgenda({
           </p>
         </div>
       ) : (
-        <div className="px-4 py-6 sm:px-6">
-          {grouped.map((group) => (
-            <DayAgendaRow key={group.hourKey} group={group} isToday={isToday} onSelect={onSelect} />
-          ))}
-        </div>
+        <div className="px-4 py-6 sm:px-6">{renderBody()}</div>
       )}
     </div>
   );
@@ -512,6 +567,8 @@ export function AdminCalendar({
   reservations,
   onCancel,
   onMarkAttendance,
+  sortMode = 'time_asc',
+  calendarLayout = 'timeline',
 }: AdminCalendarProps) {
   const todayStart = startOfDay(new Date());
   const dayStart = view === 'weekly' ? todayStart : startOfDay(selectedDate);
@@ -607,7 +664,7 @@ export function AdminCalendar({
       <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 sm:text-left">
         {view === 'weekly'
           ? 'Haftalık görünüm bugünden başlayarak önümüzdeki 7 günü gösterir.'
-          : 'Randevular saatlerine göre sıralanır; detay için karta dokunun.'}
+          : 'Görünüm ve sıralama tercihlerinize göre listelenir; detay için karta dokunun.'}
       </p>
 
       {view === 'daily' ? (
@@ -616,13 +673,15 @@ export function AdminCalendar({
           reservations={reservationsByDay[0]}
           isToday={isSameDay(days[0], new Date())}
           onSelect={setSelectedReservation}
+          sortMode={sortMode}
+          layout={calendarLayout}
         />
       ) : (
         <div className="mx-auto grid w-full gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {days.map((d, i) => {
             const isToday = isSameDay(d, new Date());
             const dayRes = reservationsByDay[i];
-            const sorted = [...dayRes].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+            const sorted = sortReservations(dayRes, sortMode);
             const grouped = groupByHour(sorted);
             const count = dayRes.length;
 
