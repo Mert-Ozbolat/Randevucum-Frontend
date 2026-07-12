@@ -71,6 +71,8 @@ export default function StaffPage() {
     linkUserEmail: '',
   });
   const [createPhotoUploading, setCreatePhotoUploading] = useState(false);
+  const [createSaving, setCreateSaving] = useState(false);
+  const createInFlightRef = useRef(false);
   const createFileRef = useRef<HTMLInputElement>(null);
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -179,7 +181,9 @@ export default function StaffPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!businessId) return;
+    if (!businessId || createInFlightRef.current) return;
+    createInFlightRef.current = true;
+    setCreateSaving(true);
     setError('');
     try {
       const res = await api.post<{ status: string; message?: string; data: Staff }>('/staff', {
@@ -187,10 +191,8 @@ export default function StaffPage() {
         ...form,
         linkUserEmail: form.linkUserEmail.trim() || undefined,
       });
-      const data = res.data;
-      setStaff((s) => [...s, data.data]);
-      if (businessId) void loadStaffData(businessId);
-      addToast('success', data.message || 'Personel eklendi.');
+      await loadStaffData(businessId);
+      addToast('success', res.data.message || 'Personel eklendi.');
       setShowForm(false);
       setForm({
         name: '',
@@ -204,6 +206,9 @@ export default function StaffPage() {
       dispatchBusinessSetupRefresh();
     } catch (err) {
       setError(getApiErrorMessage(err));
+    } finally {
+      createInFlightRef.current = false;
+      setCreateSaving(false);
     }
   };
 
@@ -420,10 +425,13 @@ export default function StaffPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button type="submit">Ekle</Button>
+              <Button type="submit" loading={createSaving} disabled={createSaving}>
+                Ekle
+              </Button>
               <Button
                 type="button"
                 variant="outline"
+                disabled={createSaving}
                 onClick={() => {
                   setShowForm(false);
                   setForm({

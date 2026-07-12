@@ -9,8 +9,8 @@ export const metadata: Metadata = {
   title: 'Randevucum | Randevu ve işletme yönetimi',
   description: 'Kuaför, klinik, güzellik merkezi ve daha fazlası için online randevu alın; işletmeler müşterilerini tek panelden yönetir.',
   icons: {
-    icon: '/logo-randevu.jpeg',
-    apple: '/logo-randevu.jpeg',
+    icon: '/icon1.png',
+    apple: '/icon1.png',
   },
 };
 

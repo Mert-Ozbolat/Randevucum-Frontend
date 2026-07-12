@@ -38,6 +38,10 @@ interface Reservation {
     markedAt?: string;
     note?: string;
   };
+  reminders?: {
+    customerRsvp?: 'confirmed' | 'canceled' | null;
+    customerRsvpAt?: string | null;
+  };
 }
 
 interface AdminCalendarProps {
@@ -57,6 +61,12 @@ interface AdminCalendarProps {
 function customerName(r: Reservation): string {
   const c = r.customerId;
   return c ? `${c.firstName} ${c.lastName}`.trim() || 'Müşteri' : 'Müşteri';
+}
+
+function customerRsvpLabel(rsvp?: 'confirmed' | 'canceled' | null): string | null {
+  if (rsvp === 'confirmed') return 'Müşteri gelecek';
+  if (rsvp === 'canceled') return 'Müşteri iptal etti';
+  return null;
 }
 
 function reservationDayLabel(raw: string): string {
@@ -173,6 +183,13 @@ export function ReservationDetailModal({
           <DetailRow icon={User} label="Müşteri" value={customerName(reservation)} />
           {c?.email && <DetailRow icon={Mail} label="E-posta" value={c.email} />}
           {c?.phone && <DetailRow icon={User} label="Telefon" value={c.phone} />}
+          {customerRsvpLabel(reservation.reminders?.customerRsvp) && (
+            <DetailRow
+              icon={CheckCircle2}
+              label="WhatsApp yanıtı"
+              value={customerRsvpLabel(reservation.reminders?.customerRsvp) || '—'}
+            />
+          )}
         </div>
 
         {stats && (stats.totalMarked ?? 0) > 0 && (

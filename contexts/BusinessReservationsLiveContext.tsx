@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { usePathname } from 'next/navigation';
 import { api } from '@/lib/api';
 import { fetchMyBusinesses } from '@/lib/businessApi';
 import { BUSINESS_SETUP_REFRESH_EVENT } from '@/lib/businessSetupRefresh';
@@ -44,6 +45,10 @@ export interface BusinessReservation {
     markedAt?: string;
     note?: string;
   };
+  reminders?: {
+    customerRsvp?: 'confirmed' | 'canceled' | null;
+    customerRsvpAt?: string | null;
+  };
 }
 
 const POLL_VISIBLE_MS = 8_000;
@@ -72,8 +77,27 @@ function formatNewReservationToast(r: BusinessReservation): string {
   return `Yeni randevu: ${customer} — ${day} ${r.time}, ${service}`;
 }
 
+function extractBusinessIdFromPath(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const m = pathname.match(/\/dashboard\/business\/reservations\/([a-f0-9]{24})\/?$/i);
+  return m ? m[1] : null;
+}
+
+function resolveOwnedBusinessId(
+  businesses: { _id: string }[],
+  pathname: string | null
+): string | null {
+  if (!businesses.length) return null;
+  const fromPath = extractBusinessIdFromPath(pathname);
+  if (fromPath && businesses.some((b) => String(b._id) === fromPath)) {
+    return fromPath;
+  }
+  return businesses[0]?._id ?? null;
+}
+
 export function BusinessReservationsLiveProvider({ children }: { children: ReactNode }) {
   const { addToast } = useToast();
+  const pathname = usePathname();
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [reservations, setReservations] = useState<BusinessReservation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -134,7 +158,12 @@ export function BusinessReservationsLiveProvider({ children }: { children: React
   const loadBusiness = useCallback(async () => {
     try {
       const res = await fetchMyBusinesses<{ data: { _id: string }[] }>();
-      const bid = res.data.data?.[0]?._id ?? null;
+      const list = res.data.data || [];
+      const bid = resolveOwnedBusinessId(list, pathname);
+      if (businessIdRef.current !== bid) {
+        initialLoadDoneRef.current = false;
+        knownIdsRef.current = new Set();
+      }
       setBusinessId(bid);
       businessIdRef.current = bid;
       if (!bid) {
@@ -148,7 +177,7 @@ export function BusinessReservationsLiveProvider({ children }: { children: React
       setError('Randevular yüklenemedi.');
       return null;
     }
-  }, [fetchReservations]);
+  }, [fetchReservations, pathname]);
 
   useEffect(() => {
     attachNotificationAudioUnlock();

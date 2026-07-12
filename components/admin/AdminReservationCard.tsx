@@ -13,6 +13,10 @@ interface Reservation {
   serviceId?: { name: string; durationMinutes?: number };
   staffId?: { _id?: string; name: string; title?: string } | string | null;
   customerId?: { firstName: string; lastName: string; email?: string };
+  reminders?: {
+    customerRsvp?: 'confirmed' | 'canceled' | null;
+    customerRsvpAt?: string | null;
+  };
 }
 
 interface AdminReservationCardProps {
@@ -29,6 +33,22 @@ function initials(first?: string, last?: string): string {
   return s || '?';
 }
 
+function rsvpBadge(rsvp?: 'confirmed' | 'canceled' | null) {
+  if (rsvp === 'confirmed') {
+    return {
+      label: 'Müşteri gelecek',
+      className: 'bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-900',
+    };
+  }
+  if (rsvp === 'canceled') {
+    return {
+      label: 'Müşteri iptal etti',
+      className: 'bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-200 dark:ring-red-900',
+    };
+  }
+  return null;
+}
+
 export function AdminReservationCard({
   reservation,
   onCancel,
@@ -38,6 +58,7 @@ export function AdminReservationCard({
   const customerName = c ? `${c.firstName} ${c.lastName}`.trim() : '';
   const canCancel = canBusinessCancelReservation(reservation);
   const compact = variant === 'compact';
+  const rsvp = rsvpBadge(reservation.reminders?.customerRsvp);
 
   if (compact) {
     return (
@@ -84,6 +105,11 @@ export function AdminReservationCard({
                 </Button>
               </div>
             )}
+            {rsvp && (
+              <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${rsvp.className}`}>
+                {rsvp.label}
+              </span>
+            )}
           </div>
         </div>
       </article>
@@ -128,6 +154,11 @@ export function AdminReservationCard({
           )}
           {c?.email && (
             <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">{c.email}</p>
+          )}
+          {rsvp && (
+            <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${rsvp.className}`}>
+              {rsvp.label}
+            </span>
           )}
 
           {canCancel && onCancel && (
