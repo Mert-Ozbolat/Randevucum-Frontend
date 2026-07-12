@@ -108,8 +108,6 @@ export function Navbar() {
 
   const roleQuick = customerQuick || businessQuick;
 
-  const isHome = pathname === "/";
-
   const linkActive = (href: string) =>
     href === "/"
       ? pathname === "/"
@@ -148,15 +146,8 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-neutral-200/90 bg-white/90 shadow-soft backdrop-blur-md dark:border-neutral-700/90 dark:bg-neutral-900/90">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:h-[4.25rem] sm:gap-3 sm:px-6 lg:px-8">
         <div className="min-w-0 shrink">
-          <Logo
-            size="sm"
-            className="sm:hidden"
-            variant={isHome ? "wordmark" : "default"}
-          />
-          <Logo
-            className="hidden sm:inline-flex"
-            variant={isHome ? "wordmark" : "default"}
-          />
+          <Logo size="sm" className="sm:hidden" />
+          <Logo className="hidden sm:inline-flex" />
         </div>
 
         {/* Masaüstü / geniş tablet — yatay menü (lg+) */}

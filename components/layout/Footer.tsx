@@ -1,8 +1,7 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { ArrowRight, Calendar, Heart, Shield, Sparkles } from "lucide-react";
+import Link from 'next/link';
+import { ArrowRight, Calendar, Heart, Shield, Sparkles } from 'lucide-react';
 import { Logo } from "@/components/brand/Logo";
 import { AnimateIn } from "@/components/ui/AnimateIn";
 import { LEGAL_LINKS } from "@/lib/legal/constants";
@@ -55,8 +54,6 @@ function FooterLinkGroup({
 }
 
 export function Footer() {
-  const pathname = usePathname();
-  const isHome = pathname === "/";
   const year = new Date().getFullYear();
 
   return (
@@ -71,11 +68,7 @@ export function Footer() {
           <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:gap-12">
             {/* Marka */}
             <div className="max-w-sm">
-              <Logo
-                size="sm"
-                href="/"
-                variant={isHome ? "wordmark" : "default"}
-              />
+              <Logo size="sm" href="/" />
               <p className="mt-4 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
                 Kuaförden kliniğe — müsait saatleri görün, dakikalar içinde
                 randevunuzu oluşturun.
