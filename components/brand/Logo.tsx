@@ -2,11 +2,11 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Sora } from 'next/font/google';
 
-const brandFont = Plus_Jakarta_Sans({
+const brandFont = Sora({
   subsets: ['latin', 'latin-ext'],
-  weight: ['700', '800'],
+  weight: ['600', '700', '800'],
   display: 'swap',
 });
 
@@ -27,10 +27,10 @@ function LogoMark({ className }: { className: string }) {
     <Image
       src="/icon1.png"
       alt=""
-      width={40}
-      height={40}
-      className={`${className} shrink-0 rounded-[10px] object-contain shadow-glow`}
-      sizes="40px"
+      width={56}
+      height={56}
+      className={`${className} shrink-0 rounded-[12px] object-contain shadow-glow ring-1 ring-black/5 dark:ring-white/10`}
+      sizes="56px"
       priority
     />
   );
@@ -39,12 +39,12 @@ function LogoMark({ className }: { className: string }) {
 function LogoWordmark({ size }: { size: LogoSize }) {
   const textClass =
     size === 'sm'
-      ? 'text-xl sm:text-2xl tracking-[-0.03em]'
-      : 'text-2xl sm:text-[1.85rem] tracking-[-0.035em]';
+      ? 'text-[1.75rem] leading-none sm:text-[2.125rem] tracking-[-0.04em]'
+      : 'text-[2rem] leading-none sm:text-[2.375rem] tracking-[-0.045em]';
 
   return (
     <span
-      className={`${brandFont.className} ${textClass} bg-gradient-to-r from-primary-700 via-primary-600 to-primary-500 bg-clip-text font-extrabold text-transparent dark:from-primary-300 dark:via-primary-400 dark:to-primary-500`}
+      className={`${brandFont.className} ${textClass} font-bold text-primary-700 dark:text-primary-300`}
     >
       Randevucum
     </span>
@@ -52,11 +52,12 @@ function LogoWordmark({ size }: { size: LogoSize }) {
 }
 
 export function Logo({ size = 'md', variant = 'default', href = '/', className = '' }: LogoProps) {
-  const iconClass = size === 'sm' ? 'h-8 w-8' : 'h-10 w-10';
+  const iconClass =
+    size === 'sm' ? 'h-11 w-11 sm:h-12 sm:w-12' : 'h-12 w-12 sm:h-14 sm:w-14';
   const textClass =
     size === 'sm'
-      ? 'text-base tracking-tight'
-      : 'text-lg sm:text-xl tracking-tight';
+      ? `${brandFont.className} text-lg sm:text-xl font-semibold tracking-[-0.02em]`
+      : `${brandFont.className} text-xl sm:text-2xl font-semibold tracking-[-0.025em]`;
 
   const inner =
     variant === 'wordmark' ? (
@@ -64,11 +65,9 @@ export function Logo({ size = 'md', variant = 'default', href = '/', className =
         <LogoWordmark size={size} />
       </span>
     ) : (
-      <span className={`inline-flex items-center gap-2.5 ${className}`}>
+      <span className={`inline-flex items-center gap-3 ${className}`}>
         <LogoMark className={iconClass} />
-        <span className={`font-bold text-primary-700 dark:text-primary-400 ${textClass}`}>
-          Randevucum
-        </span>
+        <span className={`text-primary-700 dark:text-primary-300 ${textClass}`}>Randevucum</span>
       </span>
     );
 
