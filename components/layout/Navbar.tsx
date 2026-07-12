@@ -1,19 +1,28 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { Calendar, Heart, Menu, Moon, Sun, User, Building2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useAuthStore } from '@/store/authStore';
-import { useThemeStore } from '@/store/themeStore';
-import { usePathname } from 'next/navigation';
-import { clearAuth, isBusinessOwner, isCustomer } from '@/lib/auth';
-import { Logo } from '@/components/brand/Logo';
+import Link from "next/link";
+import {
+  Calendar,
+  Heart,
+  Menu,
+  Moon,
+  Sun,
+  User,
+  Building2,
+  X,
+} from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { useThemeStore } from "@/store/themeStore";
+import { usePathname } from "next/navigation";
+import { clearAuth, isBusinessOwner, isCustomer } from "@/lib/auth";
+import { Logo } from "@/components/brand/Logo";
 
 const publicLinks = [
-  { href: '/', label: 'Ana Sayfa' },
-  { href: '/business', label: 'İşletmeler' },
-  { href: '/business/discover', label: 'Keşfet' },
-  { href: '/pricing', label: 'Fiyatlar' },
+  { href: "/", label: "Ana Sayfa" },
+  { href: "/business", label: "İşletmeler" },
+  { href: "/business/discover", label: "Keşfet" },
+  { href: "/pricing", label: "Fiyatlar" },
 ] as const;
 
 type QuickLink = {
@@ -35,7 +44,7 @@ export function Navbar() {
   useEffect(() => {
     if (!mobileOpen) return;
     const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = prev;
     };
@@ -43,78 +52,111 @@ export function Navbar() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMobileOpen(false);
+      if (e.key === "Escape") setMobileOpen(false);
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   const handleLogout = () => {
     clearAuth();
     storeLogout();
-    window.location.href = '/';
+    window.location.href = "/";
   };
 
   const toggleDark = () => {
-    setTheme(theme === 'dark' ? 'light' : 'dark');
+    setTheme(theme === "dark" ? "light" : "dark");
   };
 
   const customerQuick: QuickLink[] | null =
     token && user && isCustomer(user)
       ? [
-          { href: '/dashboard/customer/reservations', label: 'Randevularım', Icon: Calendar },
-          { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
-          { href: '/dashboard/profile', label: 'Profil', Icon: User },
+          {
+            href: "/dashboard/customer/reservations",
+            label: "Randevularım",
+            Icon: Calendar,
+          },
+          {
+            href: "/dashboard/customer/favorites",
+            label: "Favorilerim",
+            Icon: Heart,
+          },
+          { href: "/dashboard/profile", label: "Profil", Icon: User },
         ]
       : null;
 
   const businessQuick: QuickLink[] | null =
     token && user && isBusinessOwner(user)
       ? [
-          { href: '/dashboard/business', label: 'İşletme paneli', Icon: Building2 },
-          { href: '/dashboard/business/reservations', label: 'Randevular', Icon: Calendar },
-          { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
+          {
+            href: "/dashboard/business",
+            label: "İşletme paneli",
+            Icon: Building2,
+          },
+          {
+            href: "/dashboard/business/reservations",
+            label: "Randevular",
+            Icon: Calendar,
+          },
+          {
+            href: "/dashboard/customer/favorites",
+            label: "Favorilerim",
+            Icon: Heart,
+          },
         ]
       : null;
 
   const roleQuick = customerQuick || businessQuick;
 
-  const isHome = pathname === '/';
+  const isHome = pathname === "/";
 
   const linkActive = (href: string) =>
-    href === '/' ? pathname === '/' : pathname === href || pathname?.startsWith(`${href}/`);
+    href === "/"
+      ? pathname === "/"
+      : pathname === href || pathname?.startsWith(`${href}/`);
 
   const navLinkClass = (href: string, compact = false) =>
     `rounded-full font-medium transition ${
-      compact ? 'px-2.5 py-1.5 text-xs xl:px-3.5 xl:py-2 xl:text-sm' : 'px-3.5 py-2 text-sm'
+      compact
+        ? "px-2.5 py-1.5 text-xs xl:px-3.5 xl:py-2 xl:text-sm"
+        : "px-3.5 py-2 text-sm"
     } ${
       linkActive(href)
-        ? 'bg-white text-primary-700 shadow-sm dark:bg-neutral-700 dark:text-primary-300'
-        : 'text-neutral-600 hover:text-primary-600 dark:text-neutral-300 dark:hover:text-primary-400'
+        ? "bg-white text-primary-700 shadow-sm dark:bg-neutral-700 dark:text-primary-300"
+        : "text-neutral-600 hover:text-primary-600 dark:text-neutral-300 dark:hover:text-primary-400"
     }`;
 
   const roleLinkClass = (href: string, compact = false) =>
     `inline-flex items-center gap-1.5 rounded-full font-medium transition ${
-      compact ? 'px-2.5 py-1.5 text-xs xl:gap-1.5 xl:px-3 xl:py-2 xl:text-sm' : 'px-3 py-2 text-sm'
+      compact
+        ? "px-2.5 py-1.5 text-xs xl:gap-1.5 xl:px-3 xl:py-2 xl:text-sm"
+        : "px-3 py-2 text-sm"
     } ${
       linkActive(href)
-        ? 'bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200'
-        : 'text-neutral-600 hover:bg-neutral-100 hover:text-primary-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-primary-400'
+        ? "bg-primary-100 text-primary-800 dark:bg-primary-900/50 dark:text-primary-200"
+        : "text-neutral-600 hover:bg-neutral-100 hover:text-primary-700 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-primary-400"
     }`;
 
   const mobileNavLinkClass = (href: string) =>
     `rounded-xl px-4 py-3 text-sm font-medium ${
       linkActive(href)
-        ? 'bg-primary-50 text-primary-800 dark:bg-primary-900/40 dark:text-primary-200'
-        : 'text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800'
+        ? "bg-primary-50 text-primary-800 dark:bg-primary-900/40 dark:text-primary-200"
+        : "text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
     }`;
 
   return (
     <header className="sticky top-0 z-50 border-b border-neutral-200/90 bg-white/90 shadow-soft backdrop-blur-md dark:border-neutral-700/90 dark:bg-neutral-900/90">
       <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-3 sm:h-[4.25rem] sm:gap-3 sm:px-6 lg:px-8">
         <div className="min-w-0 shrink">
-          <Logo size="sm" className="sm:hidden" variant={isHome ? 'wordmark' : 'default'} />
-          <Logo className="hidden sm:inline-flex" variant={isHome ? 'wordmark' : 'default'} />
+          <Logo
+            size="sm"
+            className="sm:hidden"
+            variant={isHome ? "wordmark" : "default"}
+          />
+          <Logo
+            className="hidden sm:inline-flex"
+            variant={isHome ? "wordmark" : "default"}
+          />
         </div>
 
         {/* Masaüstü / geniş tablet — yatay menü (lg+) */}
@@ -132,8 +174,17 @@ export function Navbar() {
           {roleQuick && (
             <div className="hidden min-w-0 items-center gap-0.5 lg:flex xl:gap-1">
               {roleQuick.map(({ href, label, Icon }) => (
-                <Link key={href} href={href} className={roleLinkClass(href, true)} title={label}>
-                  <Icon className="h-4 w-4 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                <Link
+                  key={href}
+                  href={href}
+                  className={roleLinkClass(href, true)}
+                  title={label}
+                >
+                  <Icon
+                    className="h-4 w-4 shrink-0 opacity-90"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
                   <span className="hidden xl:inline">{label}</span>
                 </Link>
               ))}
@@ -144,10 +195,10 @@ export function Navbar() {
             type="button"
             onClick={toggleDark}
             className="rounded-full p-2 text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 sm:p-2.5 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-            title={theme === 'dark' ? 'Açık mod' : 'Koyu mod'}
-            aria-label={theme === 'dark' ? 'Açık moda geç' : 'Koyu moda geç'}
+            title={theme === "dark" ? "Açık mod" : "Koyu mod"}
+            aria-label={theme === "dark" ? "Açık moda geç" : "Koyu moda geç"}
           >
-            {theme === 'dark' ? (
+            {theme === "dark" ? (
               <Sun className="h-5 w-5" strokeWidth={1.75} aria-hidden />
             ) : (
               <Moon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
@@ -192,10 +243,14 @@ export function Navbar() {
             className="inline-flex rounded-full p-2 text-neutral-700 hover:bg-neutral-100 sm:p-2.5 lg:hidden dark:text-neutral-200 dark:hover:bg-neutral-800"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
-            aria-label={mobileOpen ? 'Menüyü kapat' : 'Menüyü aç'}
+            aria-label={mobileOpen ? "Menüyü kapat" : "Menüyü aç"}
             onClick={() => setMobileOpen((o) => !o)}
           >
-            {mobileOpen ? <X className="h-6 w-6" aria-hidden /> : <Menu className="h-6 w-6" aria-hidden />}
+            {mobileOpen ? (
+              <X className="h-6 w-6" aria-hidden />
+            ) : (
+              <Menu className="h-6 w-6" aria-hidden />
+            )}
           </button>
         </div>
       </div>
@@ -243,7 +298,11 @@ export function Navbar() {
                         onClick={() => setMobileOpen(false)}
                         className={`flex items-center gap-3 ${mobileNavLinkClass(href)}`}
                       >
-                        <Icon className="h-5 w-5 shrink-0 opacity-90" strokeWidth={2} aria-hidden />
+                        <Icon
+                          className="h-5 w-5 shrink-0 opacity-90"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
                         {label}
                       </Link>
                     ))}

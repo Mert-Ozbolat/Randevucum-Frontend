@@ -1,17 +1,17 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { Sora } from 'next/font/google';
+import Image from "next/image";
+import Link from "next/link";
+import { REM } from "next/font/google";
 
-const brandFont = Sora({
-  subsets: ['latin', 'latin-ext'],
-  weight: ['600', '700', '800'],
-  display: 'swap',
+const brandFont = REM({
+  weight: "400",
+  subsets: ["latin", "latin-ext"],
+  display: "swap",
 });
 
-type LogoSize = 'sm' | 'md';
-type LogoVariant = 'default' | 'wordmark';
+type LogoSize = "sm" | "md";
+type LogoVariant = "default" | "wordmark";
 
 interface LogoProps {
   size?: LogoSize;
@@ -27,10 +27,10 @@ function LogoMark({ className }: { className: string }) {
     <Image
       src="/icon1.png"
       alt=""
-      width={56}
-      height={56}
-      className={`${className} shrink-0 rounded-[12px] object-contain shadow-glow ring-1 ring-black/5 dark:ring-white/10`}
-      sizes="56px"
+      width={44}
+      height={44}
+      className={`${className} shrink-0 rounded-[10px] object-contain shadow-glow ring-1 ring-black/5 dark:ring-white/10`}
+      sizes="44px"
       priority
     />
   );
@@ -38,36 +38,43 @@ function LogoMark({ className }: { className: string }) {
 
 function LogoWordmark({ size }: { size: LogoSize }) {
   const textClass =
-    size === 'sm'
-      ? 'text-[1.75rem] leading-none sm:text-[2.125rem] tracking-[-0.04em]'
-      : 'text-[2rem] leading-none sm:text-[2.375rem] tracking-[-0.045em]';
+    size === "sm" ? "text-lg sm:text-xl" : "text-xl sm:text-[1.25rem]";
 
   return (
     <span
-      className={`${brandFont.className} ${textClass} font-bold text-primary-700 dark:text-primary-300`}
+      className={`${brandFont.className} ${textClass} font-normal uppercase text-primary-700 dark:text-primary-300`}
     >
       Randevucum
     </span>
   );
 }
 
-export function Logo({ size = 'md', variant = 'default', href = '/', className = '' }: LogoProps) {
+export function Logo({
+  size = "md",
+  variant = "default",
+  href = "/",
+  className = "",
+}: LogoProps) {
   const iconClass =
-    size === 'sm' ? 'h-11 w-11 sm:h-12 sm:w-12' : 'h-12 w-12 sm:h-14 sm:w-14';
+    size === "sm" ? "h-9 w-9 sm:h-10 sm:w-10" : "h-10 w-10 sm:h-11 sm:w-11";
   const textClass =
-    size === 'sm'
-      ? `${brandFont.className} text-lg sm:text-xl font-semibold tracking-[-0.02em]`
-      : `${brandFont.className} text-xl sm:text-2xl font-semibold tracking-[-0.025em]`;
+    size === "sm"
+      ? `${brandFont.className} text-base sm:text-lg font-normal uppercase`
+      : `${brandFont.className} text-lg sm:text-xl font-normal uppercase`;
 
   const inner =
-    variant === 'wordmark' ? (
+    variant === "wordmark" ? (
       <span className={`inline-flex items-center ${className}`}>
         <LogoWordmark size={size} />
       </span>
     ) : (
-      <span className={`inline-flex items-center gap-3 ${className}`}>
+      <span className={`inline-flex items-center gap-2.5 ${className}`}>
         <LogoMark className={iconClass} />
-        <span className={`text-primary-700 dark:text-primary-300 ${textClass}`}>Randevucum</span>
+        <span
+          className={`uppercase text-primary-700 dark:text-primary-300 ${textClass}`}
+        >
+          Randevucum
+        </span>
       </span>
     );
 
@@ -76,7 +83,10 @@ export function Logo({ size = 'md', variant = 'default', href = '/', className =
   }
 
   return (
-    <Link href={href} className="rounded-xl outline-none ring-primary-500/0 transition hover:opacity-95 focus-visible:ring-2">
+    <Link
+      href={href}
+      className="rounded-xl outline-none ring-primary-500/0 transition hover:opacity-95 focus-visible:ring-2"
+    >
       {inner}
     </Link>
   );

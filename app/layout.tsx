@@ -1,20 +1,25 @@
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import './globals.css';
-import { Providers } from './providers';
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import { Providers } from "./providers";
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: 'Randevucum | Randevu ve işletme yönetimi',
-  description: 'Kuaför, klinik, güzellik merkezi ve daha fazlası için online randevu alın; işletmeler müşterilerini tek panelden yönetir.',
+  title: "Randevucum | Randevu ve işletme yönetimi",
+  description:
+    "Kuaför, klinik, güzellik merkezi ve daha fazlası için online randevu alın; işletmeler müşterilerini tek panelden yönetir.",
   icons: {
-    icon: '/icon1.png',
-    apple: '/icon1.png',
+    icon: "/icon1.png",
+    apple: "/icon1.png",
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <html lang="tr">
       <body
