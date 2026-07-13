@@ -26,6 +26,7 @@ interface SubscriptionStatus {
 
 const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
 const ACCEPTED_VIDEO = 'video/mp4,video/quicktime,video/webm';
+const FILE_INPUT_ID = 'discover-video-upload';
 
 export default function DiscoverVideoPage() {
   const [business, setBusiness] = useState<Business | null>(null);
@@ -247,42 +248,84 @@ export default function DiscoverVideoPage() {
       <Card className="overflow-hidden p-0">
         <div className="relative aspect-[9/16] max-h-[420px] w-full bg-neutral-900">
           {hasVideo ? (
-            <video
-              key={promoVideoUrl}
-              src={promoVideoUrl}
-              className="h-full w-full object-cover"
-              controls
-              playsInline
-              preload="metadata"
-            />
+            <>
+              <video
+                key={promoVideoUrl}
+                src={promoVideoUrl}
+                className="h-full w-full object-cover"
+                controls
+                playsInline
+                preload="metadata"
+              />
+              {!uploading && (
+                <label
+                  htmlFor={FILE_INPUT_ID}
+                  className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 cursor-pointer rounded-full bg-black/70 px-4 py-2 text-sm font-semibold text-white shadow-lg backdrop-blur-sm transition hover:bg-black/85"
+                >
+                  Videoyu değiştir
+                </label>
+              )}
+            </>
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-neutral-400">
-              <Clapperboard className="h-12 w-12 opacity-40" strokeWidth={1.5} aria-hidden />
-              <p className="text-sm">Henüz video yok — dikey (9:16) kısa video önerilir</p>
+            <label
+              className={`relative flex h-full flex-col items-center justify-center gap-3 p-6 text-center text-neutral-400 ${
+                uploading ? 'cursor-wait' : 'cursor-pointer hover:bg-neutral-800/40'
+              }`}
+            >
+              <input
+                id={FILE_INPUT_ID}
+                ref={fileRef}
+                type="file"
+                accept={ACCEPTED_VIDEO}
+                onChange={handleFile}
+                disabled={uploading}
+                className="absolute inset-0 z-10 h-full w-full cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                aria-label="Video yükle"
+              />
+              <div className="pointer-events-none flex flex-col items-center gap-3">
+                <Clapperboard className="h-12 w-12 opacity-40" strokeWidth={1.5} aria-hidden />
+                <p className="text-sm">Henüz video yok — dikey (9:16) kısa video önerilir</p>
+                <span className="mt-1 inline-flex items-center rounded-full bg-primary-500 px-4 py-2 text-sm font-semibold text-white shadow-sm">
+                  {uploading ? 'Yükleniyor…' : 'Video yükle'}
+                </span>
+              </div>
+            </label>
+          )}
+
+          {uploading && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-black/55 text-white">
+              <div className="h-10 w-10 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              <p className="text-sm font-medium">Video yükleniyor…</p>
             </div>
           )}
         </div>
 
         <form onSubmit={handleSave} className="space-y-4 p-5">
-          <input
-            ref={fileRef}
-            type="file"
-            accept={ACCEPTED_VIDEO}
-            className="hidden"
-            onChange={handleFile}
-          />
+          {hasVideo && (
+            <input
+              id={FILE_INPUT_ID}
+              ref={fileRef}
+              type="file"
+              accept={ACCEPTED_VIDEO}
+              className="sr-only"
+              onChange={handleFile}
+              disabled={uploading}
+            />
+          )}
 
           <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={uploading}
-              onClick={() => fileRef.current?.click()}
+            <label
+              htmlFor={uploading ? undefined : FILE_INPUT_ID}
+              className={`inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium transition ${
+                uploading
+                  ? 'cursor-not-allowed bg-neutral-100 text-neutral-400 opacity-50 dark:bg-neutral-700 dark:text-neutral-500'
+                  : 'cursor-pointer bg-neutral-100 text-neutral-800 hover:bg-neutral-200 dark:bg-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-600'
+              }`}
             >
               {uploading ? 'Yükleniyor…' : hasVideo ? 'Videoyu değiştir' : 'Video yükle'}
-            </Button>
+            </label>
             {hasVideo && (
-              <Button type="button" variant="secondary" onClick={handleRemove}>
+              <Button type="button" variant="secondary" onClick={handleRemove} disabled={uploading}>
                 <Trash2 className="mr-1.5 h-4 w-4" aria-hidden />
                 Kaldır
               </Button>

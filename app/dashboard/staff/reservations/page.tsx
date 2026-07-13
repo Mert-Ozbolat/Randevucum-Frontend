@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Calendar } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Calendar, CalendarPlus } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { useStaffPanel } from '@/contexts/StaffPanelContext';
 import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { ManualAppointmentModal } from '@/components/admin/ManualAppointmentModal';
+import { useToast } from '@/components/ui/Toast';
 import {
   CustomerReservationCard,
   type CustomerReservationItem,
 } from '@/components/reservations/CustomerReservationCard';
+import type { BusinessReservation } from '@/contexts/BusinessReservationsLiveContext';
+import { canBusinessCancelReservation } from '@/lib/reservationFilters';
 
 type FilterTab = 'all' | 'upcoming' | 'past';
 
@@ -28,19 +33,33 @@ function isUpcomingLike(r: CustomerReservationItem): boolean {
 
 export default function StaffReservationsPage() {
   const { staffRows } = useStaffPanel();
+  const { addToast } = useToast();
   const [reservations, setReservations] = useState<CustomerReservationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tab, setTab] = useState<FilterTab>('upcoming');
+  const [manualModalOpen, setManualModalOpen] = useState(false);
 
-  useEffect(() => {
+  const activeStaff = useMemo(
+    () => staffRows.filter((s) => s.canViewOwnReservations && s.businessId?._id),
+    [staffRows]
+  );
+  const primaryStaff = activeStaff[0];
+  const businessId = primaryStaff?.businessId?._id || null;
+  const staffId = primaryStaff?._id || null;
+
+  const loadReservations = useCallback(() => {
     setLoading(true);
-    api
+    return api
       .get<{ data: CustomerReservationItem[] }>('/reservations/staff/mine')
       .then((res) => setReservations(res.data.data || []))
       .catch((err) => setError(getApiErrorMessage(err)))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    void loadReservations();
+  }, [loadReservations]);
 
   const filtered = useMemo(() => {
     const sorted = [...reservations].sort((a, b) => {
@@ -52,6 +71,27 @@ export default function StaffReservationsPage() {
     if (tab === 'past') return sorted.filter((r) => !isUpcomingLike(r));
     return sorted;
   }, [reservations, tab]);
+
+  const handleCancel = async (id: string) => {
+    if (!confirm('Bu randevuyu iptal etmek istediğinize emin misiniz?')) return;
+    setError('');
+    try {
+      await api.patch(`/reservations/${id}/status`, { status: 'canceled' });
+      setReservations((prev) =>
+        prev.map((r) => (r._id === id ? { ...r, status: 'canceled' } : r))
+      );
+      addToast('success', 'Randevu iptal edildi.');
+    } catch (err) {
+      setError(getApiErrorMessage(err));
+    }
+  };
+
+  const handleManualSuccess = (reservation: BusinessReservation) => {
+    const item = reservation as unknown as CustomerReservationItem;
+    setReservations((prev) => [...prev, item]);
+    addToast('success', 'Manuel randevu oluşturuldu.');
+    setTab('upcoming');
+  };
 
   if (loading) {
     return (
@@ -67,17 +107,28 @@ export default function StaffReservationsPage() {
         <p className="text-sm font-medium text-primary-100">Personel</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">İş randevularım</h1>
         <p className="mt-2 max-w-xl text-sm text-primary-100">
-          Size atanmış randevuları görüntüleyin. Onay ve iptal işlemleri işletme sahibinden yapılır.
+          Size atanmış randevuları görüntüleyin, manuel randevu ekleyin veya iptal edin.
         </p>
-        {staffRows.length > 0 && (
+        {activeStaff.length > 0 && (
           <p className="mt-3 max-w-xl text-xs text-primary-200/95">
             Personel kaydı:{' '}
-            {staffRows
-              .filter((s) => s.canViewOwnReservations)
+            {activeStaff
               .map((s) => s.businessId?.name || s.name || 'İşletme')
               .filter(Boolean)
               .join(' · ') || '—'}
           </p>
+        )}
+        {businessId && (
+          <div className="mt-5">
+            <Button
+              type="button"
+              className="rounded-xl bg-white text-primary-800 hover:bg-primary-50"
+              onClick={() => setManualModalOpen(true)}
+            >
+              <CalendarPlus className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden />
+              Manuel randevu ekle
+            </Button>
+          </div>
         )}
       </div>
 
@@ -94,7 +145,7 @@ export default function StaffReservationsPage() {
             Henüz size atanmış randevu yok
           </p>
           <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
-            İşletme sahibi hesabınızı personel ile eşleştirdiğinde ve size randevu atandığında burada listelenir.
+            Manuel randevu ekleyebilir veya işletme sahibinin size randevu atamasını bekleyebilirsiniz.
           </p>
         </Card>
       )}
@@ -123,8 +174,8 @@ export default function StaffReservationsPage() {
               <li key={r._id}>
                 <CustomerReservationCard
                   reservation={r}
-                  readOnly
-                  onCancel={() => {}}
+                  readOnly={!canBusinessCancelReservation(r)}
+                  onCancel={handleCancel}
                 />
               </li>
             ))}
@@ -136,6 +187,16 @@ export default function StaffReservationsPage() {
             </p>
           )}
         </>
+      )}
+
+      {businessId && (
+        <ManualAppointmentModal
+          open={manualModalOpen}
+          onClose={() => setManualModalOpen(false)}
+          businessId={businessId}
+          defaultStaffId={staffId}
+          onSuccess={handleManualSuccess}
+        />
       )}
     </div>
   );

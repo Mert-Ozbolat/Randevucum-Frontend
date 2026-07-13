@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { format, startOfDay } from 'date-fns';
-import { CalendarDays, ClipboardList, Filter, History, Radio, Store, Users } from 'lucide-react';
+import { CalendarDays, CalendarPlus, ClipboardList, Filter, History, Radio, Store, Users } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { AdminCalendar, ReservationDetailModal } from '@/components/admin/AdminCalendar';
+import { ManualAppointmentModal } from '@/components/admin/ManualAppointmentModal';
 import { ReservationGroupedList } from '@/components/admin/ReservationGroupedList';
 import { ReservationViewControls } from '@/components/admin/ReservationViewControls';
 import { Card } from '@/components/ui/Card';
@@ -59,6 +60,7 @@ export default function BusinessReservationsPage() {
     error: liveError,
     isLive,
     updateReservation,
+    addReservation,
   } = useBusinessReservationsLive();
   const [error, setError] = useState('');
   const [view, setView] = useState<'daily' | 'weekly'>('daily');
@@ -68,6 +70,7 @@ export default function BusinessReservationsPage() {
   const [staffList, setStaffList] = useState<StaffOption[]>([]);
   const [viewPrefs, setViewPrefs] = useState<ReservationViewPrefs>(() => loadReservationViewPrefs(null));
   const [selectedReservation, setSelectedReservation] = useState<BusinessReservation | null>(null);
+  const [manualModalOpen, setManualModalOpen] = useState(false);
   const { addToast } = useToast();
 
   useEffect(() => {
@@ -197,9 +200,21 @@ export default function BusinessReservationsPage() {
             )}
           </div>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-300">
-            Yeni randevular otomatik onaylanır. Takvimden günlük/haftalık planınızı görün ve gerekirse
-            randevuyu iptal edin.
+            Yeni randevular otomatik onaylanır. Manuel randevu ekleyebilir, takvimden planınızı görüntüleyebilir ve
+            gerekirse iptal edebilirsiniz.
           </p>
+          {businessId && (
+            <div className="mt-5 flex flex-wrap gap-3">
+              <Button
+                type="button"
+                className="rounded-xl bg-white text-slate-900 hover:bg-slate-100"
+                onClick={() => setManualModalOpen(true)}
+              >
+                <CalendarPlus className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden />
+                Manuel randevu ekle
+              </Button>
+            </div>
+          )}
           {businessId && (
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="rounded-2xl bg-white/10 px-4 py-3 backdrop-blur-sm">
@@ -416,6 +431,21 @@ export default function BusinessReservationsPage() {
               onClose={() => setSelectedReservation(null)}
               onCancel={handleCancel}
               onMarkAttendance={handleMarkAttendance}
+            />
+          )}
+
+          {businessId && (
+            <ManualAppointmentModal
+              open={manualModalOpen}
+              onClose={() => setManualModalOpen(false)}
+              businessId={businessId}
+              defaultDate={selectedDate}
+              defaultStaffId={staffFilter !== 'all' && staffFilter !== 'unassigned' ? staffFilter : null}
+              onSuccess={(reservation) => {
+                addReservation(reservation);
+                addToast('success', 'Manuel randevu oluşturuldu.');
+                setTab('calendar');
+              }}
             />
           )}
         </>

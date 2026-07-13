@@ -62,6 +62,7 @@ type BusinessReservationsLiveContextValue = {
   isLive: boolean;
   refresh: () => Promise<void>;
   updateReservation: (id: string, patch: Partial<BusinessReservation>) => void;
+  addReservation: (reservation: BusinessReservation) => void;
 };
 
 const BusinessReservationsLiveContext = createContext<BusinessReservationsLiveContextValue | null>(
@@ -153,6 +154,20 @@ export function BusinessReservationsLiveProvider({ children }: { children: React
 
   const updateReservation = useCallback((id: string, patch: Partial<BusinessReservation>) => {
     setReservations((prev) => prev.map((r) => (r._id === id ? { ...r, ...patch } : r)));
+  }, []);
+
+  const addReservation = useCallback((reservation: BusinessReservation) => {
+    knownIdsRef.current.add(reservation._id);
+    setReservations((prev) => {
+      const next = [...prev, reservation];
+      next.sort((a, b) => {
+        const da = String(a.date);
+        const db = String(b.date);
+        if (da !== db) return da.localeCompare(db);
+        return (a.time || '').localeCompare(b.time || '');
+      });
+      return next;
+    });
   }, []);
 
   const loadBusiness = useCallback(async () => {
@@ -253,6 +268,7 @@ export function BusinessReservationsLiveProvider({ children }: { children: React
         isLive,
         refresh,
         updateReservation,
+        addReservation,
       }}
     >
       {children}

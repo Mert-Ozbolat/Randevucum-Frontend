@@ -13,7 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { isBusinessOwner } from '@/lib/auth';
 
 export type StaffMeRow = {
-  _id?: string;
+  _id: string;
   canViewOwnReservations?: boolean;
   businessId?: { _id?: string; name?: string };
   name?: string;
