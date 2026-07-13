@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { format } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { Button } from '@/components/ui/Button';
@@ -8,6 +9,11 @@ import { Input } from '@/components/ui/Input';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { phoneInputFromStored } from '@/lib/phone';
 import { CUSTOMER_CANCEL_POLICY_NOTICE } from '@/lib/reservationFilters';
+
+export interface ReservationConfirmPayload {
+  phone?: string;
+  guestName?: string;
+}
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -24,7 +30,10 @@ interface ReservationModalProps {
   phone?: string;
   onPhoneChange?: (value: string) => void;
   requirePhone?: boolean;
-  onConfirm: (phoneFromModal?: string) => void;
+  /** Oturum açmadan hızlı randevu */
+  quickBooking?: boolean;
+  loginHref?: string;
+  onConfirm: (payload?: ReservationConfirmPayload) => void;
   loading?: boolean;
   error?: string;
 }
@@ -43,18 +52,32 @@ export function ReservationModal({
   phone,
   onPhoneChange,
   requirePhone = false,
+  quickBooking = false,
+  loginHref,
   onConfirm,
   loading = false,
   error,
 }: ReservationModalProps) {
   if (!isOpen) return null;
-  const showPhone = Boolean(requirePhone || !String(phone || '').trim());
+
+  const showPhone = quickBooking || Boolean(requirePhone || !String(phone || '').trim());
   const [localPhone, setLocalPhone] = useState<string>(phone || '');
+  const [guestName, setGuestName] = useState('');
 
   useEffect(() => {
-    // Sync local state whenever parent phone changes (e.g. after /auth/me) or modal opens.
     setLocalPhone(phoneInputFromStored(phone) || phone || '');
   }, [phone, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) setGuestName('');
+  }, [isOpen]);
+
+  const handleConfirm = () => {
+    onConfirm({
+      phone: showPhone ? localPhone : undefined,
+      guestName: quickBooking ? guestName.trim() : undefined,
+    });
+  };
 
   return (
     <div
@@ -70,13 +93,23 @@ export function ReservationModal({
       />
       <div className="relative w-full max-w-md rounded-2xl border border-neutral-200 bg-white p-6 shadow-soft animate-slide-up dark:border-neutral-700 dark:bg-neutral-900">
         <h2 id="reservation-modal-title" className="text-xl font-bold text-neutral-900 dark:text-neutral-50">
-          Randevu özeti
+          {quickBooking ? 'Hızlı randevu' : 'Randevu özeti'}
         </h2>
         <p className="mt-1 text-sm text-neutral-600 dark:text-neutral-300">
-          Bilgileri kontrol edip randevunuzu oluşturun.
+          {quickBooking
+            ? 'Adınız ve WhatsApp numaranızla hesap açmadan randevunuzu oluşturun.'
+            : 'Bilgileri kontrol edip randevunuzu oluşturun.'}
         </p>
 
-        {/* Bilgi alanları kutu içinde */}
+        {quickBooking && loginHref && (
+          <p className="mt-3 text-sm text-neutral-600 dark:text-neutral-400">
+            Hesabınız var mı?{' '}
+            <Link href={loginHref} className="font-semibold text-primary-600 hover:underline dark:text-primary-400">
+              Giriş yapın
+            </Link>
+          </p>
+        )}
+
         <div className="mt-4 rounded-xl border border-neutral-200 bg-neutral-100 p-4 dark:border-neutral-700 dark:bg-neutral-800/60">
           {businessName && (
             <p className="text-neutral-900 dark:text-neutral-50">
@@ -108,17 +141,33 @@ export function ReservationModal({
         </div>
 
         <div className="mt-4">
+          {quickBooking && (
+            <div className="mb-4">
+              <Input
+                label="Ad soyad"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Örn. Ayşe Yılmaz"
+                required
+                autoComplete="name"
+              />
+            </div>
+          )}
           {showPhone && (
             <div className="mb-4">
               <PhoneInput
-                label="Telefon (WhatsApp hatırlatmaları için)"
+                label="WhatsApp telefon"
                 value={localPhone}
                 onChange={(v) => {
                   setLocalPhone(v);
                   onPhoneChange?.(v);
                 }}
-                required={requirePhone}
-                hint="İlk randevunuzda istenir; sonraki randevularda tekrar sorulmaz."
+                required={quickBooking || requirePhone}
+                hint={
+                  quickBooking
+                    ? 'Onay ve hatırlatmalar bu numaraya WhatsApp ile gönderilir.'
+                    : 'İlk randevunuzda istenir; sonraki randevularda tekrar sorulmaz.'
+                }
               />
             </div>
           )}
@@ -143,19 +192,15 @@ export function ReservationModal({
           </div>
         )}
         <div className="mt-6 flex gap-3">
-          <Button
-            variant="danger"
-            className="flex-1"
-            onClick={onClose}
-          >
+          <Button variant="danger" className="flex-1" onClick={onClose}>
             İptal
           </Button>
           <Button
             className="flex-[1.5] py-3 text-base font-semibold"
             loading={loading}
-            onClick={() => onConfirm(showPhone ? localPhone : undefined)}
+            onClick={handleConfirm}
           >
-            Randevuyu oluştur
+            {quickBooking ? 'Hızlı randevu al' : 'Randevuyu oluştur'}
           </Button>
         </div>
       </div>

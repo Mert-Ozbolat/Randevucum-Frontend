@@ -317,39 +317,62 @@ export default function BusinessDetailPage() {
     : [];
 
   const handleSlotSelect = (time: string) => {
-    if (!token) {
-      router.push(`/login?from=${encodeURIComponent(`/business/${id}`)}`);
-      return;
-    }
     setSelectedTime(time);
     setModalOpen(true);
   };
 
-  const handleConfirmReservation = async (phoneFromModal?: string) => {
+  const handleConfirmReservation = async (payload?: { phone?: string; guestName?: string }) => {
     if (!selectedDate || !selectedTime || !selectedServiceId || !business) return;
     setReserveError('');
     setReserveLoading(true);
     try {
-      const phoneInput = String(phoneFromModal ?? phone ?? '').trim();
+      const isQuickBooking = !token;
+      const phoneInput = String(payload?.phone ?? phone ?? '').trim();
       const digits = phoneDigitsOnly(phoneInput);
       let normalizedDigits = digits;
       if (normalizedDigits.startsWith('90')) normalizedDigits = normalizedDigits.slice(2);
       if (normalizedDigits.startsWith('0')) normalizedDigits = normalizedDigits.slice(1);
       normalizedDigits = normalizedDigits.slice(0, 10);
-      if (needsPhone && normalizedDigits.length < 10) {
+
+      if (isQuickBooking) {
+        if (!String(payload?.guestName || '').trim()) {
+          setReserveError('Ad soyad gerekli.');
+          return;
+        }
+        if (normalizedDigits.length < 10) {
+          setReserveError('WhatsApp telefon numarası gerekli.');
+          return;
+        }
+      } else if (needsPhone && normalizedDigits.length < 10) {
         setReserveError('Telefon numarası gerekli.');
         return;
       }
-      await apiLib.post('/reservations', {
+
+      const res = await apiLib.post<{
+        data: {
+          reservation: unknown;
+          quickBooking?: boolean;
+          token?: string;
+          user?: typeof storeUser;
+        };
+      }>('/reservations', {
         businessId: id,
         serviceId: selectedServiceId,
         ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
-        ...(needsPhone ? { customerPhone: phoneInput } : {}),
+        ...(isQuickBooking || needsPhone ? { customerPhone: phoneInput } : {}),
+        ...(isQuickBooking ? { guestName: String(payload?.guestName).trim() } : {}),
       });
-      if (needsPhone) {
+
+      const quickData = res.data.data;
+      if (quickData?.quickBooking && quickData.token && quickData.user) {
+        setLocalAuth(quickData.token, quickData.user);
+        setStoreAuth(quickData.token, quickData.user);
+        setPhone(formatTrMobile(phoneInput) || phoneInput);
+        setNeedsPhone(false);
+      } else if (needsPhone) {
         const t = getStoredToken() || token;
         const u = getStoredUser() || storeUser;
         if (t && u) {
@@ -361,7 +384,13 @@ export default function BusinessDetailPage() {
           setNeedsPhone(false);
         }
       }
-      addToast('success', 'Randevunuz alındı.');
+
+      addToast(
+        'success',
+        isQuickBooking
+          ? 'Randevunuz alındı. WhatsApp ile bilgilendirileceksiniz.'
+          : 'Randevunuz alındı.'
+      );
       setModalOpen(false);
       setSelectedTime(null);
       setNotes('');
@@ -1117,6 +1146,8 @@ export default function BusinessDetailPage() {
             if (reserveError) setReserveError('');
           }}
           requirePhone={needsPhone}
+          quickBooking={!token}
+          loginHref={`/login?from=${encodeURIComponent(`/business/${id}`)}`}
           onConfirm={handleConfirmReservation}
           loading={reserveLoading}
           error={reserveError}

@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useParams, useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useParams, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
 import { getStoredToken, getStoredUser, setAuth } from '@/lib/auth';
+import { useAuthStore } from '@/store/authStore';
 import { format, startOfDay } from 'date-fns';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -81,11 +82,12 @@ function buildSlotOptions(
 export default function ReservePage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const pathname = usePathname();
   const businessId = params.id as string;
   const serviceId = searchParams.get('serviceId');
   const { addToast } = useToast();
+  const token = useAuthStore((s) => s.token);
+  const setStoreAuth = useAuthStore((s) => s.setAuth);
   const [service, setService] = useState<Service | null>(null);
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string | null>(null);
@@ -101,6 +103,7 @@ export default function ReservePage() {
   const [reserveLoading, setReserveLoading] = useState(false);
   const [reserveError, setReserveError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [quickBookingSuccess, setQuickBookingSuccess] = useState(false);
   const [businessName, setBusinessName] = useState<string>('');
   const [phone, setPhone] = useState<string>(() => phoneInputFromStored(getStoredUser()?.phone));
   const [needsPhone, setNeedsPhone] = useState<boolean>(() => {
@@ -114,8 +117,9 @@ export default function ReservePage() {
   }, [reserveError]);
   const requirePhoneForThisReservation = needsPhone || phoneRequiredByApi;
 
-  // Keep localStorage user in sync with backend (phone may be missing in DB even if LS is stale).
+  // Keep localStorage user in sync with backend when logged in.
   useEffect(() => {
+    if (!getStoredToken()) return;
     api
       .get<{ data: { phone?: string } }>('/auth/me')
       .then((res) => {
@@ -136,15 +140,6 @@ export default function ReservePage() {
         // ignore; fall back to localStorage
       });
   }, []);
-
-  useEffect(() => {
-    const token = getStoredToken();
-    if (!token) {
-      const q = searchParams.toString();
-      const path = q ? `${pathname}?${q}` : pathname;
-      router.replace(`/login?from=${encodeURIComponent(path)}`);
-    }
-  }, [pathname, router, searchParams]);
 
   useEffect(() => {
     api.get<{ data: Business }>(`/business/${businessId}`).then((res) => setBusinessName(res.data.data?.name ?? '')).catch(() => {});
@@ -239,13 +234,14 @@ export default function ReservePage() {
     setModalOpen(true);
   };
 
-  const handleConfirm = async (phoneFromModal?: string) => {
+  const handleConfirm = async (payload?: { phone?: string; guestName?: string }) => {
     if (!selectedDate || !selectedTime || !service) return;
     setReserveError('');
     setReserveLoading(true);
     try {
+      const isQuickBooking = !getStoredToken() && !token;
       const u = getStoredUser();
-      const phoneCandidateA = (phoneFromModal ?? '') as string;
+      const phoneCandidateA = (payload?.phone ?? '') as string;
       const phoneCandidateB = (phone ?? '') as string;
       const phoneInput =
         phoneDigitsOnly(phoneCandidateA).length > 0
@@ -255,36 +251,69 @@ export default function ReservePage() {
             : phoneCandidateA || phoneCandidateB || '';
 
       const phoneDigits = phoneDigitsOnly(phoneInput);
-      // TR mobile should be 10 digits (5xxxxxxxxx) after trimming prefixes.
       let normalizedDigits = phoneDigits;
       if (normalizedDigits.startsWith('90')) normalizedDigits = normalizedDigits.slice(2);
       if (normalizedDigits.startsWith('0')) normalizedDigits = normalizedDigits.slice(1);
       normalizedDigits = normalizedDigits.slice(0, 10);
-      if (requirePhoneForThisReservation && normalizedDigits.length < 10) {
+
+      if (isQuickBooking) {
+        if (!String(payload?.guestName || '').trim()) {
+          setReserveError('Ad soyad gerekli.');
+          return;
+        }
+        if (normalizedDigits.length < 10) {
+          setReserveError('WhatsApp telefon numarası gerekli.');
+          return;
+        }
+      } else if (requirePhoneForThisReservation && normalizedDigits.length < 10) {
         setReserveError('Telefon numarası gerekli.');
         return;
       }
-      await api.post('/reservations', {
+
+      const res = await api.post<{
+        data: {
+          reservation: unknown;
+          quickBooking?: boolean;
+          token?: string;
+          user?: NonNullable<ReturnType<typeof getStoredUser>>;
+        };
+      }>('/reservations', {
         businessId,
         serviceId,
         ...(selectedStaffId ? { staffId: selectedStaffId } : {}),
         date: format(selectedDate, 'yyyy-MM-dd'),
         time: selectedTime,
         notes: notes || undefined,
-        ...(requirePhoneForThisReservation ? { customerPhone: String(phoneInput).trim() } : {}),
+        ...(isQuickBooking || requirePhoneForThisReservation
+          ? { customerPhone: String(phoneInput).trim() }
+          : {}),
+        ...(isQuickBooking ? { guestName: String(payload?.guestName).trim() } : {}),
       });
-      if (requirePhoneForThisReservation) {
-        const token = getStoredToken();
-        if (token && u) {
-          // Store pretty formatted version on client; backend will normalize to E.164.
+
+      const quickData = res.data.data;
+      if (quickData?.quickBooking && quickData.token && quickData.user) {
+        setAuth(quickData.token, quickData.user);
+        setStoreAuth(quickData.token, quickData.user);
+        setPhone(formatTrMobile(phoneInput) || String(phoneInput).trim());
+        setNeedsPhone(false);
+        setQuickBookingSuccess(true);
+      } else if (requirePhoneForThisReservation) {
+        const authToken = getStoredToken();
+        if (authToken && u) {
           const pretty = formatTrMobile(phoneInput) || String(phoneInput).trim();
           const updated = { ...u, phone: pretty };
-          setAuth(token, updated);
+          setAuth(authToken, updated);
           setPhone(pretty);
           setNeedsPhone(false);
         }
       }
-      addToast('success', 'Randevunuz alındı.');
+
+      addToast(
+        'success',
+        isQuickBooking
+          ? 'Randevunuz alındı. WhatsApp ile bilgilendirileceksiniz.'
+          : 'Randevunuz alındı.'
+      );
       setSuccess(true);
       setModalOpen(false);
     } catch (err) {
@@ -321,8 +350,9 @@ export default function ReservePage() {
           </div>
           <h1 className="mt-4 text-xl font-semibold text-neutral-900">Randevunuz oluşturuldu</h1>
           <p className="mt-2 text-neutral-600">
-            Randevunuz onaylandı. Randevularım sayfasından takip edebilir veya başlangıç saatinden
-            en geç 12 saat öncesine kadar iptal edebilirsiniz.
+            {quickBookingSuccess
+              ? 'Randevunuz onaylandı. Detaylar WhatsApp numaranıza gönderilecek. İsterseniz randevularınızı panelden de takip edebilirsiniz.'
+              : 'Randevunuz onaylandı. Randevularım sayfasından takip edebilir veya başlangıç saatinden en geç 12 saat öncesine kadar iptal edebilirsiniz.'}
           </p>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center sm:gap-4">
             <Link href="/dashboard/customer/reservations" className="order-first">
@@ -475,6 +505,8 @@ export default function ReservePage() {
           if (reserveError) setReserveError('');
         }}
         requirePhone={requirePhoneForThisReservation}
+        quickBooking={!token && !getStoredToken()}
+        loginHref={`/login?from=${encodeURIComponent(pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''))}`}
         onConfirm={handleConfirm}
         loading={reserveLoading}
         error={reserveError}
