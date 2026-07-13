@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { format, startOfDay, addDays, isSameDay } from 'date-fns';
+import { format, startOfDay, addDays, isSameDay, startOfMonth } from 'date-fns';
 import { tr } from 'date-fns/locale';
 import { reservationLocalCalendarKey } from '@/lib/reservationDate';
 import { CalendarDays, Clock, Mail, Scissors, User, UserRound, X, CheckCircle2, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { AdminReservationCard } from './AdminReservationCard';
+import { ReservationMonthCalendar } from './ReservationMonthCalendar';
 import { canBusinessCancelReservation, canMarkAttendance } from '@/lib/reservationFilters';
 import { ReservationStatusBadge } from '@/components/reservations/ReservationStatusBadge';
 import { attendanceRateColor, formatAttendanceRate, type AttendanceStats } from '@/lib/attendance';
@@ -375,59 +376,86 @@ function DayAgendaCard({
     <button
       type="button"
       onClick={() => onSelect(reservation)}
-      className={`group flex w-full flex-col gap-2.5 rounded-2xl border bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/70 sm:flex-row sm:items-center sm:gap-3 sm:p-4 ${
+      className={`group w-full rounded-2xl border bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/70 sm:p-4 ${
         canceled
           ? 'border-neutral-200 opacity-60 dark:border-neutral-700'
           : 'border-neutral-200/90 dark:border-neutral-700'
       }`}
     >
-      <span
-        className={`h-1 w-full shrink-0 rounded-full sm:hidden ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
-        aria-hidden
-      />
-
-      <div className="flex w-full items-start gap-3 sm:items-center">
+      {/* Mobil */}
+      <div className="flex flex-col gap-3 sm:hidden">
         <span
-          className={`hidden h-12 w-1.5 shrink-0 rounded-full sm:block ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
+          className={`h-1 w-full rounded-full ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
           aria-hidden
         />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-lg font-bold tabular-nums text-neutral-900 dark:text-white">
+              {reservation.time}
+            </span>
+            {reservation.endTime && (
+              <span className="font-mono text-xs tabular-nums text-neutral-400">– {reservation.endTime}</span>
+            )}
+          </div>
+          <ReservationStatusBadge status={reservation.status} />
+        </div>
+        <div className="flex items-start gap-3">
+          <div
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white"
+            aria-hidden
+          >
+            {initials}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className={`text-base font-semibold text-neutral-900 dark:text-white ${canceled ? 'line-through' : ''}`}>
+              {customerName(reservation)}
+            </p>
+            <p className="mt-0.5 text-sm text-neutral-600 dark:text-neutral-300">
+              {reservation.serviceId?.name || 'Hizmet'}
+              {reservation.serviceId?.durationMinutes ? (
+                <span className="text-neutral-400"> · {reservation.serviceId.durationMinutes} dk</span>
+              ) : null}
+            </p>
+            {sName && <p className="mt-0.5 text-xs text-neutral-400 dark:text-neutral-500">{sName}</p>}
+          </div>
+        </div>
+      </div>
 
-        <div className="flex shrink-0 flex-col items-center rounded-xl bg-neutral-50 px-3 py-2 dark:bg-neutral-800/70 sm:w-[4.5rem] sm:px-2 sm:py-1.5">
-          <span className="font-mono text-lg font-bold tabular-nums text-neutral-900 dark:text-white sm:text-base">
+      {/* Masaüstü */}
+      <div className="hidden items-center gap-3 sm:flex">
+        <span
+          className={`h-12 w-1.5 shrink-0 rounded-full ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
+          aria-hidden
+        />
+        <div className="flex w-[4.5rem] shrink-0 flex-col items-center rounded-xl bg-neutral-50 px-2 py-1.5 dark:bg-neutral-800/70">
+          <span className="font-mono text-base font-bold tabular-nums text-neutral-900 dark:text-white">
             {reservation.time}
           </span>
           {reservation.endTime && (
-            <span className="font-mono text-xs tabular-nums text-neutral-400 sm:text-[11px]">
-              {reservation.endTime}
-            </span>
+            <span className="font-mono text-[11px] tabular-nums text-neutral-400">{reservation.endTime}</span>
           )}
         </div>
-
         <div
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white sm:h-11 sm:w-11"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white"
           aria-hidden
         >
           {initials}
         </div>
-
         <div className="min-w-0 flex-1">
-          <p className={`break-words text-base font-semibold leading-snug text-neutral-900 dark:text-white ${canceled ? 'line-through' : ''}`}>
+          <p className={`truncate text-base font-semibold text-neutral-900 dark:text-white ${canceled ? 'line-through' : ''}`}>
             {customerName(reservation)}
           </p>
-          <p className="mt-1 break-words text-sm leading-snug text-neutral-600 dark:text-neutral-300">
+          <p className="mt-0.5 truncate text-sm text-neutral-600 dark:text-neutral-300">
             {reservation.serviceId?.name || 'Hizmet'}
             {reservation.serviceId?.durationMinutes ? (
               <span className="text-neutral-400"> · {reservation.serviceId.durationMinutes} dk</span>
             ) : null}
           </p>
-          {sName && (
-            <p className="mt-1 break-words text-xs text-neutral-400 dark:text-neutral-500">{sName}</p>
-          )}
+          {sName && <p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">{sName}</p>}
         </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-1.5 self-start sm:self-center">
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
           <ReservationStatusBadge status={reservation.status} />
-          <span className="hidden text-[11px] font-medium text-primary-500 opacity-0 transition group-hover:opacity-100 sm:inline">
+          <span className="text-[11px] font-medium text-primary-500 opacity-0 transition group-hover:opacity-100">
             Detay →
           </span>
         </div>
@@ -440,33 +468,44 @@ function DayAgendaCard({
 function DayAgenda({
   day,
   reservations,
+  allReservations,
   isToday,
   onSelect,
+  onDateChange,
   sortMode,
   layout,
 }: {
   day: Date;
   reservations: Reservation[];
+  allReservations: Reservation[];
   isToday: boolean;
   onSelect: (reservation: Reservation) => void;
+  onDateChange: (date: Date) => void;
   sortMode: ReservationSortMode;
   layout: CalendarLayoutMode;
 }) {
   const sorted = sortReservations(reservations, sortMode);
   const grouped = groupByHour(sorted);
   const count = reservations.length;
+  const [viewMonth, setViewMonth] = useState(() => startOfMonth(day));
+
+  useEffect(() => {
+    setViewMonth(startOfMonth(day));
+  }, [day]);
 
   const renderCards = (items: Reservation[]) =>
     items.map((r) => <DayAgendaCard key={r._id} reservation={r} onSelect={onSelect} />);
 
+  const appointmentLayout = layout === 'calendar' ? 'timeline' : layout;
+
   const renderBody = () => {
-    if (layout === 'timeline') {
+    if (appointmentLayout === 'timeline') {
       return grouped.map((group) => (
         <DayAgendaRow key={group.hourKey} group={group} isToday={isToday} onSelect={onSelect} />
       ));
     }
 
-    if (layout === 'hour_grid') {
+    if (appointmentLayout === 'hour_grid') {
       return grouped.map((group) => (
         <div key={group.hourKey} className="mb-5">
           <div className="mb-2 flex items-center gap-2">
@@ -482,7 +521,7 @@ function DayAgenda({
       ));
     }
 
-    if (layout === 'by_staff') {
+    if (appointmentLayout === 'by_staff') {
       const groups = groupReservations(sorted, 'by_staff');
       return groups.map((g) => (
         <div key={g.key} className="mb-6">
@@ -498,7 +537,7 @@ function DayAgenda({
       ));
     }
 
-    if (layout === 'by_service') {
+    if (appointmentLayout === 'by_service') {
       const groups = groupReservations(sorted, 'by_service');
       return groups.map((g) => (
         <div key={g.key} className="mb-6">
@@ -520,6 +559,18 @@ function DayAgenda({
 
   return (
     <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/50">
+      {layout === 'calendar' && (
+        <div className="border-b border-neutral-200/80 bg-neutral-50/50 px-3 py-4 dark:border-neutral-700/80 dark:bg-neutral-900/40 sm:px-5 sm:py-5">
+          <ReservationMonthCalendar
+            month={viewMonth}
+            onMonthChange={setViewMonth}
+            selectedDate={day}
+            onSelectDate={onDateChange}
+            reservations={allReservations}
+          />
+        </div>
+      )}
+
       {/* Gün başlığı */}
       <div
         className={`flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5 ${
@@ -690,15 +741,19 @@ export function AdminCalendar({
       <p className="text-center text-xs text-neutral-500 dark:text-neutral-400 sm:text-left">
         {view === 'weekly'
           ? 'Haftalık görünüm bugünden başlayarak önümüzdeki 7 günü gösterir.'
-          : 'Görünüm ve sıralama tercihlerinize göre listelenir; detay için karta dokunun.'}
+          : calendarLayout === 'calendar'
+            ? 'Takvimden bir gün seçin; seçili günün randevuları altta zaman çizelgesinde listelenir.'
+            : 'Görünüm ve sıralama tercihlerinize göre listelenir; detay için karta dokunun.'}
       </p>
 
       {view === 'daily' ? (
         <DayAgenda
           day={days[0]}
           reservations={reservationsByDay[0]}
+          allReservations={reservations}
           isToday={isSameDay(days[0], new Date())}
           onSelect={setSelectedReservation}
+          onDateChange={onDateChange}
           sortMode={sortMode}
           layout={calendarLayout}
         />

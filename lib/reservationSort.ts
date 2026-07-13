@@ -10,7 +10,7 @@ export type ReservationSortMode =
   | 'service_asc'
   | 'status';
 
-export type CalendarLayoutMode = 'timeline' | 'hour_grid' | 'by_staff' | 'by_service' | 'compact';
+export type CalendarLayoutMode = 'timeline' | 'hour_grid' | 'by_staff' | 'by_service' | 'compact' | 'calendar';
 
 export type ListGroupMode = 'flat' | 'by_day' | 'by_staff' | 'by_service';
 
@@ -40,6 +40,7 @@ export const SORT_MODE_LABELS: Record<ReservationSortMode, string> = {
 
 export const CALENDAR_LAYOUT_LABELS: Record<CalendarLayoutMode, string> = {
   timeline: 'Zaman çizelgesi',
+  calendar: 'Takvim',
   hour_grid: 'Saat kutuları',
   by_staff: 'Personele göre',
   by_service: 'Hizmete göre',
