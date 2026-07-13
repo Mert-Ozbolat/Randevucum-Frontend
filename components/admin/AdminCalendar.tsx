@@ -323,18 +323,18 @@ function DayAgendaRow({
   onSelect: (reservation: Reservation) => void;
 }) {
   return (
-    <div className="flex gap-3 sm:gap-5">
+    <div className="flex gap-2 sm:gap-5">
       {/* Saat sütunu */}
-      <div className="flex w-14 shrink-0 flex-col items-center pt-1 sm:w-20">
+      <div className="flex w-12 shrink-0 flex-col items-center pt-1 sm:w-20">
         <span
-          className={`font-mono text-lg font-extrabold tabular-nums leading-none sm:text-2xl ${
+          className={`font-mono text-base font-extrabold tabular-nums leading-none sm:text-2xl ${
             isToday ? 'text-primary-600 dark:text-primary-400' : 'text-neutral-800 dark:text-neutral-100'
           }`}
         >
           {group.hourKey}
           <span className="text-neutral-400 dark:text-neutral-500">:00</span>
         </span>
-        <span className="mt-1 rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+        <span className="mt-1 rounded-full bg-neutral-100 px-1.5 py-0.5 text-[9px] font-semibold tabular-nums text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400 sm:px-2 sm:text-[10px]">
           {group.items.length}
         </span>
       </div>
@@ -375,60 +375,62 @@ function DayAgendaCard({
     <button
       type="button"
       onClick={() => onSelect(reservation)}
-      className={`group flex w-full items-center gap-3 rounded-2xl border bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/70 sm:p-4 ${
+      className={`group flex w-full flex-col gap-2.5 rounded-2xl border bg-white p-3.5 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-primary-300 hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 dark:bg-neutral-900/70 sm:flex-row sm:items-center sm:gap-3 sm:p-4 ${
         canceled
           ? 'border-neutral-200 opacity-60 dark:border-neutral-700'
           : 'border-neutral-200/90 dark:border-neutral-700'
       }`}
     >
-      {/* Durum şeridi */}
       <span
-        className={`h-12 w-1.5 shrink-0 rounded-full ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
+        className={`h-1 w-full shrink-0 rounded-full sm:hidden ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
         aria-hidden
       />
 
-      {/* Saat bloğu */}
-      <div className="flex w-[4.5rem] shrink-0 flex-col items-center rounded-xl bg-neutral-50 px-2 py-1.5 dark:bg-neutral-800/70">
-        <span className="font-mono text-base font-bold tabular-nums text-neutral-900 dark:text-white">
-          {reservation.time}
-        </span>
-        {reservation.endTime && (
-          <span className="font-mono text-[11px] tabular-nums text-neutral-400">
-            {reservation.endTime}
+      <div className="flex w-full items-start gap-3 sm:items-center">
+        <span
+          className={`hidden h-12 w-1.5 shrink-0 rounded-full sm:block ${STATUS_ACCENT[reservation.status] || 'bg-neutral-400'}`}
+          aria-hidden
+        />
+
+        <div className="flex shrink-0 flex-col items-center rounded-xl bg-neutral-50 px-3 py-2 dark:bg-neutral-800/70 sm:w-[4.5rem] sm:px-2 sm:py-1.5">
+          <span className="font-mono text-lg font-bold tabular-nums text-neutral-900 dark:text-white sm:text-base">
+            {reservation.time}
           </span>
-        )}
-      </div>
+          {reservation.endTime && (
+            <span className="font-mono text-xs tabular-nums text-neutral-400 sm:text-[11px]">
+              {reservation.endTime}
+            </span>
+          )}
+        </div>
 
-      {/* Avatar */}
-      <div
-        className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white sm:flex"
-        aria-hidden
-      >
-        {initials}
-      </div>
+        <div
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white sm:h-11 sm:w-11"
+          aria-hidden
+        >
+          {initials}
+        </div>
 
-      {/* Bilgi */}
-      <div className="min-w-0 flex-1">
-        <p className={`truncate text-base font-semibold text-neutral-900 dark:text-white ${canceled ? 'line-through' : ''}`}>
-          {customerName(reservation)}
-        </p>
-        <p className="mt-0.5 truncate text-sm text-neutral-600 dark:text-neutral-300">
-          {reservation.serviceId?.name || 'Hizmet'}
-          {reservation.serviceId?.durationMinutes ? (
-            <span className="text-neutral-400"> · {reservation.serviceId.durationMinutes} dk</span>
-          ) : null}
-        </p>
-        {sName && (
-          <p className="mt-0.5 truncate text-xs text-neutral-400 dark:text-neutral-500">{sName}</p>
-        )}
-      </div>
+        <div className="min-w-0 flex-1">
+          <p className={`break-words text-base font-semibold leading-snug text-neutral-900 dark:text-white ${canceled ? 'line-through' : ''}`}>
+            {customerName(reservation)}
+          </p>
+          <p className="mt-1 break-words text-sm leading-snug text-neutral-600 dark:text-neutral-300">
+            {reservation.serviceId?.name || 'Hizmet'}
+            {reservation.serviceId?.durationMinutes ? (
+              <span className="text-neutral-400"> · {reservation.serviceId.durationMinutes} dk</span>
+            ) : null}
+          </p>
+          {sName && (
+            <p className="mt-1 break-words text-xs text-neutral-400 dark:text-neutral-500">{sName}</p>
+          )}
+        </div>
 
-      {/* Durum + ipucu */}
-      <div className="flex shrink-0 flex-col items-end gap-1.5">
-        <ReservationStatusBadge status={reservation.status} />
-        <span className="hidden text-[11px] font-medium text-primary-500 opacity-0 transition group-hover:opacity-100 sm:inline">
-          Detay →
-        </span>
+        <div className="flex shrink-0 flex-col items-end gap-1.5 self-start sm:self-center">
+          <ReservationStatusBadge status={reservation.status} />
+          <span className="hidden text-[11px] font-medium text-primary-500 opacity-0 transition group-hover:opacity-100 sm:inline">
+            Detay →
+          </span>
+        </div>
       </div>
     </button>
   );
@@ -520,40 +522,40 @@ function DayAgenda({
     <div className="mx-auto w-full max-w-3xl overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card dark:border-neutral-700 dark:bg-neutral-900/50">
       {/* Gün başlığı */}
       <div
-        className={`flex items-center justify-between gap-3 border-b px-5 py-4 ${
+        className={`flex flex-col gap-3 border-b px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-5 ${
           isToday
             ? 'border-primary-200/70 bg-gradient-to-r from-primary-50/90 to-white dark:border-primary-800/50 dark:from-primary-950/30 dark:to-neutral-900/0'
             : 'border-neutral-200/80 bg-neutral-50/70 dark:border-neutral-700/80 dark:bg-neutral-900/60'
         }`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <span
-            className={`flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-2xl text-center ${
+            className={`flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-2xl text-center sm:h-14 sm:w-14 ${
               isToday
                 ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
                 : 'bg-white text-neutral-800 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:ring-neutral-600'
             }`}
           >
-            <span className="text-xl font-extrabold leading-none tabular-nums">{format(day, 'd')}</span>
-            <span className="mt-0.5 text-[10px] font-bold uppercase leading-none opacity-90">
+            <span className="text-lg font-extrabold leading-none tabular-nums sm:text-xl">{format(day, 'd')}</span>
+            <span className="mt-0.5 text-[9px] font-bold uppercase leading-none opacity-90 sm:text-[10px]">
               {format(day, 'MMM', { locale: tr })}
             </span>
           </span>
-          <div>
-            <p className="text-lg font-bold capitalize text-neutral-900 dark:text-neutral-50">
+          <div className="min-w-0">
+            <p className="break-words text-base font-bold capitalize leading-tight text-neutral-900 dark:text-neutral-50 sm:text-lg">
               {format(day, 'EEEE', { locale: tr })}
               {isToday && (
-                <span className="ml-2 rounded-full bg-primary-500 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-white">
+                <span className="ml-2 inline-block rounded-full bg-primary-500 px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-white">
                   Bugün
                 </span>
               )}
             </p>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 sm:text-sm">
               {format(day, 'd MMMM yyyy', { locale: tr })}
             </p>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-600">
+        <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-white px-3 py-1.5 text-sm font-semibold text-neutral-700 ring-1 ring-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:ring-neutral-600 sm:w-auto sm:justify-start">
           <Clock className="h-4 w-4 text-primary-500" strokeWidth={2} aria-hidden />
           {count} randevu
         </span>
@@ -614,9 +616,9 @@ export function AdminCalendar({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 rounded-2xl border border-neutral-200/90 bg-gradient-to-r from-white to-neutral-50/80 p-4 shadow-card dark:border-neutral-700 dark:from-neutral-900/80 dark:to-neutral-900/40 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex rounded-xl border border-neutral-200 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800">
+      <div className="flex flex-col gap-3 rounded-2xl border border-neutral-200/90 bg-gradient-to-r from-white to-neutral-50/80 p-3 shadow-card dark:border-neutral-700 dark:from-neutral-900/80 dark:to-neutral-900/40 sm:gap-4 sm:p-4">
+        <div className="flex w-full flex-col gap-3">
+          <div className="inline-flex w-full rounded-xl border border-neutral-200 bg-white p-1 dark:border-neutral-600 dark:bg-neutral-800 sm:w-auto">
             {(['daily', 'weekly'] as const).map((v) => (
               <button
                 key={v}
@@ -625,7 +627,7 @@ export function AdminCalendar({
                   if (v === 'weekly') onDateChange(todayStart);
                   onViewChange(v);
                 }}
-                className={`rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition sm:flex-none sm:px-4 ${
                   view === v
                     ? 'bg-primary-500 text-white shadow-sm dark:bg-primary-600'
                     : 'text-neutral-600 hover:bg-neutral-50 dark:text-neutral-300 dark:hover:bg-neutral-700/50'
@@ -635,43 +637,50 @@ export function AdminCalendar({
               </button>
             ))}
           </div>
+
           {view === 'weekly' && (
-            <p className="text-sm font-medium text-neutral-600 dark:text-neutral-300">
-              {format(todayStart, 'd MMMM', { locale: tr })} –{' '}
-              {format(addDays(todayStart, 6), 'd MMMM yyyy', { locale: tr })}
-              <span className="ml-1 font-normal text-neutral-500 dark:text-neutral-400">
+            <p className="text-xs font-medium leading-relaxed text-neutral-600 dark:text-neutral-300 sm:text-sm">
+              <span className="font-semibold text-neutral-800 dark:text-neutral-100">
+                {format(todayStart, 'd MMM', { locale: tr })} –{' '}
+                {format(addDays(todayStart, 6), 'd MMM yyyy', { locale: tr })}
+              </span>
+              <span className="mt-0.5 block text-neutral-500 dark:text-neutral-400 sm:ml-1 sm:mt-0 sm:inline">
                 (bugünden itibaren 7 gün)
               </span>
             </p>
           )}
+
           {view === 'daily' && (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
               <button
                 type="button"
                 onClick={() => onDateChange(addDays(selectedDate, -1))}
-                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                className="rounded-xl border border-neutral-200 bg-white px-2 py-2.5 text-xs font-medium shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700 sm:px-3 sm:text-sm"
               >
-                ← Önceki gün
+                <span className="sm:hidden">← Önceki</span>
+                <span className="hidden sm:inline">← Önceki gün</span>
               </button>
               <button
                 type="button"
                 onClick={() => onDateChange(startOfDay(new Date()))}
-                className="rounded-xl border border-primary-200 bg-primary-50 px-3 py-2 text-sm font-semibold text-primary-800 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-200 dark:hover:bg-primary-900/40"
+                className="rounded-xl border border-primary-200 bg-primary-50 px-2 py-2.5 text-xs font-semibold text-primary-800 hover:bg-primary-100 dark:border-primary-800 dark:bg-primary-950/50 dark:text-primary-200 dark:hover:bg-primary-900/40 sm:px-3 sm:text-sm"
               >
                 Bugün
               </button>
               <button
                 type="button"
                 onClick={() => onDateChange(addDays(selectedDate, 1))}
-                className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm font-medium shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700"
+                className="rounded-xl border border-neutral-200 bg-white px-2 py-2.5 text-xs font-medium shadow-sm hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:hover:bg-neutral-700 sm:px-3 sm:text-sm"
               >
-                Sonraki gün →
+                <span className="sm:hidden">Sonraki →</span>
+                <span className="hidden sm:inline">Sonraki gün →</span>
               </button>
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50">
+
+        <div className="flex w-full sm:w-auto sm:justify-end">
+          <span className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-900 ring-1 ring-emerald-200/80 dark:bg-emerald-950/40 dark:text-emerald-200 dark:ring-emerald-800/50 sm:w-auto sm:justify-start">
             <CalendarDays className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             Bugün: {todayCount}
           </span>

@@ -246,26 +246,27 @@ export default function BusinessReservationsPage() {
         </Card>
       ) : (
         <>
-          <div className="flex flex-wrap gap-2 rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-1.5 dark:border-neutral-700 dark:bg-neutral-900/50">
+          <div className="grid grid-cols-3 gap-1.5 rounded-2xl border border-neutral-200/80 bg-neutral-50/80 p-1.5 dark:border-neutral-700 dark:bg-neutral-900/50 sm:flex sm:flex-wrap sm:gap-2">
             {(
               [
-                { id: 'calendar' as const, label: 'Takvim', Icon: CalendarDays },
-                { id: 'list' as const, label: 'Yaklaşan liste', Icon: ClipboardList },
-                { id: 'past' as const, label: 'Geçmiş', Icon: History },
+                { id: 'calendar' as const, label: 'Takvim', shortLabel: 'Takvim', Icon: CalendarDays },
+                { id: 'list' as const, label: 'Yaklaşan liste', shortLabel: 'Liste', Icon: ClipboardList },
+                { id: 'past' as const, label: 'Geçmiş', shortLabel: 'Geçmiş', Icon: History },
               ] as const
-            ).map(({ id, label, Icon }) => (
+            ).map(({ id, label, shortLabel, Icon }) => (
               <button
                 key={id}
                 type="button"
                 onClick={() => setTab(id)}
-                className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
+                className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-2 py-2.5 text-xs font-semibold transition sm:gap-2 sm:px-4 sm:text-sm ${
                   tab === id
                     ? 'bg-white text-primary-700 shadow-card dark:bg-neutral-800 dark:text-primary-400'
                     : 'text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white'
                 }`}
               >
-                <Icon className="h-4 w-4" strokeWidth={2} aria-hidden />
-                {label}
+                <Icon className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                <span className="sm:hidden">{shortLabel}</span>
+                <span className="hidden sm:inline">{label}</span>
               </button>
             ))}
           </div>

@@ -63,54 +63,52 @@ export function AdminReservationCard({
   if (compact) {
     return (
       <article className="rounded-xl border border-neutral-200/90 bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:border-primary-300/60 hover:shadow-md dark:border-neutral-600 dark:bg-neutral-900/80 dark:hover:border-primary-700/50">
-        <div className="flex gap-2.5 p-2.5">
-          <div
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 text-[11px] font-bold text-white"
-            aria-hidden
-          >
-            {initials(c?.firstName, c?.lastName)}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-mono text-sm font-bold tabular-nums text-neutral-900 dark:text-white">
-                  {reservation.time}
-                  {reservation.endTime && (
-                    <span className="font-normal text-neutral-500 dark:text-neutral-400"> – {reservation.endTime}</span>
-                  )}
-                  {reservation.serviceId?.durationMinutes != null && (
-                    <span className="ml-1 text-xs font-normal text-neutral-500">
-                      · {reservation.serviceId.durationMinutes} dk
-                    </span>
-                  )}
-                </p>
-                <p className="truncate text-xs font-semibold text-primary-600 dark:text-primary-400">
-                  {reservation.serviceId?.name || 'Hizmet'}
-                </p>
-                {customerName && (
-                  <p className="truncate text-xs font-medium text-neutral-700 dark:text-neutral-300">{customerName}</p>
-                )}
-              </div>
-              <ReservationStatusBadge status={reservation.status} />
+        <div className="flex flex-col gap-2.5 p-3 sm:flex-row sm:gap-2.5 sm:p-2.5">
+          <div className="flex items-start gap-2.5">
+            <div
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-400 to-primary-600 text-[11px] font-bold text-white"
+              aria-hidden
+            >
+              {initials(c?.firstName, c?.lastName)}
             </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-mono text-sm font-bold tabular-nums text-neutral-900 dark:text-white">
+                {reservation.time}
+                {reservation.endTime && (
+                  <span className="font-normal text-neutral-500 dark:text-neutral-400"> – {reservation.endTime}</span>
+                )}
+              </p>
+              <p className="mt-1 break-words text-xs font-semibold leading-snug text-primary-600 dark:text-primary-400">
+                {reservation.serviceId?.name || 'Hizmet'}
+                {reservation.serviceId?.durationMinutes != null && (
+                  <span className="font-normal text-neutral-500"> · {reservation.serviceId.durationMinutes} dk</span>
+                )}
+              </p>
+              {customerName && (
+                <p className="mt-1 break-words text-xs font-medium leading-snug text-neutral-700 dark:text-neutral-300">
+                  {customerName}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-100 pt-2 dark:border-neutral-700/80 sm:border-0 sm:pt-0">
+            <ReservationStatusBadge status={reservation.status} />
             {canCancel && onCancel && (
-              <div className="mt-2">
-                <Button
-                  size="sm"
-                  variant="danger"
-                  className="!px-2.5 !py-1 text-xs"
-                  onClick={() => onCancel(reservation._id)}
-                >
-                  İptal et
-                </Button>
-              </div>
-            )}
-            {rsvp && (
-              <span className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${rsvp.className}`}>
-                {rsvp.label}
-              </span>
+              <Button
+                size="sm"
+                variant="danger"
+                className="!px-2.5 !py-1 text-xs"
+                onClick={() => onCancel(reservation._id)}
+              >
+                İptal et
+              </Button>
             )}
           </div>
+          {rsvp && (
+            <span className={`inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ${rsvp.className}`}>
+              {rsvp.label}
+            </span>
+          )}
         </div>
       </article>
     );
@@ -118,7 +116,7 @@ export function AdminReservationCard({
 
   return (
     <article className="overflow-hidden rounded-2xl border border-neutral-200/90 bg-white shadow-card transition duration-300 hover:-translate-y-0.5 hover:border-primary-200/70 hover:shadow-soft dark:border-neutral-600 dark:bg-neutral-900/70 dark:hover:border-primary-700/40">
-      <div className="flex gap-3 p-4">
+      <div className="flex flex-col gap-3 p-4 sm:flex-row">
         <div
           className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-400 to-primary-600 text-sm font-bold text-white shadow-sm"
           aria-hidden
@@ -126,8 +124,8 @@ export function AdminReservationCard({
           {initials(c?.firstName, c?.lastName)}
         </div>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-start justify-between gap-2">
-            <div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+            <div className="min-w-0">
               <p className="font-mono text-base font-bold tabular-nums text-neutral-900 dark:text-white">
                 {reservation.time}
                 {reservation.endTime && (
@@ -137,7 +135,7 @@ export function AdminReservationCard({
                   </span>
                 )}
               </p>
-              <p className="mt-0.5 text-sm font-semibold text-primary-600 dark:text-primary-400">
+              <p className="mt-0.5 break-words text-sm font-semibold leading-snug text-primary-600 dark:text-primary-400">
                 {reservation.serviceId?.name || 'Hizmet'}
               </p>
               {reservation.serviceId?.durationMinutes != null && (
@@ -150,10 +148,12 @@ export function AdminReservationCard({
           </div>
 
           {customerName && (
-            <p className="mt-2 text-sm font-medium text-neutral-800 dark:text-neutral-200">{customerName}</p>
+            <p className="mt-2 break-words text-sm font-medium leading-snug text-neutral-800 dark:text-neutral-200">
+              {customerName}
+            </p>
           )}
           {c?.email && (
-            <p className="mt-0.5 truncate text-xs text-neutral-500 dark:text-neutral-400">{c.email}</p>
+            <p className="mt-0.5 break-all text-xs text-neutral-500 dark:text-neutral-400">{c.email}</p>
           )}
           {rsvp && (
             <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ${rsvp.className}`}>
