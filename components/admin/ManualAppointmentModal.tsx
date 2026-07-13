@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { format, startOfDay } from 'date-fns';
 import { CalendarPlus, Search, User, UserPlus, X } from 'lucide-react';
 import { api, getApiErrorMessage } from '@/lib/api';
@@ -106,6 +107,25 @@ export function ManualAppointmentModal({
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
 
   const selectedService = useMemo(
     () => services.find((s) => s._id === serviceId) || null,
@@ -268,13 +288,16 @@ export function ManualAppointmentModal({
     }
   };
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4">
+  const modal = (
+    <div
+      className="fixed inset-0 z-[200] flex min-h-[100dvh] min-w-full items-end justify-center sm:items-center sm:p-4"
+      role="presentation"
+    >
       <button
         type="button"
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 min-h-[100dvh] w-full bg-neutral-950/65 backdrop-blur-md"
         onClick={onClose}
         aria-label="Kapat"
       />
@@ -282,26 +305,27 @@ export function ManualAppointmentModal({
         role="dialog"
         aria-modal="true"
         aria-labelledby="manual-appointment-title"
-        className="relative flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-neutral-200 bg-white shadow-2xl dark:border-neutral-700 dark:bg-neutral-900 sm:max-h-[90vh] sm:rounded-3xl"
+        className="relative z-[1] flex max-h-[min(92dvh,100%)] w-full max-w-lg flex-col overflow-hidden rounded-t-3xl border border-neutral-300 bg-white shadow-2xl ring-1 ring-black/5 dark:border-neutral-600 dark:bg-neutral-900 dark:ring-white/10 sm:max-h-[min(90vh,100%)] sm:rounded-3xl"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-4 dark:border-neutral-700 sm:px-5">
-          <div className="flex items-center gap-2">
-            <CalendarPlus className="h-5 w-5 text-primary-500" strokeWidth={2} aria-hidden />
-            <h2 id="manual-appointment-title" className="text-lg font-bold text-neutral-900 dark:text-white">
+        <div className="flex shrink-0 items-center justify-between border-b border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900 sm:px-5">
+          <div className="flex min-w-0 items-center gap-2">
+            <CalendarPlus className="h-5 w-5 shrink-0 text-primary-600 dark:text-primary-400" strokeWidth={2} aria-hidden />
+            <h2 id="manual-appointment-title" className="truncate text-lg font-bold text-neutral-900 dark:text-white">
               Manuel randevu
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800"
+            className="shrink-0 rounded-lg p-2 text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
             aria-label="Kapat"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white px-4 py-4 dark:bg-neutral-900 sm:px-5">
           {error && (
             <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200">
               {error}
@@ -310,30 +334,30 @@ export function ManualAppointmentModal({
 
           <section className="mb-6">
             <h3 className="mb-3 text-sm font-semibold text-neutral-800 dark:text-neutral-100">Müşteri</h3>
-            <div className="mb-3 flex gap-2">
+            <div className="mb-3 grid grid-cols-2 gap-2">
               <button
                 type="button"
                 onClick={() => setCustomerMode('search')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold ${
+                className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-sm font-semibold transition ${
                   customerMode === 'search'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+                    ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
+                    : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700'
                 }`}
               >
-                <Search className="h-4 w-4" aria-hidden />
-                Kayıtlı ara
+                <Search className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">Kayıtlı ara</span>
               </button>
               <button
                 type="button"
                 onClick={() => setCustomerMode('new')}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold ${
+                className={`flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-sm font-semibold transition ${
                   customerMode === 'new'
-                    ? 'bg-primary-500 text-white'
-                    : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+                    ? 'border-primary-500 bg-primary-500 text-white shadow-sm'
+                    : 'border-neutral-300 bg-neutral-50 text-neutral-800 hover:bg-neutral-100 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700'
                 }`}
               >
-                <UserPlus className="h-4 w-4" aria-hidden />
-                Yeni müşteri
+                <UserPlus className="h-4 w-4 shrink-0" aria-hidden />
+                <span className="truncate">Yeni müşteri</span>
               </button>
             </div>
 
@@ -349,15 +373,15 @@ export function ManualAppointmentModal({
                   autoComplete="off"
                 />
                 {searchLoading && (
-                  <p className="text-xs text-neutral-500">Aranıyor…</p>
+                  <p className="text-xs text-neutral-600 dark:text-neutral-400">Aranıyor…</p>
                 )}
                 {!searchLoading && searchQuery.trim().length >= 2 && searchResults.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-neutral-200 px-3 py-4 text-center text-sm text-neutral-500 dark:border-neutral-700">
+                  <p className="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 px-3 py-4 text-center text-sm text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-400">
                     Sonuç yok. Daha önce randevu almış müşteri bulunamadı — &quot;Yeni müşteri&quot; sekmesini deneyin.
                   </p>
                 )}
                 {searchResults.length > 0 && (
-                  <ul className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-neutral-200 p-1 dark:border-neutral-700">
+                  <ul className="max-h-44 space-y-1 overflow-y-auto rounded-xl border border-neutral-300 bg-neutral-50 p-1 dark:border-neutral-600 dark:bg-neutral-800/50">
                     {searchResults.map((c) => {
                       const selected = selectedCustomer?._id === c._id;
                       return (
@@ -367,17 +391,15 @@ export function ManualAppointmentModal({
                             onClick={() => setSelectedCustomer(c)}
                             className={`flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition ${
                               selected
-                                ? 'bg-primary-50 text-primary-900 dark:bg-primary-950/50 dark:text-primary-100'
-                                : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/60'
+                                ? 'bg-primary-100 text-primary-900 ring-1 ring-primary-300 dark:bg-primary-950/50 dark:text-primary-100 dark:ring-primary-700'
+                                : 'bg-white text-neutral-900 hover:bg-neutral-100 dark:bg-neutral-900 dark:text-neutral-100 dark:hover:bg-neutral-800'
                             }`}
                           >
-                            <User className="mt-0.5 h-4 w-4 shrink-0 text-neutral-400" aria-hidden />
-                            <span>
-                              <span className="font-semibold text-neutral-900 dark:text-white">
-                                {customerLabel(c)}
-                              </span>
+                            <User className="mt-0.5 h-4 w-4 shrink-0 text-neutral-500 dark:text-neutral-400" aria-hidden />
+                            <span className="min-w-0">
+                              <span className="block font-semibold">{customerLabel(c)}</span>
                               {c.phone && (
-                                <span className="mt-0.5 block text-xs text-neutral-500">{c.phone}</span>
+                                <span className="mt-0.5 block text-xs text-neutral-600 dark:text-neutral-400">{c.phone}</span>
                               )}
                             </span>
                           </button>
@@ -387,7 +409,7 @@ export function ManualAppointmentModal({
                   </ul>
                 )}
                 {selectedCustomer && (
-                  <p className="text-xs font-medium text-primary-700 dark:text-primary-300">
+                  <p className="rounded-lg bg-primary-50 px-3 py-2 text-xs font-medium text-primary-800 dark:bg-primary-950/40 dark:text-primary-200">
                     Seçili: {customerLabel(selectedCustomer)}
                   </p>
                 )}
@@ -423,7 +445,7 @@ export function ManualAppointmentModal({
                   id="manual-service"
                   value={serviceId}
                   onChange={(e) => setServiceId(e.target.value)}
-                  className="w-full rounded-xl border border-neutral-200 bg-white px-3 py-2.5 text-sm dark:border-neutral-600 dark:bg-neutral-800"
+                  className="w-full rounded-xl border border-neutral-300 bg-white px-3 py-2.5 text-sm font-medium text-neutral-900 shadow-sm focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-500/25 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
                 >
                   <option value="">Hizmet seçin</option>
                   {services.map((s) => (
@@ -441,10 +463,10 @@ export function ManualAppointmentModal({
                     <button
                       type="button"
                       onClick={() => setStaffId(null)}
-                      className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
                         staffId === null
-                          ? 'bg-primary-500 text-white'
-                          : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+                          ? 'border-primary-500 bg-primary-500 text-white'
+                          : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700'
                       }`}
                     >
                       Farketmez
@@ -454,10 +476,10 @@ export function ManualAppointmentModal({
                         key={s._id}
                         type="button"
                         onClick={() => setStaffId(s._id)}
-                        className={`rounded-full px-3 py-1.5 text-sm font-medium ${
+                        className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
                           staffId === s._id
-                            ? 'bg-primary-500 text-white'
-                            : 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200'
+                            ? 'border-primary-500 bg-primary-500 text-white'
+                            : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700'
                         }`}
                       >
                         {s.name}
@@ -504,12 +526,12 @@ export function ManualAppointmentModal({
           </section>
         </div>
 
-        <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900 sm:px-5">
+        <div className="shrink-0 border-t border-neutral-200 bg-white px-4 py-4 pb-[max(1rem,env(safe-area-inset-bottom))] dark:border-neutral-700 dark:bg-neutral-900 sm:px-5">
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="secondary" onClick={onClose} disabled={submitting}>
+            <Button type="button" variant="secondary" className="w-full sm:w-auto" onClick={onClose} disabled={submitting}>
               Vazgeç
             </Button>
-            <Button type="button" onClick={() => void handleSubmit()} disabled={submitting}>
+            <Button type="button" className="w-full sm:w-auto" onClick={() => void handleSubmit()} disabled={submitting}>
               {submitting ? 'Kaydediliyor…' : 'Randevu oluştur'}
             </Button>
           </div>
@@ -517,4 +539,6 @@ export function ManualAppointmentModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }

@@ -10,6 +10,7 @@ import { Building2, Calendar, CalendarDays, Heart, Menu, User } from 'lucide-rea
 import { Sidebar } from '@/components/layout/Sidebar';
 import { DashboardMobileNav } from '@/components/layout/DashboardMobileNav';
 import { DashboardBackButton } from '@/components/layout/DashboardBackButton';
+import { StaffPhoneRequiredGate } from '@/components/dashboard/StaffPhoneRequiredGate';
 import { StaffPanelProvider, useStaffPanel } from '@/contexts/StaffPanelContext';
 import { DashboardShellProvider, useDashboardShell } from '@/contexts/DashboardShellContext';
 import { useAuthStore, hydrateAuthStore } from '@/store/authStore';
@@ -254,6 +255,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
         )}
         <DashboardMobileNav />
       </div>
+      <StaffPhoneRequiredGate />
     </div>
   );
 }

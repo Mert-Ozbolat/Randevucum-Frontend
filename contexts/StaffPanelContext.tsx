@@ -15,6 +15,7 @@ import { isBusinessOwner } from '@/lib/auth';
 export type StaffMeRow = {
   _id: string;
   canViewOwnReservations?: boolean;
+  phone?: string | null;
   businessId?: { _id?: string; name?: string };
   name?: string;
 };
