@@ -36,13 +36,19 @@ type SidebarLink = {
 
 const businessLinks: SidebarLink[] = [
   { href: '/dashboard/business', label: 'Özet', Icon: LayoutDashboard },
+  {
+    href: '/dashboard/business/reservations',
+    label: 'Randevular',
+    Icon: Calendar,
+    emphasize: true,
+    isActive: (p) => Boolean(p?.startsWith('/dashboard/business/reservations')),
+  },
   { href: '/dashboard/business/analytics', label: 'Analytics', Icon: LineChart },
   { href: '/dashboard/business/info', label: 'İşletme Bilgisi', Icon: Building2 },
   { href: '/dashboard/business/services', label: 'Hizmetler', Icon: Scissors },
   { href: '/dashboard/business/staff', label: 'Personel', Icon: Users },
   { href: '/dashboard/business/working-hours', label: 'Çalışma Saatleri', Icon: Clock },
   { href: '/dashboard/business/special-days', label: 'Özel Günler', Icon: CalendarOff },
-  { href: '/dashboard/business/reservations', label: 'Randevular', Icon: Calendar },
   { href: '/dashboard/business/discover-video', label: 'Keşfet videosu', Icon: Clapperboard },
   { href: '/dashboard/business/subscription', label: 'Abonelik', Icon: CreditCard },
   { href: '/dashboard/customer/favorites', label: 'Favorilerim', Icon: Heart },
@@ -108,11 +114,9 @@ export function Sidebar() {
           </button>
         </SidebarHeader>
 
-        {!isOwner && (
-          <p className="border-b border-neutral-100 px-5 pb-3 pt-2 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
-            Hızlı erişim
-          </p>
-        )}
+        <p className="border-b border-neutral-100 px-5 pb-3 pt-2 text-xs font-medium uppercase tracking-wide text-neutral-500 dark:border-neutral-800 dark:text-neutral-400">
+          Hızlı erişim
+        </p>
 
         <nav className="flex-1 space-y-1 overflow-y-auto overscroll-contain p-3">
           {links.map(({ href, label, Icon, emphasize, isActive }) => {
@@ -123,7 +127,7 @@ export function Sidebar() {
                 href={href}
                 onClick={closeSidebar}
                 className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
-                  emphasize && !isOwner
+                  emphasize
                     ? active
                       ? 'bg-primary-500 text-white shadow-md shadow-primary-500/25 dark:bg-primary-600 dark:text-white'
                       : 'bg-primary-50/90 text-primary-900 hover:bg-primary-100 dark:bg-primary-950/60 dark:text-primary-50 dark:hover:bg-primary-900/55 dark:hover:text-white'

@@ -8,6 +8,7 @@ import { BusinessBillingShell } from '@/components/dashboard/BusinessBillingShel
 import { BusinessReservationsLiveProvider } from '@/contexts/BusinessReservationsLiveContext';
 import { Building2, Calendar, CalendarDays, Heart, Menu, User } from 'lucide-react';
 import { Sidebar } from '@/components/layout/Sidebar';
+import { DashboardMobileNav } from '@/components/layout/DashboardMobileNav';
 import { DashboardBackButton } from '@/components/layout/DashboardBackButton';
 import { StaffPanelProvider, useStaffPanel } from '@/contexts/StaffPanelContext';
 import { DashboardShellProvider, useDashboardShell } from '@/contexts/DashboardShellContext';
@@ -139,6 +140,36 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
                   {headerScopeTitle}
                 </h1>
               </div>
+              {owner && (
+                <div className="flex flex-wrap gap-2 md:hidden">
+                  <Link
+                    href="/dashboard/business/reservations"
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+                      pathname?.startsWith('/dashboard/business/reservations')
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    Randevular
+                  </Link>
+                </div>
+              )}
+              {!owner && canViewStaffPanel && (
+                <div className="flex flex-wrap gap-2 md:hidden">
+                  <Link
+                    href="/dashboard/staff/reservations"
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold ${
+                      pathname?.startsWith('/dashboard/staff')
+                        ? 'bg-primary-600 text-white shadow-sm'
+                        : 'bg-primary-100 text-primary-800 dark:bg-primary-900/55 dark:text-primary-50'
+                    }`}
+                  >
+                    <CalendarDays className="h-4 w-4 shrink-0" strokeWidth={2} aria-hidden />
+                    İş randevuları
+                  </Link>
+                </div>
+              )}
               {!owner && (
                 <div className="hidden flex-wrap gap-2 md:flex">
                   <Link
@@ -245,12 +276,13 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
           <BusinessBillingShell>
             <BusinessReservationsLiveProvider>
               {showBusinessSetupBar && <BusinessSetupStatusBar />}
-              <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+              <main className="min-w-0 overflow-x-hidden p-4 pb-24 sm:p-6 lg:pb-6">{children}</main>
             </BusinessReservationsLiveProvider>
           </BusinessBillingShell>
         ) : (
-          <main className="min-w-0 overflow-x-hidden p-4 sm:p-6">{children}</main>
+          <main className="min-w-0 overflow-x-hidden p-4 pb-24 sm:p-6 lg:pb-6">{children}</main>
         )}
+        <DashboardMobileNav />
       </div>
     </div>
   );
