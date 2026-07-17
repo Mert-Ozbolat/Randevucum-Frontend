@@ -232,6 +232,10 @@ export function ManualAppointmentModal({
       setError('Hizmet seçin.');
       return;
     }
+    if (eligibleStaff.length > 0 && !staffId) {
+      setError('Personel seçin.');
+      return;
+    }
     if (!selectedDate || !selectedTime) {
       setError('Tarih ve saat seçin.');
       return;
@@ -458,19 +462,8 @@ export function ManualAppointmentModal({
 
               {eligibleStaff.length > 0 && (
                 <div>
-                  <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">Personel (isteğe bağlı)</p>
+                  <p className="mb-2 text-sm font-medium text-neutral-700 dark:text-neutral-300">Personel</p>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setStaffId(null)}
-                      className={`rounded-full border px-3 py-1.5 text-sm font-medium transition ${
-                        staffId === null
-                          ? 'border-primary-500 bg-primary-500 text-white'
-                          : 'border-neutral-300 bg-white text-neutral-800 hover:bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:bg-neutral-700'
-                      }`}
-                    >
-                      Farketmez
-                    </button>
                     {eligibleStaff.map((s) => (
                       <button
                         key={s._id}

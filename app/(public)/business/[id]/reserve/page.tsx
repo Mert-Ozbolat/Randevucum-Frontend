@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useSearchParams, usePathname } from 'next/navigation';
 import Link from 'next/link';
 import { api, getApiErrorMessage } from '@/lib/api';
@@ -111,6 +111,16 @@ export default function ReservePage() {
     const p = u?.phone ? String(u.phone).trim() : '';
     return !p;
   });
+  const staffStepRef = useRef<HTMLDivElement | null>(null);
+  const dateStepRef = useRef<HTMLDivElement | null>(null);
+  const timeStepRef = useRef<HTMLDivElement | null>(null);
+
+  const scrollToStep = (el: HTMLElement | null) => {
+    if (!el) return;
+    window.requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
   const phoneRequiredByApi = useMemo(() => {
     const msg = String(reserveError || '').toLowerCase();
     return msg.includes('telefon numarası gerekli') || msg.includes('telefon numarasi gerekli');
@@ -218,12 +228,32 @@ export default function ReservePage() {
     return staffList.filter((s) => staffOffersService(s, service));
   }, [staffList, service]);
 
-  const reservationStaffLabel =
-    eligibleStaff.length > 0
-      ? selectedStaffId
-        ? eligibleStaff.find((s) => s._id === selectedStaffId)?.name ?? ''
-        : 'Farketmez (müsait personel)'
-      : undefined;
+  const staffRequired = eligibleStaff.length > 0;
+  const staffReady = !staffRequired || Boolean(selectedStaffId);
+
+  const reservationStaffLabel = selectedStaffId
+    ? eligibleStaff.find((s) => s._id === selectedStaffId)?.name ?? ''
+    : undefined;
+
+  const selectStaff = (staffId: string) => {
+    setSelectedStaffId(staffId);
+    setSelectedTime(null);
+    window.setTimeout(() => scrollToStep(dateStepRef.current), 80);
+  };
+
+  const selectDate = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(null);
+    window.setTimeout(() => scrollToStep(timeStepRef.current), 80);
+  };
+
+  // Service is fixed on this page — scroll to staff/date once ready.
+  useEffect(() => {
+    if (!service) return;
+    window.setTimeout(() => {
+      scrollToStep(staffStepRef.current || dateStepRef.current);
+    }, 120);
+  }, [service?._id, eligibleStaff.length]);
 
   const handleSlotSelect = (time: string) => {
     setSelectedTime(time);
@@ -236,6 +266,10 @@ export default function ReservePage() {
 
   const handleConfirm = async (payload?: { phone?: string; guestName?: string }) => {
     if (!selectedDate || !selectedTime || !service) return;
+    if (staffRequired && !selectedStaffId) {
+      setReserveError('Lütfen bir personel seçin.');
+      return;
+    }
     setReserveError('');
     setReserveLoading(true);
     try {
@@ -393,7 +427,8 @@ export default function ReservePage() {
 
       {eligibleStaff.length > 0 && (
         <div
-          className="relative mt-6 overflow-hidden rounded-2xl border-2 border-primary-500 bg-gradient-to-br from-primary-50 via-white to-primary-50/80 p-5 shadow-[0_8px_30px_-8px_rgba(59,130,246,0.35)] dark:border-primary-500/70 dark:from-primary-950/80 dark:via-neutral-900 dark:to-primary-950/50 dark:shadow-[0_8px_30px_-8px_rgba(59,130,246,0.25)] sm:p-6"
+          ref={staffStepRef}
+          className="relative mt-6 scroll-mt-24 overflow-hidden rounded-2xl border-2 border-primary-500 bg-gradient-to-br from-primary-50 via-white to-primary-50/80 p-5 shadow-[0_8px_30px_-8px_rgba(59,130,246,0.35)] dark:border-primary-500/70 dark:from-primary-950/80 dark:via-neutral-900 dark:to-primary-950/50 dark:shadow-[0_8px_30px_-8px_rgba(59,130,246,0.25)] sm:p-6"
           role="region"
           aria-labelledby="reserve-staff-heading"
         >
@@ -410,33 +445,20 @@ export default function ReservePage() {
                 id="reserve-staff-heading"
                 className="mt-0.5 text-lg font-bold text-neutral-900 dark:text-white sm:text-xl"
               >
-                Personel seçin{' '}
-                <span className="font-semibold text-primary-700 dark:text-primary-300">(isteğe bağlı)</span>
+                Personel seçin
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
-                <strong className="text-neutral-900 dark:text-white">Farketmez</strong> müsait personel atanır. Bir isim
-                seçerseniz yalnızca <strong className="text-neutral-900 dark:text-white">o kişinin</strong> uygun
-                saatleri görürsünüz.
+                Bir personel seçin; yalnızca{' '}
+                <strong className="text-neutral-900 dark:text-white">o kişinin</strong> uygun saatleri görürsünüz.
               </p>
             </div>
           </div>
           <div className="relative mt-5 flex flex-wrap gap-2.5 border-t border-primary-200/80 pt-5 dark:border-primary-800/60">
-            <button
-              type="button"
-              onClick={() => setSelectedStaffId(null)}
-              className={`min-h-[46px] rounded-xl border-2 px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900 ${
-                selectedStaffId === null
-                  ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
-                  : 'border-neutral-200 bg-white text-neutral-900 hover:border-primary-400 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100'
-              }`}
-            >
-              Farketmez
-            </button>
             {eligibleStaff.map((s) => (
               <button
                 key={s._id}
                 type="button"
-                onClick={() => setSelectedStaffId(s._id)}
+                onClick={() => selectStaff(s._id)}
                 className={`min-h-[46px] rounded-xl border-2 px-4 py-2.5 text-base font-semibold shadow-sm transition focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 dark:focus:ring-offset-neutral-900 ${
                   selectedStaffId === s._id
                     ? 'border-primary-600 bg-primary-600 text-white dark:border-primary-500 dark:bg-primary-600'
@@ -450,18 +472,29 @@ export default function ReservePage() {
         </div>
       )}
 
+      {staffRequired && !selectedStaffId && (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-900 dark:text-amber-100">
+          Tarih ve saat için önce bir personel seçin.
+        </p>
+      )}
+
+      {staffReady && (
+      <div ref={dateStepRef} className="scroll-mt-24">
       <Card className="mt-6 space-y-6 p-6">
         <h2 className="font-semibold text-neutral-900">Tarih seçin</h2>
         <CalendarPicker
           selectedDate={selectedDate}
-          onSelectDate={setSelectedDate}
+          onSelectDate={selectDate}
           minDate={new Date()}
           daysCount={14}
           disabledDateKeys={blockedDateKeys}
         />
       </Card>
+      </div>
+      )}
 
-      {selectedDate && (
+      {staffReady && selectedDate && (
+        <div ref={timeStepRef} className="scroll-mt-24">
         <Card className="mt-6 p-6">
           <button
             type="button"
@@ -483,6 +516,7 @@ export default function ReservePage() {
             />
           </div>
         </Card>
+        </div>
       )}
 
       <ReservationModal

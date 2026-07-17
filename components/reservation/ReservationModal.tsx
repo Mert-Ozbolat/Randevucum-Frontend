@@ -21,7 +21,7 @@ interface ReservationModalProps {
   onClose: () => void;
   businessName?: string;
   serviceName: string;
-  /** Boş dizi yoksa: seçilen personel adı veya "Farketmez" metni */
+  /** Seçilen personel adı (yoksa gösterilmez) */
   staffLabel?: string;
   date: Date;
   time: string;
