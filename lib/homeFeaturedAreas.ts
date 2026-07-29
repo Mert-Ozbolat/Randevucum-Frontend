@@ -18,7 +18,7 @@ export const HOME_FEATURED_AREAS: HomeFeaturedArea[] = [
   },
   {
     name: 'Güzellik & Bakım',
-    tagline: 'Kuaför, SPA, estetik',
+    tagline: 'Kuaför, berber, SPA',
     image:
       'https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=900&q=80',
   },

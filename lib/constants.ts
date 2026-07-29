@@ -7,6 +7,7 @@ export const ROLES = {
 /** İşletme türü slug → kısa Türkçe etiket (liste / filtre) — backend enum ile uyumlu */
 export const BUSINESS_TYPES: Record<string, string> = {
   hair_salon: 'Kuaför',
+  barber: 'Berber',
   dental_clinic: 'Diş Kliniği',
   beauty_center: 'Güzellik Merkezi',
   restaurant: 'Restoran & Cafe',

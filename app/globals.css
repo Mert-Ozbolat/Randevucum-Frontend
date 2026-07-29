@@ -3,13 +3,13 @@
 @tailwind utilities;
 
 :root {
-  --foreground: #171717;
-  --background: #fafafa;
+  --foreground: theme('colors.neutral.900');
+  --background: theme('colors.neutral.50');
 }
 
 .dark {
-  --foreground: #fafafa;
-  --background: #171717;
+  --foreground: theme('colors.neutral.50');
+  --background: theme('colors.neutral.900');
 }
 
 body {
@@ -45,5 +45,17 @@ body {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  /* Ensure AnimateIn content is never stuck invisible */
+  .animate-fade-in,
+  .animate-fade-in-slow,
+  .animate-slide-up,
+  .animate-slide-down,
+  .animate-scale-in,
+  .animate-slide-in-right,
+  .animate-slide-in-left {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

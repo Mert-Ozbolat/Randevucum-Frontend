@@ -34,7 +34,7 @@ function FooterLinkGroup({
 }) {
   return (
     <div>
-      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+      <h3 className="text-xs font-bold uppercase tracking-wider text-neutral-400">
         {title}
       </h3>
       <ul className="mt-4 space-y-2.5">
@@ -42,7 +42,7 @@ function FooterLinkGroup({
           <li key={`${title}-${href}`}>
             <Link
               href={href}
-              className="text-sm text-neutral-600 transition hover:text-primary-600 dark:text-neutral-300 dark:hover:text-primary-400"
+              className="text-sm text-neutral-300 transition hover:text-primary-400"
             >
               {label}
             </Link>
@@ -57,7 +57,7 @@ export function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="relative mt-20 border-t border-neutral-200/80 bg-gradient-to-b from-neutral-50 to-white dark:border-neutral-800 dark:from-neutral-900 dark:to-neutral-950">
+    <footer className="relative border-t border-neutral-800 bg-neutral-900">
       <div
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-400/40 to-transparent"
         aria-hidden
@@ -66,10 +66,9 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8 lg:py-16">
         <AnimateIn animation="slide-up">
           <div className="grid gap-10 lg:grid-cols-[1.4fr_repeat(4,1fr)] lg:gap-12">
-            {/* Marka */}
             <div className="max-w-sm">
               <Logo size="sm" href="/" />
-              <p className="mt-4 text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
+              <p className="mt-4 text-sm leading-relaxed text-neutral-400">
                 Kuaförden kliniğe — müsait saatleri görün, dakikalar içinde
                 randevunuzu oluşturun.
               </p>
@@ -81,10 +80,10 @@ export function Footer() {
                 ].map(({ Icon, label }) => (
                   <span
                     key={label}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-neutral-200/80 bg-white px-3 py-1 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800/80 dark:text-neutral-300"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-neutral-700 bg-neutral-800/80 px-3 py-1 text-xs font-medium text-neutral-300"
                   >
                     <Icon
-                      className="h-3.5 w-3.5 text-primary-500"
+                      className="h-3.5 w-3.5 text-primary-400"
                       strokeWidth={2}
                       aria-hidden
                     />
@@ -94,7 +93,7 @@ export function Footer() {
               </div>
               <Link
                 href="/business"
-                className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-600 transition hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-400 transition hover:text-primary-300"
               >
                 İşletmeleri keşfet
                 <ArrowRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
@@ -107,8 +106,8 @@ export function Footer() {
             <FooterLinkGroup title="Yasal" links={LEGAL_LINKS} />
           </div>
 
-          <div className="mt-12 flex flex-col gap-4 border-t border-neutral-200/80 pt-8 dark:border-neutral-800 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-neutral-500 dark:text-neutral-400">
+          <div className="mt-12 flex flex-col gap-4 border-t border-neutral-800 pt-8 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-neutral-500">
               © {year} Randevucum. Tüm hakları saklıdır.
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -116,14 +115,14 @@ export function Footer() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="text-xs font-medium text-neutral-500 transition hover:text-primary-600 dark:text-neutral-400 dark:hover:text-primary-400"
+                  className="text-xs font-medium text-neutral-500 transition hover:text-primary-400"
                 >
                   {link.label}
                 </Link>
               ))}
-              <span className="inline-flex items-center gap-1.5 text-xs text-neutral-400 dark:text-neutral-500">
+              <span className="inline-flex items-center gap-1.5 text-xs text-neutral-500">
                 <Sparkles
-                  className="h-3.5 w-3.5 text-primary-500"
+                  className="h-3.5 w-3.5 text-primary-400"
                   aria-hidden
                 />
                 Online randevu platformu

@@ -1,63 +1,70 @@
-'use client';
+"use client";
 
-import { useEffect, useMemo, useState } from 'react';
-import { api } from '@/lib/api';
+import { useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { HomeHero } from "@/components/home/HomeHero";
+import { HomeSearchBar } from "@/components/home/HomeSearchBar";
+import { HomePopularCategories } from "@/components/home/HomePopularCategories";
+import { HomeNearbyBusinesses } from "@/components/home/HomeNearbyBusinesses";
 import {
-  HOME_PLATFORM_SLIDES,
-  mapPaidSliderAdsToSlides,
-  mergeHeroSlides,
-  type PaidSliderAdApi,
-} from '@/lib/homeHeroSlides';
-import { HomeHero } from '@/components/home/HomeHero';
-import { HomeCategoriesBento } from '@/components/home/HomeCategoriesBento';
-import { HomeFeaturedBusinesses, type HomeBusiness } from '@/components/home/HomeFeaturedBusinesses';
-import { HomeDiscoverVideos } from '@/components/home/HomeDiscoverVideos';
-import { HomeHowItWorks } from '@/components/home/HomeHowItWorks';
-import { HomeBottomSections } from '@/components/home/HomeBottomSections';
+  HomeFeaturedBusinesses,
+  type HomeBusiness,
+} from "@/components/home/HomeFeaturedBusinesses";
+import { HomeHowItWorks } from "@/components/home/HomeHowItWorks";
+import { HomeWhatWeOffer } from "@/components/home/HomeWhatWeOffer";
+import { HomeNewestBusinesses } from "@/components/home/HomeNewestBusinesses";
+import { HomeTestimonials } from "@/components/home/HomeTestimonials";
+import { HomeBusinessOwnerCta } from "@/components/home/HomeBusinessOwnerCta";
 
 export default function HomePage() {
-  const [featuredBusinesses, setFeaturedBusinesses] = useState<HomeBusiness[]>([]);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
-  const [featuredError, setFeaturedError] = useState(false);
-  const [paidSliderAds, setPaidSliderAds] = useState<PaidSliderAdApi[]>([]);
+  const [businesses, setBusinesses] = useState<HomeBusiness[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     api
-      .get<{ data: HomeBusiness[] }>('/business', {
-        params: { sort: 'rating', limit: 6 },
+      .get<{ data: HomeBusiness[] }>("/business")
+      .then((res) => {
+        if (!cancelled) setBusinesses(res.data.data || []);
       })
-      .then((res) => setFeaturedBusinesses(res.data.data || []))
-      .catch(() => setFeaturedError(true))
-      .finally(() => setFeaturedLoading(false));
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  useEffect(() => {
-    api
-      .get<{ data: PaidSliderAdApi[] }>('/business/home-slider-ads')
-      .then((res) => setPaidSliderAds(res.data.data || []))
-      .catch(() => setPaidSliderAds([]));
-  }, []);
-
-  const heroSlides = useMemo(
-    () => mergeHeroSlides(HOME_PLATFORM_SLIDES, mapPaidSliderAdsToSlides(paidSliderAds)),
-    [paidSliderAds]
-  );
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-      <HomeHero slides={heroSlides} />
+    <div className="overflow-x-hidden pb-0">
+      <HomeHero />
 
-      <div className="space-y-20 lg:space-y-28">
-        <HomeCategoriesBento />
-        <HomeDiscoverVideos />
-        <HomeFeaturedBusinesses
-          businesses={featuredBusinesses}
-          loading={featuredLoading}
-          error={featuredError}
-        />
-        <HomeHowItWorks />
-        <HomeBottomSections />
+      <div className="relative z-0 mx-auto mt-8 max-w-7xl space-y-16 px-4 sm:px-6 lg:mt-12 lg:space-y-28 lg:px-8">
+        <HomeSearchBar />
+        <div className="relative z-0 min-w-0 space-y-16 pb-16 lg:space-y-28 lg:pb-28">
+          <HomePopularCategories businesses={businesses} loading={loading} />
+          <HomeNearbyBusinesses
+            businesses={businesses}
+            loading={loading}
+            error={error}
+          />
+          <HomeFeaturedBusinesses
+            businesses={businesses}
+            loading={loading}
+            error={error}
+          />
+          <HomeHowItWorks />
+          <HomeWhatWeOffer />
+          <HomeNewestBusinesses businesses={businesses} loading={loading} />
+          <HomeTestimonials />
+        </div>
       </div>
+
+      <HomeBusinessOwnerCta />
     </div>
   );
 }

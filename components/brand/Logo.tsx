@@ -13,7 +13,6 @@ type LogoSize = 'sm' | 'md';
 
 interface LogoProps {
   size?: LogoSize;
-  /** Ana sayfaya giden link; `false` ise sadece marka (ör. footer) */
   href?: string | false;
   className?: string;
 }
@@ -30,9 +29,7 @@ export function Logo({ size = 'md', href = '/', className = '' }: LogoProps) {
     </span>
   );
 
-  if (href === false) {
-    return inner;
-  }
+  if (href === false) return inner;
 
   return (
     <Link

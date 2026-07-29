@@ -11,6 +11,7 @@ const VIDEOS = {
 
 const TYPE_TO_VIDEO: Record<string, keyof typeof VIDEOS> = {
   hair_salon: 'salon',
+  barber: 'salon',
   nail_salon: 'salon',
   lash_brow: 'salon',
   beauty_center: 'beauty',

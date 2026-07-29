@@ -7,6 +7,7 @@ import { BUSINESS_TYPE_LABELS } from '@/lib/businessCategories';
 
 const DEFAULT_IMAGES: Record<string, string> = {
   hair_salon: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=1200',
+  barber: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=1200',
   dental_clinic: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=1200',
   beauty_center: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=1200',
   restaurant: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1200',

@@ -224,7 +224,7 @@ export function Navbar() {
                 href="/register"
                 className="rounded-full bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 xl:px-4 xl:py-2 xl:text-sm"
               >
-                Kayıt Ol
+                Ücretsiz Başla
               </Link>
             </div>
           )}
@@ -336,7 +336,7 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="rounded-xl bg-primary-500 py-3 text-center text-sm font-semibold text-white shadow-soft"
                     >
-                      Kayıt Ol
+                      Ücretsiz Başla
                     </Link>
                   </>
                 )}

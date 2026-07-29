@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
-import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react';
-import type { HeroSlide } from '@/lib/homeHeroSlides';
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import type { HeroSlide } from "@/lib/homeHeroSlides";
 
 const AUTO_MS = 6500;
 
@@ -24,7 +24,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
       if (!len) return;
       setIndex((i) => (i + dir + len) % len);
     },
-    [len]
+    [len],
   );
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
     if (index >= len) setIndex(0);
   }, [index, len]);
 
-  const slideKey = slides.map((s) => s.id).join('|');
+  const slideKey = slides.map((s) => s.id).join("|");
   useEffect(() => {
     setIndex(0);
   }, [slideKey]);
@@ -70,7 +70,8 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                   className="relative h-full min-w-full shrink-0 outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-900"
                   aria-label={`${slide.title} — ${slide.badge}`}
                 >
-                  {slide.image.startsWith('data:') || slide.image.startsWith('blob:') ? (
+                  {slide.image.startsWith("data:") ||
+                  slide.image.startsWith("blob:") ? (
                     // eslint-disable-next-line @next/next/no-img-element -- yüklü base64 görselleri
                     <img
                       src={slide.image}
@@ -101,7 +102,9 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                       {slide.title}
                     </p>
                     {slide.subtitle && (
-                      <p className="mt-1.5 line-clamp-2 text-sm text-white/90">{slide.subtitle}</p>
+                      <p className="mt-1.5 line-clamp-2 text-sm text-white/90">
+                        {slide.subtitle}
+                      </p>
                     )}
                     <span className="mt-3 inline-flex items-center text-sm font-semibold text-white/95">
                       Detaya git →
@@ -141,7 +144,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                 type="button"
                 onClick={() => setPaused((p) => !p)}
                 className="rounded-full bg-black/40 p-2 text-white backdrop-blur-md transition hover:bg-black/55"
-                aria-label={paused ? 'Otomatik oynat' : 'Duraklat'}
+                aria-label={paused ? "Otomatik oynat" : "Duraklat"}
               >
                 {paused ? (
                   <Play className="h-4 w-4" strokeWidth={2} aria-hidden />
@@ -164,7 +167,9 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
                   aria-selected={i === safeIndex}
                   onClick={() => setIndex(i)}
                   className={`h-2 shrink-0 rounded-full transition-all ${
-                    i === safeIndex ? 'w-6 bg-white' : 'w-2 bg-white/40 hover:bg-white/60'
+                    i === safeIndex
+                      ? "w-6 bg-white"
+                      : "w-2 bg-white/40 hover:bg-white/60"
                   }`}
                   aria-label={`Slayt ${i + 1}`}
                 />
@@ -176,7 +181,7 @@ export function HeroPromoCarousel({ slides }: HeroPromoCarouselProps) {
 
       <p className="mt-4 text-center text-sm text-neutral-500 dark:text-neutral-400 lg:text-left">
         {len > 1
-          ? 'Sponsor işletmeler ve platform önerileri — tıklayarak detaya gidin.'
+          ? "Sponsor işletmeler ve platform önerileri — tıklayarak detaya gidin."
           : `${current.title} — detay için görsele tıklayın.`}
       </p>
     </div>

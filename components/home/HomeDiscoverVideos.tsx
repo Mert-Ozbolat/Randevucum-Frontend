@@ -1,15 +1,15 @@
-'use client';
+"use client";
 
-import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
-import { Clapperboard, Eye, Play } from 'lucide-react';
-import { api } from '@/lib/api';
-import { AnimateIn } from '@/components/ui/AnimateIn';
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { Clapperboard, Eye, Play } from "lucide-react";
+import { api } from "@/lib/api";
+import { AnimateIn } from "@/components/ui/AnimateIn";
 import {
   type DiscoverBusiness,
   formatViewCount,
   getDiscoverVideoUrl,
-} from '@/lib/businessDiscoverMedia';
+} from "@/lib/businessDiscoverMedia";
 
 function DiscoverVideoCard({ business }: { business: DiscoverBusiness }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -57,7 +57,9 @@ function DiscoverVideoCard({ business }: { business: DiscoverBusiness }) {
         )}
 
         <div className="absolute inset-x-0 bottom-0 p-3">
-          <p className="line-clamp-2 text-sm font-bold leading-tight text-white">{business.name}</p>
+          <p className="line-clamp-2 text-sm font-bold leading-tight text-white">
+            {business.name}
+          </p>
           <p className="mt-1 flex items-center gap-1 text-xs text-white/80">
             <Eye className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
             {formatViewCount(views)} izlenme
@@ -74,7 +76,9 @@ export function HomeDiscoverVideos() {
 
   useEffect(() => {
     api
-      .get<{ data: DiscoverBusiness[] }>('/business/discover', { params: { limit: 5 } })
+      .get<{ data: DiscoverBusiness[] }>("/business/discover", {
+        params: { limit: 5 },
+      })
       .then((res) => setVideos(res.data.data || []))
       .catch(() => setVideos([]))
       .finally(() => setLoading(false));
@@ -86,7 +90,10 @@ export function HomeDiscoverVideos() {
         <div className="h-8 w-48 animate-pulse rounded-lg bg-neutral-800" />
         <div className="mt-6 flex gap-4 overflow-hidden">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-[280px] w-[168px] shrink-0 animate-pulse rounded-2xl bg-neutral-800 sm:h-[320px] sm:w-[180px]" />
+            <div
+              key={i}
+              className="h-[280px] w-[168px] shrink-0 animate-pulse rounded-2xl bg-neutral-800 sm:h-[320px] sm:w-[180px]"
+            />
           ))}
         </div>
       </section>
@@ -107,9 +114,12 @@ export function HomeDiscoverVideos() {
             <Clapperboard className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
             Keşfet
           </p>
-          <h2 className="mt-1 text-2xl font-bold text-white sm:text-3xl">Son eklenen videolar</h2>
+          <h2 className="mt-1 text-2xl font-bold text-white sm:text-3xl">
+            Son eklenen videolar
+          </h2>
           <p className="mt-1 max-w-lg text-sm text-neutral-400">
-            İşletmelerin paylaştığı tanıtım videoları — Reels gibi izleyin, ücretsiz.
+            İşletmelerin paylaştığı tanıtım videoları — Reels gibi izleyin,
+            ücretsiz.
           </p>
         </div>
         <Link
@@ -122,7 +132,7 @@ export function HomeDiscoverVideos() {
 
       <div
         className="mt-6 flex gap-4 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+        style={{ WebkitOverflowScrolling: "touch" }}
       >
         {videos.map((b) => (
           <DiscoverVideoCard key={b._id} business={b} />

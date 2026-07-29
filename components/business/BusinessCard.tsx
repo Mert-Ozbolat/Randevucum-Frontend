@@ -24,6 +24,7 @@ interface BusinessCardProps {
 
 const PLACEHOLDER_IMAGES: Record<string, string> = {
   hair_salon: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800',
+  barber: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=800',
   dental_clinic: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=800',
   beauty_center: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800',
   restaurant: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800',

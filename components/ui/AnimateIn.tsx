@@ -67,6 +67,7 @@ export function AnimateIn({
       return;
     }
 
+    // Tall sections: trigger as soon as any pixel enters (titles were stuck at opacity-0)
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -76,14 +77,23 @@ export function AnimateIn({
           setVisible(false);
         }
       },
-      { threshold: 0.08, rootMargin: '0px 0px -32px 0px' }
+      { threshold: 0, rootMargin: '80px 0px 80px 0px' }
     );
     obs.observe(el);
-    return () => obs.disconnect();
+
+    // Fallback: never leave content invisible if observer fails
+    const fallback = window.setTimeout(() => setVisible(true), 1200);
+
+    return () => {
+      obs.disconnect();
+      window.clearTimeout(fallback);
+    };
   }, [immediate, once]);
 
   const style: CSSProperties | undefined =
-    visible && delay > 0 ? { animationDelay: `${delay}ms` } : undefined;
+    visible && delay > 0
+      ? { animationDelay: `${delay}ms`, animationFillMode: 'both' }
+      : undefined;
 
   return (
     <Tag

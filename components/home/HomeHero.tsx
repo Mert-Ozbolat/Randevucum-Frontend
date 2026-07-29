@@ -1,97 +1,62 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Check, Search, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { AnimateIn } from '@/components/ui/AnimateIn';
-import { HomeLiveStats } from '@/components/home/HomeLiveStats';
-import { HeroPromoCarousel } from '@/components/home/HeroPromoCarousel';
-import type { HeroSlide } from '@/lib/homeHeroSlides';
 
-const TRUST_POINTS = ['Hızlı randevu', 'Ücretsiz kullanım', 'Onaylı işletmeler'] as const;
-
-interface HomeHeroProps {
-  slides: HeroSlide[];
-}
-
-export function HomeHero({ slides }: HomeHeroProps) {
+export function HomeHero() {
   return (
-    <section className="relative -mx-4 px-4 pb-14 pt-6 sm:-mx-6 sm:px-6 sm:pb-16 lg:-mx-8 lg:px-8 lg:pb-20 lg:pt-10">
-      <div className="relative mx-auto grid max-w-7xl items-center gap-10 lg:grid-cols-2 lg:gap-12">
-        <div className="max-w-xl lg:max-w-none">
-          <AnimateIn immediate animation="fade-in">
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary-200/80 bg-white/70 px-3.5 py-1.5 text-xs font-semibold uppercase tracking-wide text-primary-700 shadow-sm backdrop-blur-sm dark:border-primary-800/60 dark:bg-primary-950/40 dark:text-primary-300">
-              <Sparkles className="h-3.5 w-3.5" strokeWidth={2} aria-hidden />
-              KKTC&apos;nin randevu platformu
-            </span>
-          </AnimateIn>
+    <header className="relative flex min-h-[100svh] w-full items-center overflow-hidden bg-neutral-900">
+      {/* Soft green + purple blur atmosphere */}
+      <div className="pointer-events-none absolute inset-0" aria-hidden>
+        <div className="absolute -left-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-primary-500/30 blur-3xl" />
+        <div className="absolute -right-20 bottom-1/4 h-[32rem] w-[32rem] rounded-full bg-accent-500/25 blur-3xl" />
+      </div>
 
-          <AnimateIn immediate animation="slide-up" delay={80}>
-            <h1 className="mt-6 text-4xl font-extrabold tracking-tight text-neutral-900 dark:text-white sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]">
-              Dakikalar içinde randevu alın
-            </h1>
-          </AnimateIn>
+      <div className="relative mx-auto w-full max-w-5xl px-4 py-16 text-center sm:px-6 sm:py-20 lg:px-8">
+        <AnimateIn immediate animation="fade-in">
+          <p className="inline-flex rounded-full bg-primary-500/20 px-4 py-2 text-sm font-semibold tracking-wide text-primary-300 ring-1 ring-primary-400/30 backdrop-blur-sm sm:px-5 sm:py-2.5 sm:text-base">
+            KKTC&apos;nin Online Randevu Platformu
+          </p>
+        </AnimateIn>
 
-          <AnimateIn immediate animation="slide-up" delay={160}>
-            <p className="mt-5 text-lg leading-relaxed text-neutral-600 dark:text-neutral-300">
-              Kuaförden kliniğe, tek yerden müsait saatleri görün. Ücretsiz kayıt olun, favorilerinizi
-              kaydedin, randevunuzu saniyeler içinde oluşturun.
-            </p>
-          </AnimateIn>
+        <AnimateIn immediate animation="slide-up" delay={70}>
+          <h1 className="mt-6 text-balance text-4xl font-bold tracking-tight text-white sm:mt-7 sm:text-5xl md:text-6xl lg:text-[4rem] lg:leading-[1.1]">
+            Zamanını boşa harcama,{' '}
+            <span className="text-primary-400">doğru saatte</span> randevunu{' '}
+            <span className="text-primary-400">anında</span> al
+          </h1>
+        </AnimateIn>
 
-          <AnimateIn immediate animation="slide-up" delay={220}>
+        <AnimateIn immediate animation="slide-up" delay={140}>
+          <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-neutral-300 sm:text-xl">
+            Binlerce işletme arasından dilediğini seç, uygun saatleri görüntüle ve saniyeler içinde
+            randevunu oluştur.
+          </p>
+        </AnimateIn>
+
+        <AnimateIn immediate animation="slide-up" delay={210}>
+          <div className="mt-9 flex flex-row flex-wrap items-center justify-center gap-3 sm:mt-11 sm:gap-3.5">
+            <Link
+              href="#home-search"
+              className="group inline-flex items-center rounded-full bg-primary-500 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-primary-400 sm:px-6 sm:py-3 sm:text-base"
+            >
+              Randevu Al
+              <ArrowRight
+                className="ml-2 h-4 w-4 transition duration-300 group-hover:translate-x-0.5 sm:h-5 sm:w-5"
+                strokeWidth={2.25}
+                aria-hidden
+              />
+            </Link>
             <Link
               href="/business"
-              className="group mt-8 flex items-center gap-3 rounded-2xl border border-neutral-200/90 bg-white/90 px-4 py-3.5 shadow-card backdrop-blur-sm transition duration-300 hover:border-primary-300 hover:shadow-soft dark:border-neutral-600 dark:bg-neutral-800/90 dark:hover:border-primary-600"
+              className="inline-flex items-center rounded-full border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:border-white/40 hover:bg-white/15 sm:px-6 sm:py-3 sm:text-base"
             >
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400">
-                <Search className="h-5 w-5" strokeWidth={2} aria-hidden />
-              </span>
-              <span className="flex-1 text-left text-sm text-neutral-500 dark:text-neutral-400">
-                İşletme, hizmet veya kategori ara…
-              </span>
-              <ArrowRight className="h-4 w-4 text-neutral-400 transition group-hover:translate-x-0.5 group-hover:text-primary-600 dark:group-hover:text-primary-400" aria-hidden />
+              İşletmeleri Keşfet
             </Link>
-          </AnimateIn>
-
-          <AnimateIn immediate animation="slide-up" delay={280}>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                href="/register"
-                className="inline-flex items-center justify-center rounded-2xl bg-primary-500 px-6 py-3 text-sm font-semibold text-white shadow-soft transition duration-300 hover:bg-primary-600 hover:shadow-glow active:scale-[0.98] sm:text-base sm:px-7 sm:py-3.5"
-              >
-                Ücretsiz başlayın
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center justify-center rounded-2xl border-2 border-neutral-200 bg-white/60 px-6 py-3 text-sm font-semibold text-neutral-800 backdrop-blur-sm transition duration-300 hover:border-primary-300 hover:bg-white dark:border-neutral-600 dark:bg-neutral-800/60 dark:text-neutral-100 sm:text-base sm:px-7 sm:py-3.5"
-              >
-                İşletme paketleri
-              </Link>
-            </div>
-          </AnimateIn>
-
-          <AnimateIn immediate animation="fade-in" delay={360}>
-            <ul className="mt-8 flex flex-wrap gap-x-6 gap-y-2">
-              {TRUST_POINTS.map((label) => (
-                <li key={label} className="flex items-center gap-2 text-sm font-medium text-neutral-600 dark:text-neutral-400">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary-100 text-primary-600 dark:bg-primary-900/50 dark:text-primary-400">
-                    <Check className="h-3 w-3" strokeWidth={3} aria-hidden />
-                  </span>
-                  {label}
-                </li>
-              ))}
-            </ul>
-          </AnimateIn>
-
-          <AnimateIn immediate animation="slide-up" delay={420}>
-            <HomeLiveStats />
-          </AnimateIn>
-        </div>
-
-        <AnimateIn immediate animation="slide-in-right" delay={200} className="w-full lg:max-w-md lg:justify-self-end xl:max-w-lg">
-          <HeroPromoCarousel slides={slides} />
+          </div>
         </AnimateIn>
       </div>
-    </section>
+    </header>
   );
 }

@@ -28,6 +28,7 @@ export const BUSINESS_CATEGORY_GROUPS: BusinessCategoryGroup[] = [
     name: 'Güzellik & Bakım',
     subcategories: [
       'Kuaför',
+      'Berber',
       'Güzellik Uzmanı',
       'Lazer Epilasyon Merkezi',
       'Manikür & Pedikür',
@@ -148,6 +149,7 @@ export const SUBCATEGORY_TO_BUSINESS_TYPE: Record<string, string> = {
   'Osteopat / Manuel Terapist': 'physiotherapist',
 
   Kuaför: 'hair_salon',
+  Berber: 'barber',
   'Güzellik Uzmanı': 'beauty_center',
   'Lazer Epilasyon Merkezi': 'laser_epilation',
   'Manikür & Pedikür': 'nail_salon',
