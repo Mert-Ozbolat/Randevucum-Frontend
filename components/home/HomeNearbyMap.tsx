@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { KKTC_CITY_CENTERS, KKTC_MAP_CENTER, loadGoogleMaps } from '@/lib/googleMaps';
 import { colors } from '@/lib/colors';
+import { getBusinessMapIconUrl, getUserLocationIconUrl } from '@/lib/mapBusinessIcons';
 import type { HomeBusiness } from '@/components/home/HomeFeaturedBusinesses';
 
 export type MapBusiness = HomeBusiness & {
@@ -16,6 +17,8 @@ interface Props {
   city?: string;
   selectedId?: string | null;
   onSelect?: (id: string) => void;
+  /** dark band styling for empty overlay */
+  tone?: 'light' | 'dark';
 }
 
 function hasCoords(b: MapBusiness): b is MapBusiness & { location: { lat: number; lng: number } } {
@@ -28,6 +31,7 @@ export function HomeNearbyMap({
   city = '',
   selectedId = null,
   onSelect,
+  tone = 'light',
 }: Props) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef<HTMLDivElement>(null);
@@ -42,7 +46,10 @@ export function HomeNearbyMap({
   const markersKey = useMemo(
     () =>
       withLocation
-        .map((b) => `${b._id}:${b.location.lat},${b.location.lng}:${b.distanceKm ?? ''}`)
+        .map(
+          (b) =>
+            `${b._id}:${b.location.lat},${b.location.lng}:${b.businessType ?? ''}:${b.distanceKm ?? ''}`
+        )
         .join('|'),
     [withLocation]
   );
@@ -50,6 +57,8 @@ export function HomeNearbyMap({
   onSelectRef.current = onSelect;
   const businessesRef = useRef(withLocation);
   businessesRef.current = withLocation;
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
 
   useEffect(() => {
     if (!apiKey) {
@@ -69,13 +78,15 @@ export function HomeNearbyMap({
     };
   }, [apiKey]);
 
+  // Keep map mounted always — remounting caused black screen after empty city filter
   useEffect(() => {
     if (!ready || !mapRef.current || !window.google?.maps) return;
 
     const pins = businessesRef.current;
+    const cityCenter = city ? KKTC_CITY_CENTERS[city] : null;
     const center =
       userCoords ||
-      (city && KKTC_CITY_CENTERS[city]) ||
+      cityCenter ||
       (pins[0] ? { lat: pins[0].location.lat, lng: pins[0].location.lng } : KKTC_MAP_CENTER);
 
     if (!mapInstanceRef.current) {
@@ -96,6 +107,7 @@ export function HomeNearbyMap({
     }
 
     const map = mapInstanceRef.current;
+    const gMaps = window.google.maps;
     const existingIds = new Set(pins.map((b) => b._id));
 
     markersRef.current.forEach((marker, id) => {
@@ -105,20 +117,28 @@ export function HomeNearbyMap({
       }
     });
 
-    const bounds = new window.google.maps.LatLngBounds();
-    let hasBounds = false;
+    const bounds = new gMaps.LatLngBounds();
+    let hasPinBounds = false;
 
     pins.forEach((b) => {
       const pos = { lat: b.location.lat, lng: b.location.lng };
       bounds.extend(pos);
-      hasBounds = true;
+      hasPinBounds = true;
+
+      const selected = selectedIdRef.current === b._id;
+      const icon = {
+        url: getBusinessMapIconUrl(b.businessType, selected),
+        scaledSize: new gMaps.Size(selected ? 44 : 40, selected ? 44 : 40),
+        anchor: new gMaps.Point(selected ? 22 : 20, selected ? 22 : 20),
+      };
 
       let marker = markersRef.current.get(b._id);
       if (!marker) {
-        marker = new window.google.maps.Marker({
+        marker = new gMaps.Marker({
           map,
           position: pos,
           title: b.name,
+          icon,
         });
         marker.addListener('click', () => {
           const current = businessesRef.current.find((x) => x._id === b._id);
@@ -139,58 +159,61 @@ export function HomeNearbyMap({
         markersRef.current.set(b._id, marker);
       } else {
         marker.setPosition(pos);
+        marker.setIcon(icon);
         marker.setMap(map);
       }
     });
 
     if (userCoords) {
       bounds.extend(userCoords);
-      hasBounds = true;
+      const userIcon = {
+        url: getUserLocationIconUrl(),
+        scaledSize: new gMaps.Size(28, 28),
+        anchor: new gMaps.Point(14, 14),
+      };
       if (!userMarkerRef.current) {
-        userMarkerRef.current = new window.google.maps.Marker({
+        userMarkerRef.current = new gMaps.Marker({
           map,
           position: userCoords,
           title: 'Konumunuz',
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: colors.accent[600],
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 2,
-          },
+          icon: userIcon,
           zIndex: 2000,
         });
       } else {
         userMarkerRef.current.setPosition(userCoords);
+        userMarkerRef.current.setIcon(userIcon);
         userMarkerRef.current.setMap(map);
       }
     } else if (userMarkerRef.current) {
       userMarkerRef.current.setMap(null);
     }
 
-    if (hasBounds && pins.length > 0) {
+    if (hasPinBounds) {
+      if (userCoords) bounds.extend(userCoords);
       map.fitBounds(bounds, { top: 48, right: 48, bottom: 48, left: 48 });
-      const listener = window.google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+      const listener = gMaps.event.addListenerOnce(map, 'bounds_changed', () => {
         if (map.getZoom() > 14) map.setZoom(14);
       });
       return () => {
-        window.google?.maps?.event?.removeListener(listener);
+        gMaps.event.removeListener(listener);
       };
     }
+
+    // Empty filter: keep map alive, pan to city / user / default (fixes black screen)
+    map.setCenter(center);
+    map.setZoom(cityCenter || userCoords ? 12 : 10);
   }, [ready, markersKey, userCoords, city]);
 
   useEffect(() => {
     if (!ready || !window.google?.maps) return;
+    const gMaps = window.google.maps;
     markersRef.current.forEach((marker, id) => {
+      const b = businessesRef.current.find((x) => x._id === id);
       const selected = selectedId === id;
       marker.setIcon({
-        path: window.google.maps.SymbolPath.CIRCLE,
-        scale: selected ? 13 : 10,
-        fillColor: selected ? colors.accent[500] : colors.primary[500],
-        fillOpacity: 1,
-        strokeColor: '#ffffff',
-        strokeWeight: selected ? 3 : 2,
+        url: getBusinessMapIconUrl(b?.businessType, selected),
+        scaledSize: new gMaps.Size(selected ? 44 : 40, selected ? 44 : 40),
+        anchor: new gMaps.Point(selected ? 22 : 20, selected ? 22 : 20),
       });
       marker.setZIndex(selected ? 1000 : 1);
     });
@@ -211,10 +234,18 @@ export function HomeNearbyMap({
 
   if (error) {
     return (
-      <div className="flex h-[360px] items-center justify-center rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 text-center dark:border-neutral-600 dark:bg-neutral-800/50">
+      <div
+        className={`flex h-[280px] items-center justify-center rounded-3xl border border-dashed px-6 text-center sm:h-[380px] md:h-[420px] ${
+          tone === 'dark'
+            ? 'border-neutral-600 bg-neutral-800/50'
+            : 'border-neutral-300 bg-neutral-50 dark:border-neutral-600 dark:bg-neutral-800/50'
+        }`}
+      >
         <div>
-          <p className="text-sm text-neutral-600 dark:text-neutral-300">{error}</p>
-          <Link href="/business" className="mt-2 inline-block text-sm font-semibold text-primary-600">
+          <p className={`text-sm ${tone === 'dark' ? 'text-neutral-300' : 'text-neutral-600 dark:text-neutral-300'}`}>
+            {error}
+          </p>
+          <Link href="/business" className="mt-2 inline-block text-sm font-semibold text-primary-500">
             Listeyi görüntüle
           </Link>
         </div>
@@ -222,15 +253,7 @@ export function HomeNearbyMap({
     );
   }
 
-  if (!withLocation.length && ready) {
-    return (
-      <div className="flex h-[360px] items-center justify-center rounded-3xl border border-dashed border-neutral-300 bg-neutral-50 px-6 text-center dark:border-neutral-600 dark:bg-neutral-800/50">
-        <p className="text-sm text-neutral-600 dark:text-neutral-300">
-          Bu filtrede haritada gösterilecek konumlu işletme yok.
-        </p>
-      </div>
-    );
-  }
+  const empty = ready && withLocation.length === 0;
 
   return (
     <div className="relative overflow-hidden rounded-3xl border border-neutral-200/80 shadow-soft dark:border-neutral-700">
@@ -239,10 +262,26 @@ export function HomeNearbyMap({
           <p className="text-sm text-neutral-500">Harita yükleniyor…</p>
         </div>
       )}
-      <div ref={mapRef} className="h-[280px] w-full bg-neutral-100 sm:h-[380px] md:h-[420px] dark:bg-neutral-800" />
+
+      {/* Always mounted — never unmount map div */}
+      <div
+        ref={mapRef}
+        className="h-[280px] w-full bg-neutral-100 sm:h-[380px] md:h-[420px] dark:bg-neutral-800"
+      />
+
+      {empty && (
+        <div className="absolute inset-0 z-[2] flex items-center justify-center bg-neutral-900/45 px-6 backdrop-blur-[2px]">
+          <p className="rounded-2xl bg-white/95 px-5 py-3 text-center text-sm font-medium text-neutral-700 shadow-soft dark:bg-neutral-900/95 dark:text-neutral-200">
+            Bu filtrede haritada gösterilecek konumlu işletme yok.
+            {city ? ` (${city})` : ''}
+          </p>
+        </div>
+      )}
+
       {withLocation.length > 0 && (
         <p className="absolute bottom-3 left-3 z-[1] rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm backdrop-blur dark:bg-neutral-900/90 dark:text-neutral-200">
           {withLocation.length} işletme haritada
+          {userCoords ? ' · konumunuz kırmızı' : ''}
         </p>
       )}
     </div>

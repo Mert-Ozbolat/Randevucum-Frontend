@@ -1,25 +1,26 @@
-"use client";
+'use client';
 
-import { useEffect, useMemo, useState } from "react";
-import { LocateFixed } from "lucide-react";
-import { AnimateIn } from "@/components/ui/AnimateIn";
-import { BusinessCard } from "@/components/business/BusinessCard";
-import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
-import { HomeSectionHeader } from "@/components/home/HomeSectionHeader";
-import { HomeNearbyMap } from "@/components/home/HomeNearbyMap";
-import { Button } from "@/components/ui/Button";
-import { KKTC_CITIES } from "@/lib/constants";
-import type { HomeBusiness } from "@/components/home/HomeFeaturedBusinesses";
+import { useEffect, useMemo, useState } from 'react';
+import { LocateFixed } from 'lucide-react';
+import { AnimateIn } from '@/components/ui/AnimateIn';
+import { BusinessCard } from '@/components/business/BusinessCard';
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
+import { HomeSectionHeader } from '@/components/home/HomeSectionHeader';
+import { HomeNearbyMap } from '@/components/home/HomeNearbyMap';
+import { Button } from '@/components/ui/Button';
+import { KKTC_CITIES } from '@/lib/constants';
+import type { HomeBusiness } from '@/components/home/HomeFeaturedBusinesses';
 
 interface Props {
   businesses: HomeBusiness[];
   loading: boolean;
   error: boolean;
+  tone?: 'light' | 'dark';
 }
 
 function haversineKm(
   a: { lat: number; lng: number },
-  b: { lat: number; lng: number },
+  b: { lat: number; lng: number }
 ): number {
   const toRad = (d: number) => (d * Math.PI) / 180;
   const R = 6371;
@@ -33,37 +34,53 @@ function haversineKm(
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
-export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
-  const [city, setCity] = useState("");
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    null,
-  );
+export function HomeNearbyBusinesses({
+  businesses,
+  loading,
+  error,
+  tone = 'light',
+}: Props) {
+  const dark = tone === 'dark';
+  const [city, setCity] = useState('');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [geoError, setGeoError] = useState(false);
+  const [geoPending, setGeoPending] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const saved = sessionStorage.getItem("homeSearchCity");
-      if (saved) setCity(saved);
-    } catch {
-      /* ignore */
-    }
-  }, []);
-
-  const requestLocation = () => {
+  const requestLocation = (fromUserClick = false) => {
     if (!navigator.geolocation) {
       setGeoError(true);
       return;
     }
+    setGeoPending(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGeoError(false);
+        setGeoPending(false);
       },
-      () => setGeoError(true),
-      { enableHighAccuracy: false, timeout: 8000 },
+      () => {
+        setGeoError(true);
+        setGeoPending(false);
+        if (!fromUserClick) {
+          /* soft fail on auto-ask — user can retry */
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 }
     );
   };
+
+  // Ask for location when homepage nearby section mounts
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem('homeSearchCity');
+      if (saved) setCity(saved);
+    } catch {
+      /* ignore */
+    }
+    requestLocation(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const nearby = useMemo(() => {
     let list = [...businesses];
@@ -76,7 +93,7 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
       const lat = b.location?.lat;
       const lng = b.location?.lng;
       const distanceKm =
-        coords && typeof lat === "number" && typeof lng === "number"
+        coords && typeof lat === 'number' && typeof lng === 'number'
           ? haversineKm(coords, { lat, lng })
           : Number.POSITIVE_INFINITY;
       return { ...b, distanceKm };
@@ -92,23 +109,22 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
   const mapBusinesses = useMemo(
     () =>
       nearby
-        .filter(
-          (b) =>
-            typeof b.location?.lat === "number" &&
-            typeof b.location?.lng === "number",
-        )
+        .filter((b) => typeof b.location?.lat === 'number' && typeof b.location?.lng === 'number')
         .slice(0, 40),
-    [nearby],
+    [nearby]
   );
 
   const cardBusinesses = useMemo(() => nearby.slice(0, 6), [nearby]);
 
+  // Clear selection when filter empties
+  useEffect(() => {
+    if (selectedId && !mapBusinesses.some((b) => b._id === selectedId)) {
+      setSelectedId(null);
+    }
+  }, [mapBusinesses, selectedId]);
+
   return (
-    <AnimateIn
-      as="section"
-      animation="slide-up"
-      aria-labelledby="home-nearby-title"
-    >
+    <AnimateIn as="section" animation="slide-up" aria-labelledby="home-nearby-title">
       <HomeSectionHeader
         eyebrow="Yakınında"
         title="Yakındaki işletmeler"
@@ -116,6 +132,7 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
         href="/business"
         linkLabel="Tüm işletmeler"
         titleId="home-nearby-title"
+        tone={tone}
       />
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -123,21 +140,28 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
           type="button"
           variant="outline"
           size="sm"
-          className="rounded-full"
-          onClick={requestLocation}
+          className={`rounded-full ${
+            dark ? 'border-white/20 bg-white/10 text-white hover:bg-white/15' : ''
+          }`}
+          onClick={() => requestLocation(true)}
+          disabled={geoPending}
         >
           <LocateFixed className="mr-1.5 h-4 w-4" aria-hidden />
-          Konumumu kullan
+          {geoPending ? 'Konum alınıyor…' : 'Konumumu kullan'}
         </Button>
         {KKTC_CITIES.map((c) => (
           <button
             key={c}
             type="button"
-            onClick={() => setCity((prev) => (prev === c ? "" : c))}
+            onClick={() => setCity((prev) => (prev === c ? '' : c))}
             className={`rounded-full border px-3.5 py-1.5 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 ${
               city === c
-                ? "border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-950/40 dark:text-primary-300"
-                : "border-neutral-200 bg-white text-neutral-600 hover:border-primary-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+                ? dark
+                  ? 'border-primary-400 bg-primary-500/20 text-primary-300'
+                  : 'border-primary-500 bg-primary-50 text-primary-700 dark:border-primary-400 dark:bg-primary-950/40 dark:text-primary-300'
+                : dark
+                  ? 'border-white/15 bg-white/5 text-neutral-300 hover:border-primary-400/50'
+                  : 'border-neutral-200 bg-white text-neutral-600 hover:border-primary-300 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-300'
             }`}
             aria-pressed={city === c}
           >
@@ -148,24 +172,24 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
 
       {geoError && (
         <p
-          className="mt-3 text-sm text-neutral-500 dark:text-neutral-400"
+          className={`mt-3 text-sm ${dark ? 'text-neutral-400' : 'text-neutral-500 dark:text-neutral-400'}`}
           role="status"
         >
-          Konum alınamadı. Şehir seçerek devam edebilirsiniz.
+          Konum izni alınamadı. Şehir seçerek devam edebilirsiniz.
         </p>
       )}
-      {coords && (
+      {coords && !geoError && (
         <p
-          className="mt-3 text-sm text-primary-600 dark:text-primary-400"
+          className={`mt-3 text-sm ${dark ? 'text-primary-400' : 'text-primary-600 dark:text-primary-400'}`}
           role="status"
         >
-          Konumunuza göre sıralandı.
+          Konumunuza göre sıralandı (haritada kırmızı nokta).
         </p>
       )}
 
       {loading && (
         <div className="mt-8 space-y-6">
-          <div className="h-[380px] animate-pulse rounded-3xl bg-neutral-200 dark:bg-neutral-700 sm:h-[420px]" />
+          <div className="h-[280px] animate-pulse rounded-3xl bg-neutral-200 dark:bg-neutral-700 sm:h-[380px] md:h-[420px]" />
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <CardSkeleton key={i} />
@@ -176,9 +200,7 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
 
       {error && !loading && (
         <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 px-6 py-10 text-center dark:border-red-800 dark:bg-red-900/20">
-          <p className="text-red-800 dark:text-red-200">
-            İşletmeler yüklenemedi.
-          </p>
+          <p className="text-red-800 dark:text-red-200">İşletmeler yüklenemedi.</p>
         </div>
       )}
 
@@ -190,6 +212,7 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
             city={city}
             selectedId={selectedId}
             onSelect={setSelectedId}
+            tone={tone}
           />
 
           {cardBusinesses.length > 0 ? (
@@ -199,7 +222,7 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
                   <div
                     className={
                       selectedId === b._id
-                        ? "rounded-3xl ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-neutral-900"
+                        ? 'rounded-3xl ring-2 ring-primary-500 ring-offset-2 dark:ring-offset-neutral-900'
                         : undefined
                     }
                     onMouseEnter={() => setSelectedId(b._id)}
@@ -220,10 +243,16 @@ export function HomeNearbyBusinesses({ businesses, loading, error }: Props) {
               ))}
             </div>
           ) : (
-            <div className="rounded-3xl border border-dashed border-neutral-300 bg-white px-8 py-12 text-center dark:border-neutral-600 dark:bg-neutral-800/50">
-              <p className="text-neutral-600 dark:text-neutral-300">
-                Bu filtreye uygun işletme bulunamadı. Şehir seçimini değiştirin
-                veya tüm işletmelere göz atın.
+            <div
+              className={`rounded-3xl border border-dashed px-8 py-12 text-center ${
+                dark
+                  ? 'border-neutral-600 bg-neutral-800/50 text-neutral-300'
+                  : 'border-neutral-300 bg-white text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300'
+              }`}
+            >
+              <p>
+                Bu filtreye uygun işletme bulunamadı. Şehir seçimini değiştirin veya tüm işletmelere
+                göz atın.
               </p>
             </div>
           )}
