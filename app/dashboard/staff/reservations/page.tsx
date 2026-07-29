@@ -41,7 +41,12 @@ export default function StaffReservationsPage() {
   const [manualModalOpen, setManualModalOpen] = useState(false);
 
   const activeStaff = useMemo(
-    () => staffRows.filter((s) => s.canViewOwnReservations && s.businessId?._id),
+    () =>
+      staffRows.filter(
+        (s) =>
+          s.canViewOwnReservations === true &&
+          Boolean(typeof s.businessId === 'object' ? s.businessId?._id : s.businessId)
+      ),
     [staffRows]
   );
   const primaryStaff = activeStaff[0];

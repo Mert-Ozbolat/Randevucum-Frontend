@@ -15,7 +15,7 @@ export function staffNeedsPhone(
   staffRows: { canViewOwnReservations?: boolean; phone?: string | null }[]
 ): boolean {
   return staffRows.some(
-    (s) => s.canViewOwnReservations && !(s.phone && String(s.phone).trim())
+    (s) => s.canViewOwnReservations === true && !(s.phone && String(s.phone).trim())
   );
 }
 

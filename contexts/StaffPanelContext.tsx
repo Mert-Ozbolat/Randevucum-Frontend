@@ -57,10 +57,19 @@ export function StaffPanelProvider({ children }: { children: React.ReactNode }) 
     load();
   }, [load]);
 
-  const canViewStaffPanel = useMemo(
-    () => Boolean(user && !isBusinessOwner(user) && staffRows.some((s) => s.canViewOwnReservations)),
-    [user, staffRows]
-  );
+  const canViewStaffPanel = useMemo(() => {
+    if (!user || isBusinessOwner(user) || staffLoading) return false;
+    return staffRows.some((s) => {
+      if (s.canViewOwnReservations !== true) return false;
+      const bid =
+        typeof s.businessId === 'string'
+          ? s.businessId
+          : s.businessId && typeof s.businessId === 'object'
+            ? s.businessId._id
+            : null;
+      return Boolean(bid);
+    });
+  }, [user, staffRows, staffLoading]);
 
   const value = useMemo(
     () => ({

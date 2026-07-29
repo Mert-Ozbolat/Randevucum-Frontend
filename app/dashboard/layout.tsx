@@ -40,7 +40,7 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, token, logout } = useAuthStore();
-  const { canViewStaffPanel } = useStaffPanel();
+  const { canViewStaffPanel, staffLoading } = useStaffPanel();
   const { openSidebar } = useDashboardShell();
   const [setupPublished, setSetupPublished] = useState(false);
   const [authReady, setAuthReady] = useState(false);
@@ -77,6 +77,14 @@ function DashboardShell({ children }: { children: React.ReactNode }) {
       router.replace('/dashboard/customer/reservations');
     }
   }, [user, pathname, router]);
+
+  // Hide /dashboard/staff/* from accounts without staff+business permission
+  useEffect(() => {
+    if (!user || staffLoading) return;
+    if (pathname?.startsWith('/dashboard/staff') && !canViewStaffPanel) {
+      router.replace('/dashboard/customer/reservations');
+    }
+  }, [user, pathname, router, canViewStaffPanel, staffLoading]);
 
   useEffect(() => {
     if (!user || !isBusinessOwner(user) || !pathname) return;
