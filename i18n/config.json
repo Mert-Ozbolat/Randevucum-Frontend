@@ -1,0 +1,8 @@
+{
+  "defaultLocale": "tr",
+  "locales": ["tr", "en"],
+  "localeNames": {
+    "tr": "Türkçe",
+    "en": "English"
+  }
+}
