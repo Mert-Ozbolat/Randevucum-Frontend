@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import { KKTC_CITY_CENTERS, KKTC_MAP_CENTER, loadGoogleMaps } from '@/lib/googleMaps';
 import { colors } from '@/lib/colors';
 import { getBusinessMapIconUrl, getUserLocationIconUrl } from '@/lib/mapBusinessIcons';
@@ -33,6 +34,7 @@ export function HomeNearbyMap({
   onSelect,
   tone = 'light',
 }: Props) {
+  const t = useTranslations('home.nearby.map');
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -59,10 +61,14 @@ export function HomeNearbyMap({
   businessesRef.current = withLocation;
   const selectedIdRef = useRef(selectedId);
   selectedIdRef.current = selectedId;
+  const detailsLabelRef = useRef(t('details'));
+  detailsLabelRef.current = t('details');
+  const yourLocationRef = useRef(t('yourLocationTitle'));
+  yourLocationRef.current = t('yourLocationTitle');
 
   useEffect(() => {
     if (!apiKey) {
-      setError('Harita için Google Maps API anahtarı gerekli.');
+      setError(t('apiKeyMissing'));
       return;
     }
     let cancelled = false;
@@ -71,12 +77,12 @@ export function HomeNearbyMap({
         if (!cancelled) setReady(true);
       })
       .catch(() => {
-        if (!cancelled) setError('Harita yüklenemedi.');
+        if (!cancelled) setError(t('loadFailed'));
       });
     return () => {
       cancelled = true;
     };
-  }, [apiKey]);
+  }, [apiKey, t]);
 
   // Keep map mounted always — remounting caused black screen after empty city filter
   useEffect(() => {
@@ -143,7 +149,9 @@ export function HomeNearbyMap({
         marker.addListener('click', () => {
           const current = businessesRef.current.find((x) => x._id === b._id) || b;
           onSelectRef.current?.(b._id);
-          infoRef.current?.setContent(buildInfoWindowHtml(current));
+          infoRef.current?.setContent(
+            buildInfoWindowHtml(current, detailsLabelRef.current)
+          );
           infoRef.current?.open({ map, anchor: marker });
         });
         markersRef.current.set(b._id, marker);
@@ -165,7 +173,7 @@ export function HomeNearbyMap({
         userMarkerRef.current = new gMaps.Marker({
           map,
           position: userCoords,
-          title: 'Konumunuz',
+          title: yourLocationRef.current,
           icon: userIcon,
           zIndex: 2000,
         });
@@ -236,7 +244,7 @@ export function HomeNearbyMap({
             {error}
           </p>
           <Link href="/business" className="mt-2 inline-block text-sm font-semibold text-primary-500">
-            Listeyi görüntüle
+            {t('viewList')}
           </Link>
         </div>
       </div>
@@ -249,7 +257,7 @@ export function HomeNearbyMap({
     <div className="relative overflow-hidden rounded-3xl border border-neutral-200/80 shadow-soft dark:border-neutral-700">
       {!ready && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-neutral-100 dark:bg-neutral-800">
-          <p className="text-sm text-neutral-500">Harita yükleniyor…</p>
+          <p className="text-sm text-neutral-500">{t('loading')}</p>
         </div>
       )}
 
@@ -262,7 +270,7 @@ export function HomeNearbyMap({
       {empty && (
         <div className="absolute inset-0 z-[2] flex items-center justify-center bg-neutral-900/45 px-6 backdrop-blur-[2px]">
           <p className="rounded-2xl bg-white/95 px-5 py-3 text-center text-sm font-medium text-neutral-700 shadow-soft dark:bg-neutral-900/95 dark:text-neutral-200">
-            Bu filtrede haritada gösterilecek konumlu işletme yok.
+            {t('empty')}
             {city ? ` (${city})` : ''}
           </p>
         </div>
@@ -270,8 +278,8 @@ export function HomeNearbyMap({
 
       {withLocation.length > 0 && (
         <p className="absolute bottom-3 left-3 z-[1] rounded-full bg-white/95 px-3 py-1.5 text-xs font-medium text-neutral-700 shadow-sm backdrop-blur dark:bg-neutral-900/90 dark:text-neutral-200">
-          {withLocation.length} işletme haritada
-          {userCoords ? ' · konumunuz kırmızı' : ''}
+          {t('countOnMap', { count: withLocation.length })}
+          {userCoords ? ` · ${t('yourLocation')}` : ''}
         </p>
       )}
     </div>
@@ -301,7 +309,7 @@ function getBusinessCoverImage(b: MapBusiness): string {
   return PLACEHOLDER_IMAGES[b.businessType] || PLACEHOLDER_IMAGES.other;
 }
 
-function buildInfoWindowHtml(b: MapBusiness): string {
+function buildInfoWindowHtml(b: MapBusiness, detailsLabel: string): string {
   const cover = escapeHtml(getBusinessCoverImage(b));
   const name = escapeHtml(b.name);
   const location = [b.address?.district, b.address?.city].filter(Boolean).join(', ');
@@ -323,6 +331,6 @@ function buildInfoWindowHtml(b: MapBusiness): string {
     <strong style="display:block;font-size:14px;line-height:1.3;color:#171717">${name}</strong>
     ${locationHtml}
     ${dist}
-    <a href="/business/${escapeHtml(b._id)}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:${colors.primary[600]}">Detay →</a>
+    <a href="/business/${escapeHtml(b._id)}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:${colors.primary[600]}">${escapeHtml(detailsLabel)}</a>
   </div>`;
 }

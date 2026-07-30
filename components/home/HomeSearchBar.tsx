@@ -1,7 +1,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useLocale, useTranslations } from 'next-intl';
 import {
   ArrowRight,
   CalendarDays,
@@ -24,48 +24,42 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
-import { tr } from 'date-fns/locale';
+import { enUS, ru, tr } from 'date-fns/locale';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { Button } from '@/components/ui/Button';
+import { useRouter } from '@/i18n/navigation';
 import { KKTC_CITIES } from '@/lib/constants';
+import { HOME_SEARCH_SERVICES } from '@/lib/homeSearchServices';
 
-/** Hızlı aramada yalnızca en önemli işletme türleri */
-const SERVICE_SUGGESTIONS = [
-  { name: 'Kuaför', area: 'Güzellik & Bakım' },
-  { name: 'Berber', area: 'Güzellik & Bakım' },
-  { name: 'Güzellik Uzmanı', area: 'Güzellik & Bakım' },
-  { name: 'SPA & Hamam', area: 'Güzellik & Bakım' },
-  { name: 'Masaj Salonu', area: 'Güzellik & Bakım' },
-  { name: 'Diş Hekimi', area: 'Sağlık' },
-  { name: 'Psikolog', area: 'Sağlık' },
-  { name: 'Diyetisyen', area: 'Sağlık' },
-  { name: 'Fizyoterapist', area: 'Sağlık' },
-  { name: 'Pilates Eğitmeni', area: 'Spor & Wellness' },
-  { name: 'Fitness & Personal Trainer', area: 'Spor & Wellness' },
-  { name: 'Veteriner Kliniği', area: 'Hayvan Bakımı' },
-  { name: 'Oto Tamir & Mekanik Servis', area: 'Otomotiv' },
-  { name: 'Restoran', area: 'Yeme & İçme' },
-] as const;
-
-const WEEKDAYS = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pz'] as const;
+const DATE_LOCALES = { tr, en: enUS, ru } as const;
+const WEEKDAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
 export function HomeSearchBar() {
+  const t = useTranslations('home.search');
+  const locale = useLocale() as keyof typeof DATE_LOCALES;
+  const dateLocale = DATE_LOCALES[locale] ?? tr;
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement | null>(null);
   const [service, setService] = useState('');
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [city, setCity] = useState('');
   const [date, setDate] = useState('');
   const [openSuggest, setOpenSuggest] = useState(false);
   const [openCalendar, setOpenCalendar] = useState(false);
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
 
+  const serviceLabel = (id: string) => t(`services.${id}` as 'services.hairdresser');
+  const areaLabel = (areaId: string) => t(`areaLabels.${areaId}` as 'areaLabels.beauty');
+
   const suggestions = useMemo(() => {
     const q = service.trim().toLowerCase();
-    if (!q) return [...SERVICE_SUGGESTIONS];
-    return SERVICE_SUGGESTIONS.filter(
-      (s) => s.name.toLowerCase().includes(q) || s.area.toLowerCase().includes(q)
-    );
-  }, [service]);
+    if (!q) return HOME_SEARCH_SERVICES;
+    return HOME_SEARCH_SERVICES.filter((s) => {
+      const name = serviceLabel(s.id).toLowerCase();
+      const area = areaLabel(s.areaId).toLowerCase();
+      return name.includes(q) || area.includes(q) || s.profession.toLowerCase().includes(q);
+    });
+  }, [service, t]);
 
   const selectedDate = date ? parseISO(date) : null;
   const today = startOfDay(new Date());
@@ -101,12 +95,16 @@ export function HomeSearchBar() {
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    const match = SERVICE_SUGGESTIONS.find(
-      (s) => s.name.toLowerCase() === service.trim().toLowerCase()
-    );
+    const match =
+      (selectedServiceId && HOME_SEARCH_SERVICES.find((s) => s.id === selectedServiceId)) ||
+      HOME_SEARCH_SERVICES.find(
+        (s) =>
+          serviceLabel(s.id).toLowerCase() === service.trim().toLowerCase() ||
+          s.profession.toLowerCase() === service.trim().toLowerCase()
+      );
     if (match) {
       params.set('area', match.area);
-      params.set('profession', match.name);
+      params.set('profession', match.profession);
     } else if (service.trim()) {
       params.set('profession', service.trim());
     }
@@ -123,8 +121,8 @@ export function HomeSearchBar() {
   };
 
   const dateLabel = selectedDate
-    ? format(selectedDate, 'd MMMM yyyy', { locale: tr })
-    : 'Tarih seç';
+    ? format(selectedDate, 'd MMMM yyyy', { locale: dateLocale })
+    : t('pickDate');
 
   return (
     <div ref={rootRef} className="relative z-[100]">
@@ -132,7 +130,7 @@ export function HomeSearchBar() {
       <form
         onSubmit={onSubmit}
         id="home-search"
-        aria-label="Hızlı randevu arama"
+        aria-label={t('ariaLabel')}
         className="relative z-[100] overflow-visible rounded-[1.75rem] bg-white/90 shadow-soft ring-1 ring-neutral-200/70 backdrop-blur-xl dark:bg-neutral-900/90 dark:ring-neutral-700/70"
       >
         <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[1.75rem]" aria-hidden>
@@ -144,27 +142,26 @@ export function HomeSearchBar() {
           <div className="mb-5 flex flex-col gap-1 sm:mb-6 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary-600 dark:text-primary-400">
-                Hızlı arama
+                {t('eyebrow')}
               </p>
               <h2 className="mt-1.5 text-balance text-lg font-bold tracking-tight text-neutral-900 dark:text-white sm:text-2xl">
-                Ne arıyorsun, <span className="text-primary-600 dark:text-primary-400">nerede</span> ve{' '}
-                <span className="text-primary-600 dark:text-primary-400">ne zaman</span>?
+                {t('titlePrefix')}{' '}
+                <span className="text-primary-600 dark:text-primary-400">{t('titleWhere')}</span>{' '}
+                {t('titleJoin')}{' '}
+                <span className="text-primary-600 dark:text-primary-400">{t('titleWhen')}</span>?
               </h2>
             </div>
-            <p className="text-sm text-neutral-500 dark:text-neutral-400">
-              Hizmet seç, konumu ayarla, hemen bul.
-            </p>
+            <p className="text-sm text-neutral-500 dark:text-neutral-400">{t('subtitle')}</p>
           </div>
 
           <div className="relative grid gap-3 overflow-visible lg:grid-cols-[1.45fr_1fr_1fr_auto] lg:gap-0 lg:overflow-visible lg:rounded-2xl lg:bg-neutral-200/60 lg:p-px dark:lg:bg-neutral-700/60">
-            {/* Service */}
             <div
               className={`relative rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:rounded-l-2xl lg:ring-0 ${
                 openSuggest ? 'z-50' : 'z-30'
               }`}
             >
               <label htmlFor="home-service" className="sr-only">
-                Kategori / Hizmet
+                {t('serviceSrOnly')}
               </label>
               <div className="flex min-h-[72px] items-center gap-3 px-4 py-3 sm:px-5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 dark:bg-primary-950/50 dark:text-primary-400">
@@ -172,7 +169,7 @@ export function HomeSearchBar() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-                    Hizmet
+                    {t('serviceLabel')}
                   </p>
                   <input
                     id="home-service"
@@ -180,6 +177,7 @@ export function HomeSearchBar() {
                     value={service}
                     onChange={(e) => {
                       setService(e.target.value);
+                      setSelectedServiceId(null);
                       setOpenSuggest(true);
                       setOpenCalendar(false);
                     }}
@@ -187,7 +185,7 @@ export function HomeSearchBar() {
                       setOpenSuggest(true);
                       setOpenCalendar(false);
                     }}
-                    placeholder="Kuaför, diş, pilates…"
+                    placeholder={t('servicePlaceholder')}
                     className="w-full border-0 bg-transparent p-0 text-sm font-medium text-neutral-900 outline-none placeholder:font-normal placeholder:text-neutral-400 focus:ring-0 dark:text-neutral-50"
                     autoComplete="off"
                     aria-autocomplete="list"
@@ -204,20 +202,21 @@ export function HomeSearchBar() {
                   className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-auto rounded-2xl border border-neutral-200 bg-white py-1.5 shadow-soft dark:border-neutral-600 dark:bg-neutral-900"
                 >
                   {suggestions.map((s) => (
-                    <li key={`${s.area}-${s.name}`} role="option" aria-selected={service === s.name}>
+                    <li key={s.id} role="option" aria-selected={selectedServiceId === s.id}>
                       <button
                         type="button"
                         className="flex w-full items-center justify-between gap-3 px-4 py-2.5 text-left transition hover:bg-primary-50 focus:bg-primary-50 focus:outline-none dark:hover:bg-primary-950/40 dark:focus:bg-primary-950/40"
                         onClick={() => {
-                          setService(s.name);
+                          setService(serviceLabel(s.id));
+                          setSelectedServiceId(s.id);
                           setOpenSuggest(false);
                         }}
                       >
                         <span className="text-sm font-medium text-neutral-900 dark:text-neutral-50">
-                          {s.name}
+                          {serviceLabel(s.id)}
                         </span>
                         <span className="shrink-0 rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] font-medium text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
-                          {s.area}
+                          {areaLabel(s.areaId)}
                         </span>
                       </button>
                     </li>
@@ -226,10 +225,9 @@ export function HomeSearchBar() {
               )}
             </div>
 
-            {/* City */}
             <div className="relative z-20 rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:ring-0">
               <label htmlFor="home-city" className="sr-only">
-                Konum
+                {t('locationSrOnly')}
               </label>
               <div className="flex min-h-[72px] items-center gap-3 px-4 py-3 sm:px-5">
                 <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-accent-50 text-accent-600 dark:bg-accent-950/40 dark:text-accent-400">
@@ -237,7 +235,7 @@ export function HomeSearchBar() {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-                    Konum
+                    {t('locationLabel')}
                   </p>
                   <select
                     id="home-city"
@@ -249,7 +247,7 @@ export function HomeSearchBar() {
                     }}
                     className="w-full cursor-pointer appearance-none border-0 bg-transparent p-0 text-sm font-medium text-neutral-900 outline-none focus:ring-0 dark:text-neutral-50"
                   >
-                    <option value="">Tüm şehirler</option>
+                    <option value="">{t('allCities')}</option>
                     {KKTC_CITIES.map((c) => (
                       <option key={c} value={c}>
                         {c}
@@ -260,13 +258,12 @@ export function HomeSearchBar() {
               </div>
             </div>
 
-            {/* Date — custom calendar */}
             <div
               className={`relative rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:ring-0 ${
                 openCalendar ? 'z-50' : 'z-20'
               }`}
             >
-              <p className="sr-only">Tarih</p>
+              <p className="sr-only">{t('dateSrOnly')}</p>
               <button
                 type="button"
                 onClick={() => {
@@ -283,7 +280,7 @@ export function HomeSearchBar() {
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-[11px] font-semibold uppercase tracking-wide text-neutral-400">
-                    Tarih
+                    {t('dateLabel')}
                   </span>
                   <span
                     className={`block truncate text-sm font-medium ${
@@ -300,7 +297,7 @@ export function HomeSearchBar() {
               {openCalendar && (
                 <div
                   role="dialog"
-                  aria-label="Tarih seçici"
+                  aria-label={t('calendarAria')}
                   className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 w-full min-w-[280px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft dark:border-neutral-600 dark:bg-neutral-900 sm:left-auto sm:right-0 sm:w-[320px]"
                 >
                   <div className="mb-3 flex items-center justify-between">
@@ -308,30 +305,30 @@ export function HomeSearchBar() {
                       type="button"
                       onClick={() => setMonthCursor((m) => addMonths(m, -1))}
                       className="rounded-xl p-2 text-neutral-600 transition hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                      aria-label="Önceki ay"
+                      aria-label={t('prevMonth')}
                     >
                       <ChevronLeft className="h-4 w-4" aria-hidden />
                     </button>
                     <p className="text-sm font-semibold capitalize text-neutral-900 dark:text-neutral-50">
-                      {format(monthCursor, 'MMMM yyyy', { locale: tr })}
+                      {format(monthCursor, 'MMMM yyyy', { locale: dateLocale })}
                     </p>
                     <button
                       type="button"
                       onClick={() => setMonthCursor((m) => addMonths(m, 1))}
                       className="rounded-xl p-2 text-neutral-600 transition hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                      aria-label="Sonraki ay"
+                      aria-label={t('nextMonth')}
                     >
                       <ChevronRight className="h-4 w-4" aria-hidden />
                     </button>
                   </div>
 
                   <div className="mb-1 grid grid-cols-7 gap-1">
-                    {WEEKDAYS.map((d) => (
+                    {WEEKDAY_KEYS.map((d) => (
                       <span
                         key={d}
                         className="py-1 text-center text-[11px] font-semibold text-neutral-400"
                       >
-                        {d}
+                        {t(`weekdays.${d}`)}
                       </span>
                     ))}
                   </div>
@@ -376,7 +373,7 @@ export function HomeSearchBar() {
                         setOpenCalendar(false);
                       }}
                     >
-                      Temizle
+                      {t('clear')}
                     </button>
                     <button
                       type="button"
@@ -387,21 +384,20 @@ export function HomeSearchBar() {
                         setOpenCalendar(false);
                       }}
                     >
-                      Bugün
+                      {t('today')}
                     </button>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Submit */}
             <div className="relative z-10 flex items-center rounded-2xl bg-white p-3 ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:rounded-r-2xl lg:p-2.5 lg:ring-0">
               <Button
                 type="submit"
                 size="lg"
                 className="h-12 w-full rounded-xl px-6 text-base shadow-soft lg:min-w-[132px]"
               >
-                Ara
+                {t('submit')}
                 <ArrowRight className="ml-2 h-4 w-4" aria-hidden />
               </Button>
             </div>

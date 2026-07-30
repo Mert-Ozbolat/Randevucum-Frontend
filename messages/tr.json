@@ -71,7 +71,195 @@
     "pricingEyebrow": "Paketler",
     "pricingTitle": "İşletmeniz için şeffaf fiyatlandırma",
     "pricingDescription": "{days} gün ücretsiz deneyin. Aylık, 3 aylık veya yıllık — hepsi aynı özellikler.",
-    "pricingDetails": "Tüm detayları gör"
+    "pricingDetails": "Tüm detayları gör",
+    "errors": {
+      "businessesLoadFailed": "İşletmeler yüklenemedi."
+    },
+    "businessCount": "{count} işletme",
+    "exploreBusinesses": "İşletmeleri keşfet",
+    "search": {
+      "ariaLabel": "Hızlı randevu arama",
+      "eyebrow": "Hızlı arama",
+      "titlePrefix": "Ne arıyorsun,",
+      "titleWhere": "nerede",
+      "titleJoin": "ve",
+      "titleWhen": "ne zaman",
+      "subtitle": "Hizmet seç, konumu ayarla, hemen bul.",
+      "serviceLabel": "Hizmet",
+      "servicePlaceholder": "Kuaför, diş, pilates…",
+      "serviceSrOnly": "Kategori / Hizmet",
+      "locationLabel": "Konum",
+      "locationSrOnly": "Konum",
+      "allCities": "Tüm şehirler",
+      "dateLabel": "Tarih",
+      "dateSrOnly": "Tarih",
+      "pickDate": "Tarih seç",
+      "calendarAria": "Tarih seçici",
+      "prevMonth": "Önceki ay",
+      "nextMonth": "Sonraki ay",
+      "clear": "Temizle",
+      "today": "Bugün",
+      "submit": "Ara",
+      "weekdays": {
+        "mon": "Pt",
+        "tue": "Sa",
+        "wed": "Ça",
+        "thu": "Pe",
+        "fri": "Cu",
+        "sat": "Ct",
+        "sun": "Pz"
+      },
+      "services": {
+        "hairdresser": "Kuaför",
+        "barber": "Berber",
+        "beautyExpert": "Güzellik Uzmanı",
+        "spa": "SPA & Hamam",
+        "massage": "Masaj Salonu",
+        "dentist": "Diş Hekimi",
+        "psychologist": "Psikolog",
+        "dietitian": "Diyetisyen",
+        "physiotherapist": "Fizyoterapist",
+        "pilates": "Pilates Eğitmeni",
+        "fitness": "Fitness & Personal Trainer",
+        "vet": "Veteriner Kliniği",
+        "auto": "Oto Tamir & Mekanik Servis",
+        "restaurant": "Restoran"
+      },
+      "areaLabels": {
+        "beauty": "Güzellik & Bakım",
+        "health": "Sağlık",
+        "sport": "Spor & Wellness",
+        "pet": "Hayvan Bakımı",
+        "auto": "Otomotiv",
+        "food": "Yeme & İçme"
+      }
+    },
+    "popularCategories": {
+      "eyebrow": "Kategoriler",
+      "title": "Popüler kategoriler",
+      "description": "İhtiyacınız olan hizmeti seçin, uygun işletmelere anında ulaşın.",
+      "linkLabel": "Tüm kategoriler",
+      "items": {
+        "kuafor": { "name": "Kuaför", "hint": "Saç & bakım" },
+        "berber": { "name": "Berber", "hint": "Erkek kuaför & sakal" },
+        "guzellik": { "name": "Güzellik", "hint": "Estetik & bakım" },
+        "spa": { "name": "Spa", "hint": "Masaj & wellness" },
+        "klinik": { "name": "Klinik", "hint": "Sağlık hizmetleri" },
+        "dis": { "name": "Diş", "hint": "Diş klinikleri" },
+        "veteriner": { "name": "Veteriner", "hint": "Pet sağlığı" },
+        "spor": { "name": "Spor", "hint": "Fitness & pilates" },
+        "oto": { "name": "Oto Servis", "hint": "Tamir & bakım" },
+        "restoran": { "name": "Restoran", "hint": "Yeme & içme" }
+      }
+    },
+    "nearby": {
+      "eyebrow": "Yakınında",
+      "title": "Yakındaki işletmeler",
+      "description": "Konumunuza veya seçtiğiniz şehre göre en yakın işletmeleri haritada görün.",
+      "linkLabel": "Tüm işletmeler",
+      "useLocation": "Konumumu kullan",
+      "locating": "Konum alınıyor…",
+      "geoError": "Konum izni alınamadı. Şehir seçerek devam edebilirsiniz.",
+      "sortedByLocation": "Konumunuza göre sıralandı (haritada kırmızı nokta).",
+      "emptyFilter": "Bu filtreye uygun işletme bulunamadı. Şehir seçimini değiştirin veya tüm işletmelere göz atın.",
+      "map": {
+        "apiKeyMissing": "Harita için Google Maps API anahtarı gerekli.",
+        "loadFailed": "Harita yüklenemedi.",
+        "viewList": "Listeyi görüntüle",
+        "loading": "Harita yükleniyor…",
+        "empty": "Bu filtrede haritada gösterilecek konumlu işletme yok.",
+        "countOnMap": "{count} işletme haritada",
+        "yourLocation": "konumunuz kırmızı",
+        "yourLocationTitle": "Konumunuz",
+        "details": "Detay →"
+      }
+    },
+    "featured": {
+      "eyebrow": "Tercih edilenler",
+      "title": "En çok tercih edilen işletmeler",
+      "description": "Yüksek puan ve gerçek yorumlara göre öne çıkan işletmeler.",
+      "empty": "Henüz puanlanmış işletme yok. Keşfetmeye başlayın."
+    },
+    "howItWorks": {
+      "eyebrow": "Çözüm",
+      "title": "Randevucum böyle çözüyor",
+      "description": "İşletmeniz için 7/24 erişim, otomasyon ve WhatsApp ile randevu yönetimi.",
+      "steps": {
+        "access": {
+          "title": "7/24 erişim",
+          "text": "Müşteri sizi buluyor; günün her saati, istediği zaman online randevu alıyor. Telefon yetiştiremediğiniz saatlerde bile işletmeniz açık kalır.",
+          "badge": "7/24 açık",
+          "notification": "Yeni randevu talebi",
+          "confirmed": "Müşteri sizi buldu · Online onaylandı",
+          "tags": { "night": "Gece", "weekend": "Hafta sonu", "holiday": "Tatil" }
+        },
+        "automation": {
+          "title": "Tam otomasyon",
+          "text": "Sistem randevuları yönetiyor, müsaitliği güncelliyor ve çakışmaları engelliyor. Siz sadece işinize odaklanıp geliyorsunuz.",
+          "badge": "Otomasyon",
+          "heading": "Sistem yönetiyor",
+          "rows": {
+            "availability": "Müsaitlik güncellendi",
+            "conflict": "Çakışma engellendi",
+            "sync": "Takvim senkron"
+          },
+          "footer": "Siz sadece geliyorsunuz"
+        },
+        "whatsapp": {
+          "title": "WhatsApp entegrasyonu",
+          "text": "Randevu onayı, hatırlatma ve bilgilendirme mesajları WhatsApp üzerinden otomatik gider. Kaçırılan randevu azalır, iletişim kopmaz.",
+          "badge": "WhatsApp",
+          "reminder": "Randevu hatırlatması: Yarın 09:30 · Kuaför Studio",
+          "reply": "Teşekkürler, geliyorum ✓",
+          "sent": "Onay + hatırlatma otomatik gönderildi"
+        }
+      }
+    },
+    "whatWeOffer": {
+      "eyebrow": "Sunulanlar",
+      "title": "Tam olarak ne sunuyoruz?",
+      "description": "Müşteri ve işletme için uçtan uca randevu altyapısı — aramadan hatırlatmaya kadar.",
+      "featuredBadge": "Ana ürün",
+      "featuredTitle": "Online randevu sistemi",
+      "featuredText": "Müşteriler işletmenizi bulur, müsait saati seçer ve tek dokunuşla randevu oluşturur. Telefon trafiği azalır, randevu akışı kesintisiz devam eder.",
+      "previewLabel": "Canlı önizleme",
+      "previewBusiness": "Kuaför Studio · Lefkoşa",
+      "slotSelected": "09:30 seçildi",
+      "bookNow": "Randevu Al",
+      "offers": {
+        "access": { "title": "7/24 erişim", "text": "Gece ve hafta sonu dahil, istediği zaman randevu alınabilir." },
+        "calendar": { "title": "Otomatik takvim", "text": "Müsaitlik, çakışma kontrolü ve onay süreci sistemde yürür." },
+        "whatsapp": { "title": "WhatsApp bildirimleri", "text": "Onay, hatırlatma ve mesajlar WhatsApp ile otomatik gider." },
+        "staff": { "title": "Personel & hizmet", "text": "Hizmet, süre ve çalışanları panelden kolayca yönetin." },
+        "search": { "title": "Akıllı arama", "text": "Kategori, şehir ve harita ile müşteriler size ulaşır." },
+        "nearby": { "title": "Yakındaki işletmeler", "text": "Konum ve harita ile en yakın seçenekler öne çıkar." },
+        "reminders": { "title": "Hatırlatma & takip", "text": "Yaklaşan randevular için otomatik uyarı; kaçırma azalır." }
+      }
+    },
+    "newest": {
+      "eyebrow": "Yeni",
+      "title": "En Yeni Eklenenler",
+      "description": "Platforma yeni katılan işletmeleri ilk siz keşfedin.",
+      "more": "Daha fazla işletme keşfet"
+    },
+    "testimonials": {
+      "eyebrow": "Yorumlar",
+      "title": "Gerçek kullanıcı deneyimleri",
+      "description": "Randevucum kullananların paylaştığı kısa notlar.",
+      "starsAria": "5 üzerinden 5 yıldız",
+      "items": {
+        "elif": { "name": "Elif K.", "initials": "EK", "city": "Lefkoşa", "text": "Kuaför randevumu iki dakikada aldım. Saatleri net görmek çok rahatlatıcı." },
+        "mert": { "name": "Mert A.", "initials": "MA", "city": "Girne", "text": "Diş kliniği için uygun slotu bulmak eskiden zordu. Şimdi tek ekrandan hallediyorum." },
+        "selin": { "name": "Selin D.", "initials": "SD", "city": "Gazimağusa", "text": "Favorilerim sayesinde her seferinde aynı salona hızlıca randevu açıyorum." }
+      }
+    },
+    "ownerCta": {
+      "eyebrow": "Hazır mısınız?",
+      "titleToday": "Bugün",
+      "titleStart": "başlayın.",
+      "description": "İlk ay ücretsiz deneyin. Online randevu, otomasyon ve WhatsApp ile işletmenizi hemen büyütün.",
+      "button": "İlk ay ücretsiz"
+    }
   },
   "pricing": {
     "eyebrow": "İşletme paketleri",

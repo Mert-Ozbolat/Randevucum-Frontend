@@ -1,10 +1,11 @@
 'use client';
 
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { BusinessCard } from '@/components/business/BusinessCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
 import { HomeSectionHeader } from '@/components/home/HomeSectionHeader';
+import { Link } from '@/i18n/navigation';
 
 export interface HomeBusiness {
   _id: string;
@@ -40,6 +41,9 @@ function sortByHighestRating(list: HomeBusiness[]): HomeBusiness[] {
 }
 
 export function HomeFeaturedBusinesses({ businesses, loading, error }: Props) {
+  const t = useTranslations('home.featured');
+  const tHome = useTranslations('home');
+  const tCommon = useTranslations('common');
   const featured = sortByHighestRating(
     businesses.filter((b) => (b.averageRating ?? b.rating ?? 0) > 0)
   ).slice(0, 6);
@@ -47,11 +51,11 @@ export function HomeFeaturedBusinesses({ businesses, loading, error }: Props) {
   return (
     <AnimateIn as="section" animation="slide-up">
       <HomeSectionHeader
-        eyebrow="Tercih edilenler"
-        title="En çok tercih edilen işletmeler"
-        description="Yüksek puan ve gerçek yorumlara göre öne çıkan işletmeler."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         href="/business"
-        linkLabel="Tümünü gör"
+        linkLabel={tCommon('seeAll')}
       />
 
       {loading && (
@@ -64,7 +68,7 @@ export function HomeFeaturedBusinesses({ businesses, loading, error }: Props) {
 
       {error && !loading && (
         <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 px-6 py-10 text-center dark:border-red-800 dark:bg-red-900/20">
-          <p className="text-red-800 dark:text-red-200">İşletmeler yüklenemedi.</p>
+          <p className="text-red-800 dark:text-red-200">{tHome('errors.businessesLoadFailed')}</p>
         </div>
       )}
 
@@ -95,14 +99,12 @@ export function HomeFeaturedBusinesses({ businesses, loading, error }: Props) {
 
       {!loading && !error && featured.length === 0 && (
         <div className="mt-8 rounded-3xl border border-dashed border-neutral-300 bg-white px-8 py-14 text-center dark:border-neutral-600 dark:bg-neutral-800/40">
-          <p className="text-neutral-600 dark:text-neutral-300">
-            Henüz puanlanmış işletme yok. Keşfetmeye başlayın.
-          </p>
+          <p className="text-neutral-600 dark:text-neutral-300">{t('empty')}</p>
           <Link
             href="/business"
             className="mt-5 inline-flex rounded-2xl bg-primary-500 px-6 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-primary-600"
           >
-            İşletmeleri keşfet
+            {tHome('exploreBusinesses')}
           </Link>
         </div>
       )}

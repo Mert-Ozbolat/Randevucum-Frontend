@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { HomeSectionHeader } from '@/components/home/HomeSectionHeader';
 import {
@@ -9,6 +9,7 @@ import {
   countBusinessesForCategory,
 } from '@/lib/homePopularCategories';
 import type { HomeBusiness } from '@/components/home/HomeFeaturedBusinesses';
+import { Link } from '@/i18n/navigation';
 
 interface Props {
   businesses: HomeBusiness[];
@@ -16,6 +17,9 @@ interface Props {
 }
 
 export function HomePopularCategories({ businesses, loading = false }: Props) {
+  const t = useTranslations('home.popularCategories');
+  const tHome = useTranslations('home');
+
   return (
     <AnimateIn
       as="section"
@@ -24,15 +28,14 @@ export function HomePopularCategories({ businesses, loading = false }: Props) {
       aria-labelledby="home-categories-title"
     >
       <HomeSectionHeader
-        eyebrow="Kategoriler"
-        title="Popüler kategoriler"
-        description="İhtiyacınız olan hizmeti seçin, uygun işletmelere anında ulaşın."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         href="/business"
-        linkLabel="Tüm kategoriler"
+        linkLabel={t('linkLabel')}
         titleId="home-categories-title"
       />
 
-      {/* Mobile: horizontal snap strip */}
       <div className="mt-8 sm:hidden">
         <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory scrollbar-hide">
           {HOME_POPULAR_CATEGORIES.map((cat) => {
@@ -48,7 +51,7 @@ export function HomePopularCategories({ businesses, loading = false }: Props) {
                   <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                 </span>
                 <span className="mt-3 text-sm font-semibold text-neutral-900 dark:text-white">
-                  {cat.name}
+                  {t(`items.${cat.id}.name`)}
                 </span>
                 <span className="mt-0.5 text-[11px] text-neutral-500 dark:text-neutral-400">
                   {loading ? '…' : `${count}`}
@@ -59,7 +62,6 @@ export function HomePopularCategories({ businesses, loading = false }: Props) {
         </div>
       </div>
 
-      {/* Desktop / tablet: clean list panel */}
       <div className="mt-8 hidden overflow-hidden rounded-3xl border border-neutral-200/90 bg-white dark:border-neutral-700 dark:bg-neutral-900 sm:block">
         <ul className="divide-y divide-neutral-100 dark:divide-neutral-800 sm:grid sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-2 xl:grid-cols-2">
           {HOME_POPULAR_CATEGORIES.map((cat, i) => {
@@ -88,14 +90,14 @@ export function HomePopularCategories({ businesses, loading = false }: Props) {
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
                       <span className="truncate text-base font-semibold text-neutral-900 dark:text-white">
-                        {cat.name}
+                        {t(`items.${cat.id}.name`)}
                       </span>
                       <span className="hidden text-xs text-neutral-400 sm:inline dark:text-neutral-500">
-                        · {cat.hint}
+                        · {t(`items.${cat.id}.hint`)}
                       </span>
                     </span>
                     <span className="mt-0.5 block text-sm text-neutral-500 dark:text-neutral-400">
-                      {loading ? '…' : `${count} işletme`}
+                      {loading ? '…' : tHome('businessCount', { count })}
                     </span>
                   </span>
                   <ArrowRight

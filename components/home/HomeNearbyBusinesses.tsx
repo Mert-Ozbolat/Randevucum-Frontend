@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { LocateFixed } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { BusinessCard } from '@/components/business/BusinessCard';
 import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -40,6 +41,8 @@ export function HomeNearbyBusinesses({
   error,
   tone = 'light',
 }: Props) {
+  const t = useTranslations('home.nearby');
+  const tHome = useTranslations('home');
   const dark = tone === 'dark';
   const [city, setCity] = useState('');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -126,11 +129,11 @@ export function HomeNearbyBusinesses({
   return (
     <AnimateIn as="section" animation="slide-up" aria-labelledby="home-nearby-title">
       <HomeSectionHeader
-        eyebrow="Yakınında"
-        title="Yakındaki işletmeler"
-        description="Konumunuza veya seçtiğiniz şehre göre en yakın işletmeleri haritada görün."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         href="/business"
-        linkLabel="Tüm işletmeler"
+        linkLabel={t('linkLabel')}
         titleId="home-nearby-title"
         tone={tone}
       />
@@ -147,7 +150,7 @@ export function HomeNearbyBusinesses({
           disabled={geoPending}
         >
           <LocateFixed className="mr-1.5 h-4 w-4" aria-hidden />
-          {geoPending ? 'Konum alınıyor…' : 'Konumumu kullan'}
+          {geoPending ? t('locating') : t('useLocation')}
         </Button>
         {KKTC_CITIES.map((c) => (
           <button
@@ -175,7 +178,7 @@ export function HomeNearbyBusinesses({
           className={`mt-3 text-sm ${dark ? 'text-neutral-400' : 'text-neutral-500 dark:text-neutral-400'}`}
           role="status"
         >
-          Konum izni alınamadı. Şehir seçerek devam edebilirsiniz.
+          {t('geoError')}
         </p>
       )}
       {coords && !geoError && (
@@ -183,7 +186,7 @@ export function HomeNearbyBusinesses({
           className={`mt-3 text-sm ${dark ? 'text-primary-400' : 'text-primary-600 dark:text-primary-400'}`}
           role="status"
         >
-          Konumunuza göre sıralandı (haritada kırmızı nokta).
+          {t('sortedByLocation')}
         </p>
       )}
 
@@ -200,7 +203,7 @@ export function HomeNearbyBusinesses({
 
       {error && !loading && (
         <div className="mt-8 rounded-3xl border border-red-200 bg-red-50 px-6 py-10 text-center dark:border-red-800 dark:bg-red-900/20">
-          <p className="text-red-800 dark:text-red-200">İşletmeler yüklenemedi.</p>
+          <p className="text-red-800 dark:text-red-200">{tHome('errors.businessesLoadFailed')}</p>
         </div>
       )}
 
@@ -250,10 +253,7 @@ export function HomeNearbyBusinesses({
                   : 'border-neutral-300 bg-white text-neutral-600 dark:border-neutral-600 dark:bg-neutral-800/50 dark:text-neutral-300'
               }`}
             >
-              <p>
-                Bu filtreye uygun işletme bulunamadı. Şehir seçimini değiştirin veya tüm işletmelere
-                göz atın.
-              </p>
+              <p>{t('emptyFilter')}</p>
             </div>
           )}
         </div>

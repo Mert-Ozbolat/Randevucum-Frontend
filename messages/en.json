@@ -71,7 +71,195 @@
     "pricingEyebrow": "Plans",
     "pricingTitle": "Transparent pricing for your business",
     "pricingDescription": "Try free for {days} days. Monthly, quarterly, or yearly — same features.",
-    "pricingDetails": "View all details"
+    "pricingDetails": "View all details",
+    "errors": {
+      "businessesLoadFailed": "Could not load businesses."
+    },
+    "businessCount": "{count} businesses",
+    "exploreBusinesses": "Explore businesses",
+    "search": {
+      "ariaLabel": "Quick booking search",
+      "eyebrow": "Quick search",
+      "titlePrefix": "What are you looking for,",
+      "titleWhere": "where",
+      "titleJoin": "and",
+      "titleWhen": "when",
+      "subtitle": "Pick a service, set location, find it fast.",
+      "serviceLabel": "Service",
+      "servicePlaceholder": "Hair salon, dental, pilates…",
+      "serviceSrOnly": "Category / Service",
+      "locationLabel": "Location",
+      "locationSrOnly": "Location",
+      "allCities": "All cities",
+      "dateLabel": "Date",
+      "dateSrOnly": "Date",
+      "pickDate": "Pick a date",
+      "calendarAria": "Date picker",
+      "prevMonth": "Previous month",
+      "nextMonth": "Next month",
+      "clear": "Clear",
+      "today": "Today",
+      "submit": "Search",
+      "weekdays": {
+        "mon": "Mo",
+        "tue": "Tu",
+        "wed": "We",
+        "thu": "Th",
+        "fri": "Fr",
+        "sat": "Sa",
+        "sun": "Su"
+      },
+      "services": {
+        "hairdresser": "Hair salon",
+        "barber": "Barber",
+        "beautyExpert": "Beauty specialist",
+        "spa": "SPA & Hammam",
+        "massage": "Massage salon",
+        "dentist": "Dentist",
+        "psychologist": "Psychologist",
+        "dietitian": "Dietitian",
+        "physiotherapist": "Physiotherapist",
+        "pilates": "Pilates instructor",
+        "fitness": "Fitness & personal trainer",
+        "vet": "Veterinary clinic",
+        "auto": "Auto repair & mechanic",
+        "restaurant": "Restaurant"
+      },
+      "areaLabels": {
+        "beauty": "Beauty & Care",
+        "health": "Health",
+        "sport": "Sports & Wellness",
+        "pet": "Pet care",
+        "auto": "Automotive",
+        "food": "Food & Drink"
+      }
+    },
+    "popularCategories": {
+      "eyebrow": "Categories",
+      "title": "Popular categories",
+      "description": "Choose the service you need and reach the right businesses instantly.",
+      "linkLabel": "All categories",
+      "items": {
+        "kuafor": { "name": "Hair salon", "hint": "Hair & care" },
+        "berber": { "name": "Barber", "hint": "Men's grooming" },
+        "guzellik": { "name": "Beauty", "hint": "Aesthetics & care" },
+        "spa": { "name": "Spa", "hint": "Massage & wellness" },
+        "klinik": { "name": "Clinic", "hint": "Healthcare" },
+        "dis": { "name": "Dental", "hint": "Dental clinics" },
+        "veteriner": { "name": "Veterinary", "hint": "Pet health" },
+        "spor": { "name": "Sports", "hint": "Fitness & pilates" },
+        "oto": { "name": "Auto service", "hint": "Repair & maintenance" },
+        "restoran": { "name": "Restaurant", "hint": "Food & drink" }
+      }
+    },
+    "nearby": {
+      "eyebrow": "Nearby",
+      "title": "Businesses near you",
+      "description": "See the closest businesses on the map by your location or selected city.",
+      "linkLabel": "All businesses",
+      "useLocation": "Use my location",
+      "locating": "Getting location…",
+      "geoError": "Location permission denied. You can continue by selecting a city.",
+      "sortedByLocation": "Sorted by your location (red dot on map).",
+      "emptyFilter": "No businesses match this filter. Change the city or browse all businesses.",
+      "map": {
+        "apiKeyMissing": "Google Maps API key is required for the map.",
+        "loadFailed": "Could not load map.",
+        "viewList": "View list",
+        "loading": "Loading map…",
+        "empty": "No businesses with location to show on the map for this filter.",
+        "countOnMap": "{count} businesses on map",
+        "yourLocation": "your location in red",
+        "yourLocationTitle": "Your location",
+        "details": "Details →"
+      }
+    },
+    "featured": {
+      "eyebrow": "Top picks",
+      "title": "Most popular businesses",
+      "description": "Featured businesses with high ratings and real reviews.",
+      "empty": "No rated businesses yet. Start exploring."
+    },
+    "howItWorks": {
+      "eyebrow": "Solution",
+      "title": "How Randevucum solves it",
+      "description": "24/7 access, automation, and WhatsApp booking management for your business.",
+      "steps": {
+        "access": {
+          "title": "24/7 access",
+          "text": "Customers find you and book online anytime. Your business stays open even when you can't answer the phone.",
+          "badge": "Open 24/7",
+          "notification": "New booking request",
+          "confirmed": "Customer found you · Confirmed online",
+          "tags": { "night": "Night", "weekend": "Weekend", "holiday": "Holiday" }
+        },
+        "automation": {
+          "title": "Full automation",
+          "text": "The system manages bookings, updates availability, and prevents conflicts. You just focus on your work.",
+          "badge": "Automation",
+          "heading": "System handles it",
+          "rows": {
+            "availability": "Availability updated",
+            "conflict": "Conflict prevented",
+            "sync": "Calendar synced"
+          },
+          "footer": "You just show up"
+        },
+        "whatsapp": {
+          "title": "WhatsApp integration",
+          "text": "Confirmations, reminders, and updates go out automatically via WhatsApp. Fewer no-shows, better communication.",
+          "badge": "WhatsApp",
+          "reminder": "Booking reminder: Tomorrow 09:30 · Hair Studio",
+          "reply": "Thanks, I'll be there ✓",
+          "sent": "Confirmation + reminder sent automatically"
+        }
+      }
+    },
+    "whatWeOffer": {
+      "eyebrow": "What we offer",
+      "title": "What exactly do we offer?",
+      "description": "End-to-end booking infrastructure for customers and businesses — from search to reminders.",
+      "featuredBadge": "Core product",
+      "featuredTitle": "Online booking system",
+      "featuredText": "Customers find your business, pick an available slot, and book in one tap. Less phone traffic, smoother flow.",
+      "previewLabel": "Live preview",
+      "previewBusiness": "Hair Studio · Nicosia",
+      "slotSelected": "09:30 selected",
+      "bookNow": "Book now",
+      "offers": {
+        "access": { "title": "24/7 access", "text": "Book anytime, including nights and weekends." },
+        "calendar": { "title": "Auto calendar", "text": "Availability, conflict checks, and approvals run in the system." },
+        "whatsapp": { "title": "WhatsApp notifications", "text": "Confirmations, reminders, and messages sent automatically." },
+        "staff": { "title": "Staff & services", "text": "Manage services, durations, and staff from the dashboard." },
+        "search": { "title": "Smart search", "text": "Customers reach you via category, city, and map." },
+        "nearby": { "title": "Nearby businesses", "text": "Location and map surface the closest options." },
+        "reminders": { "title": "Reminders & follow-up", "text": "Automatic alerts for upcoming bookings; fewer missed appointments." }
+      }
+    },
+    "newest": {
+      "eyebrow": "New",
+      "title": "Recently added",
+      "description": "Be the first to discover businesses that just joined the platform.",
+      "more": "Discover more businesses"
+    },
+    "testimonials": {
+      "eyebrow": "Reviews",
+      "title": "Real user experiences",
+      "description": "Short notes from people who use Randevucum.",
+      "starsAria": "5 out of 5 stars",
+      "items": {
+        "elif": { "name": "Elif K.", "initials": "EK", "city": "Nicosia", "text": "I booked my hair appointment in two minutes. Seeing clear time slots is so reassuring." },
+        "mert": { "name": "Mert A.", "initials": "MA", "city": "Kyrenia", "text": "Finding a dental slot used to be hard. Now I do it from one screen." },
+        "selin": { "name": "Selin D.", "initials": "SD", "city": "Famagusta", "text": "With favorites I quickly book the same salon every time." }
+      }
+    },
+    "ownerCta": {
+      "eyebrow": "Ready?",
+      "titleToday": "Start",
+      "titleStart": "today.",
+      "description": "Try free for the first month. Grow your business with online booking, automation, and WhatsApp.",
+      "button": "First month free"
+    }
   },
   "pricing": {
     "eyebrow": "Business plans",

@@ -1,11 +1,12 @@
-"use client";
+'use client';
 
-import Link from "next/link";
-import { AnimateIn } from "@/components/ui/AnimateIn";
-import { BusinessCard } from "@/components/business/BusinessCard";
-import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
-import { HomeSectionHeader } from "@/components/home/HomeSectionHeader";
-import type { HomeBusiness } from "@/components/home/HomeFeaturedBusinesses";
+import { useTranslations } from 'next-intl';
+import { AnimateIn } from '@/components/ui/AnimateIn';
+import { BusinessCard } from '@/components/business/BusinessCard';
+import { CardSkeleton } from '@/components/ui/LoadingSkeleton';
+import { HomeSectionHeader } from '@/components/home/HomeSectionHeader';
+import type { HomeBusiness } from '@/components/home/HomeFeaturedBusinesses';
+import { Link } from '@/i18n/navigation';
 
 interface Props {
   businesses: HomeBusiness[];
@@ -21,6 +22,8 @@ function sortByNewest(list: HomeBusiness[]): HomeBusiness[] {
 }
 
 export function HomeNewestBusinesses({ businesses, loading }: Props) {
+  const t = useTranslations('home.newest');
+  const tCommon = useTranslations('common');
   const newest = sortByNewest(businesses).slice(0, 6);
 
   if (!loading && newest.length === 0) return null;
@@ -28,11 +31,11 @@ export function HomeNewestBusinesses({ businesses, loading }: Props) {
   return (
     <AnimateIn as="section" animation="slide-up">
       <HomeSectionHeader
-        eyebrow="Yeni"
-        title="En Yeni Eklenenler"
-        description="Platforma yeni katılan işletmeleri ilk siz keşfedin."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         href="/business"
-        linkLabel="Tümünü gör"
+        linkLabel={tCommon('seeAll')}
       />
 
       {loading ? (
@@ -67,7 +70,7 @@ export function HomeNewestBusinesses({ businesses, loading }: Props) {
             href="/business"
             className="inline-flex rounded-2xl border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-primary-300"
           >
-            Daha fazla işletme keşfet
+            {t('more')}
           </Link>
         </div>
       )}
