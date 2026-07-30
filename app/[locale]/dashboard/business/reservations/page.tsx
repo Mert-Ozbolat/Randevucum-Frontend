@@ -207,7 +207,8 @@ export default function BusinessReservationsPage() {
             <div className="mt-5 flex flex-wrap gap-3">
               <Button
                 type="button"
-                className="rounded-xl bg-white text-slate-900 hover:bg-slate-100"
+                variant="secondary"
+                className="rounded-xl border-0 !bg-white !text-slate-900 shadow-sm hover:!bg-slate-100"
                 onClick={() => setManualModalOpen(true)}
               >
                 <CalendarPlus className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden />

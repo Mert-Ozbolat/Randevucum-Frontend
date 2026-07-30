@@ -110,8 +110,14 @@ export function HomeSearchBar() {
     } else if (service.trim()) {
       params.set('profession', service.trim());
     }
-    if (city) sessionStorage.setItem('homeSearchCity', city);
-    if (date) sessionStorage.setItem('homeSearchDate', date);
+    if (city) {
+      params.set('city', city);
+      sessionStorage.setItem('homeSearchCity', city);
+    }
+    if (date) {
+      params.set('date', date);
+      sessionStorage.setItem('homeSearchDate', date);
+    }
     const qs = params.toString();
     router.push(qs ? `/business?${qs}` : '/business');
   };
@@ -152,7 +158,11 @@ export function HomeSearchBar() {
 
           <div className="relative grid gap-3 overflow-visible lg:grid-cols-[1.45fr_1fr_1fr_auto] lg:gap-0 lg:overflow-visible lg:rounded-2xl lg:bg-neutral-200/60 lg:p-px dark:lg:bg-neutral-700/60">
             {/* Service */}
-            <div className="relative z-[110] rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:rounded-l-2xl lg:ring-0">
+            <div
+              className={`relative rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:rounded-l-2xl lg:ring-0 ${
+                openSuggest ? 'z-50' : 'z-30'
+              }`}
+            >
               <label htmlFor="home-service" className="sr-only">
                 Kategori / Hizmet
               </label>
@@ -191,7 +201,7 @@ export function HomeSearchBar() {
                 <ul
                   id="home-service-suggestions"
                   role="listbox"
-                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-[120] max-h-80 overflow-auto rounded-2xl border border-neutral-200 bg-white py-1.5 shadow-soft dark:border-neutral-600 dark:bg-neutral-900"
+                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 max-h-80 overflow-auto rounded-2xl border border-neutral-200 bg-white py-1.5 shadow-soft dark:border-neutral-600 dark:bg-neutral-900"
                 >
                   {suggestions.map((s) => (
                     <li key={`${s.area}-${s.name}`} role="option" aria-selected={service === s.name}>
@@ -217,7 +227,7 @@ export function HomeSearchBar() {
             </div>
 
             {/* City */}
-            <div className="relative z-[105] rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:ring-0">
+            <div className="relative z-20 rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:ring-0">
               <label htmlFor="home-city" className="sr-only">
                 Konum
               </label>
@@ -251,7 +261,11 @@ export function HomeSearchBar() {
             </div>
 
             {/* Date — custom calendar */}
-            <div className="relative z-[110] rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:ring-0">
+            <div
+              className={`relative rounded-2xl bg-white ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:ring-0 ${
+                openCalendar ? 'z-50' : 'z-20'
+              }`}
+            >
               <p className="sr-only">Tarih</p>
               <button
                 type="button"
@@ -287,7 +301,7 @@ export function HomeSearchBar() {
                 <div
                   role="dialog"
                   aria-label="Tarih seçici"
-                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-[120] w-full min-w-[280px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft dark:border-neutral-600 dark:bg-neutral-900 sm:left-auto sm:right-0 sm:w-[320px]"
+                  className="absolute left-0 right-0 top-[calc(100%+8px)] z-50 w-full min-w-[280px] rounded-2xl border border-neutral-200 bg-white p-4 shadow-soft dark:border-neutral-600 dark:bg-neutral-900 sm:left-auto sm:right-0 sm:w-[320px]"
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <button
@@ -381,7 +395,7 @@ export function HomeSearchBar() {
             </div>
 
             {/* Submit */}
-            <div className="relative z-[100] flex items-center rounded-2xl bg-white p-3 ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:rounded-r-2xl lg:p-2.5 lg:ring-0">
+            <div className="relative z-10 flex items-center rounded-2xl bg-white p-3 ring-1 ring-neutral-200/80 dark:bg-neutral-900 dark:ring-neutral-700 lg:rounded-none lg:rounded-r-2xl lg:p-2.5 lg:ring-0">
               <Button
                 type="submit"
                 size="lg"

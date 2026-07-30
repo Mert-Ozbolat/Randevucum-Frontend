@@ -127,7 +127,8 @@ export default function StaffReservationsPage() {
           <div className="mt-5">
             <Button
               type="button"
-              className="rounded-xl bg-white text-primary-800 hover:bg-primary-50"
+              variant="secondary"
+              className="rounded-xl border-0 !bg-white !text-primary-800 shadow-sm hover:!bg-primary-50"
               onClick={() => setManualModalOpen(true)}
             >
               <CalendarPlus className="mr-2 h-4 w-4" strokeWidth={2} aria-hidden />

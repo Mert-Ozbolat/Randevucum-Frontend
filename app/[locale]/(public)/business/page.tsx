@@ -36,13 +36,18 @@ function BusinessListPage() {
   const type = searchParams.get('type') || '';
   const areaFilter = searchParams.get('area') || '';
   const professionFilter = searchParams.get('profession') || '';
+  const cityParam = searchParams.get('city') || '';
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('default');
-  const [locationFilter, setLocationFilter] = useState('');
+  const [locationFilter, setLocationFilter] = useState(cityParam);
   const [todayOnly, setTodayOnly] = useState(false);
+
+  useEffect(() => {
+    setLocationFilter(cityParam);
+  }, [cityParam]);
 
   useEffect(() => {
     const shouldUseAreaProfession = !!areaFilter || !!professionFilter;

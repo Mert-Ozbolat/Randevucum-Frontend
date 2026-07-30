@@ -8,6 +8,7 @@ import { isImageKitReady, uploadFileToImageKit } from '@/lib/imagekitUpload';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { phoneDigitsOnly, phoneInputFromStored } from '@/lib/phone';
 import { useAuthStore } from '@/store/authStore';
+import { useStaffPanel } from '@/contexts/StaffPanelContext';
 import { useToast } from '@/components/ui/Toast';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
@@ -17,6 +18,7 @@ export default function ProfilePage() {
   const storeUser = useAuthStore((s) => s.user);
   const setStoreAuth = useAuthStore((s) => s.setAuth);
   const token = useAuthStore((s) => s.token);
+  const { refreshStaffMe } = useStaffPanel();
   const { addToast } = useToast();
 
   const [firstName, setFirstName] = useState('');
@@ -118,6 +120,7 @@ export default function ProfilePage() {
         setStoreAuth(token, merged);
       }
       setPhone(phoneInputFromStored(updated.phone));
+      refreshStaffMe();
       addToast('success', 'Profil kaydedildi.');
     } catch (err) {
       const msg = getApiErrorMessage(err);
