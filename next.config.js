@@ -1,3 +1,7 @@
+const createNextIntlPlugin = require('next-intl/plugin');
+
+const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -7,7 +11,6 @@ const nextConfig = {
       { protocol: 'http', hostname: '**' },
     ],
   },
-  // Google Identity Services uses a popup/postMessage; strict COOP breaks the flow in some browsers.
   async headers() {
     return [
       {
@@ -18,9 +21,16 @@ const nextConfig = {
         source: '/register',
         headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' }],
       },
+      {
+        source: '/:locale/login',
+        headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' }],
+      },
+      {
+        source: '/:locale/register',
+        headers: [{ key: 'Cross-Origin-Opener-Policy', value: 'unsafe-none' }],
+      },
     ];
   },
-  // Prevent stale webpack cache errors (Cannot find module './638.js', page_client-reference-manifest)
   webpack: (config, { dev }) => {
     if (dev) {
       config.cache = false;
@@ -29,4 +39,4 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);

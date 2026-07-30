@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   Calendar,
   Heart,
@@ -12,18 +11,13 @@ import {
   X,
 } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
-import { usePathname } from "next/navigation";
+import { usePathname, Link } from "@/i18n/navigation";
 import { clearAuth, isBusinessOwner, isCustomer } from "@/lib/auth";
 import { Logo } from "@/components/brand/Logo";
-
-const publicLinks = [
-  { href: "/", label: "Ana Sayfa" },
-  { href: "/business", label: "İşletmeler" },
-  { href: "/business/discover", label: "Keşfet" },
-  { href: "/pricing", label: "Fiyatlar" },
-] as const;
+import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 
 type QuickLink = {
   href: string;
@@ -32,10 +26,19 @@ type QuickLink = {
 };
 
 export function Navbar() {
+  const t = useTranslations("common");
+  const tn = useTranslations("nav");
   const { user, token, logout: storeLogout } = useAuthStore();
   const { theme, setTheme } = useThemeStore();
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  const publicLinks = [
+    { href: "/", label: tn("home") },
+    { href: "/business", label: tn("businesses") },
+    { href: "/business/discover", label: tn("discover") },
+    { href: "/pricing", label: tn("pricing") },
+  ] as const;
 
   useEffect(() => {
     setMobileOpen(false);
@@ -73,15 +76,15 @@ export function Navbar() {
       ? [
           {
             href: "/dashboard/customer/reservations",
-            label: "Randevularım",
+            label: tn("myReservations"),
             Icon: Calendar,
           },
           {
             href: "/dashboard/customer/favorites",
-            label: "Favorilerim",
+            label: tn("favorites"),
             Icon: Heart,
           },
-          { href: "/dashboard/profile", label: "Profil", Icon: User },
+          { href: "/dashboard/profile", label: tn("profile"), Icon: User },
         ]
       : null;
 
@@ -90,17 +93,17 @@ export function Navbar() {
       ? [
           {
             href: "/dashboard/business",
-            label: "İşletme paneli",
+            label: tn("businessPanel"),
             Icon: Building2,
           },
           {
             href: "/dashboard/business/reservations",
-            label: "Randevular",
+            label: tn("reservations"),
             Icon: Calendar,
           },
           {
             href: "/dashboard/customer/favorites",
-            label: "Favorilerim",
+            label: tn("favorites"),
             Icon: Heart,
           },
         ]
@@ -150,7 +153,6 @@ export function Navbar() {
           <Logo className="hidden sm:inline-flex" />
         </div>
 
-        {/* Masaüstü / geniş tablet — yatay menü (lg+) */}
         <nav className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
           <div className="flex max-w-full items-center gap-0.5 rounded-full border border-neutral-200/80 bg-neutral-50/90 px-1 py-1 dark:border-neutral-700 dark:bg-neutral-800/80 xl:gap-1 xl:px-1.5">
             {publicLinks.map(({ href, label }) => (
@@ -182,12 +184,14 @@ export function Navbar() {
             </div>
           )}
 
+          <LanguageSwitcher compact />
+
           <button
             type="button"
             onClick={toggleDark}
             className="rounded-full p-2 text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900 sm:p-2.5 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-            title={theme === "dark" ? "Açık mod" : "Koyu mod"}
-            aria-label={theme === "dark" ? "Açık moda geç" : "Koyu moda geç"}
+            title={theme === "dark" ? t("lightMode") : t("darkMode")}
+            aria-label={theme === "dark" ? t("switchToLight") : t("switchToDark")}
           >
             {theme === "dark" ? (
               <Sun className="h-5 w-5" strokeWidth={1.75} aria-hidden />
@@ -202,14 +206,14 @@ export function Navbar() {
                 href="/dashboard"
                 className="rounded-full bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 xl:px-4 xl:py-2 xl:text-sm"
               >
-                Panel
+                {t("panel")}
               </Link>
               <button
                 type="button"
                 onClick={handleLogout}
                 className="rounded-full px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100 xl:px-3 xl:py-2 xl:text-sm"
               >
-                Çıkış
+                {t("logout")}
               </button>
             </div>
           ) : (
@@ -218,13 +222,13 @@ export function Navbar() {
                 href="/login"
                 className="rounded-full px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 xl:px-3 xl:py-2 xl:text-sm"
               >
-                Giriş
+                {t("login")}
               </Link>
               <Link
                 href="/register"
                 className="rounded-full bg-primary-500 px-3 py-1.5 text-xs font-semibold text-white shadow-soft transition hover:bg-primary-600 dark:bg-primary-600 dark:hover:bg-primary-700 xl:px-4 xl:py-2 xl:text-sm"
               >
-                Ücretsiz Başla
+                {t("startFree")}
               </Link>
             </div>
           )}
@@ -234,7 +238,7 @@ export function Navbar() {
             className="inline-flex rounded-full p-2 text-neutral-700 hover:bg-neutral-100 sm:p-2.5 lg:hidden dark:text-neutral-200 dark:hover:bg-neutral-800"
             aria-expanded={mobileOpen}
             aria-controls="mobile-nav"
-            aria-label={mobileOpen ? "Menüyü kapat" : "Menüyü aç"}
+            aria-label={mobileOpen ? t("closeMenu") : t("openMenu")}
             onClick={() => setMobileOpen((o) => !o)}
           >
             {mobileOpen ? (
@@ -246,12 +250,11 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobil / tablet menü (lg altı) */}
       {mobileOpen && (
         <>
           <button
             type="button"
-            aria-label="Menüyü kapat"
+            aria-label={t("closeMenu")}
             className="fixed inset-0 z-40 animate-fade-in bg-neutral-900/50 backdrop-blur-[2px] lg:hidden"
             onClick={() => setMobileOpen(false)}
           />
@@ -260,9 +263,12 @@ export function Navbar() {
             className="absolute left-0 right-0 top-full z-50 max-h-[calc(100dvh-3.5rem)] animate-slide-down overflow-y-auto border-t border-neutral-200 bg-white shadow-lg sm:max-h-[calc(100dvh-4.25rem)] dark:border-neutral-700 dark:bg-neutral-900 lg:hidden"
           >
             <nav className="mx-auto max-w-7xl px-3 py-3 sm:px-6">
-              <p className="px-4 pb-1 text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-                Menü
-              </p>
+              <div className="mb-3 flex items-center justify-between px-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
+                  {t("menu")}
+                </p>
+                <LanguageSwitcher />
+              </div>
               <div className="flex flex-col gap-0.5">
                 {publicLinks.map(({ href, label }) => (
                   <Link
@@ -279,7 +285,7 @@ export function Navbar() {
               {roleQuick && roleQuick.length > 0 && (
                 <>
                   <p className="mb-1 mt-4 px-4 text-xs font-semibold uppercase tracking-wide text-neutral-400 dark:text-neutral-500">
-                    Hesabım
+                    {t("myAccount")}
                   </p>
                   <div className="flex flex-col gap-0.5">
                     {roleQuick.map(({ href, label, Icon }) => (
@@ -309,7 +315,7 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="rounded-xl bg-primary-500 py-3 text-center text-sm font-semibold text-white shadow-soft"
                     >
-                      Panel
+                      {t("panel")}
                     </Link>
                     <button
                       type="button"
@@ -319,7 +325,7 @@ export function Navbar() {
                       }}
                       className="rounded-xl py-3 text-sm font-medium text-neutral-600 dark:text-neutral-300"
                     >
-                      Çıkış
+                      {t("logout")}
                     </button>
                   </>
                 ) : (
@@ -329,14 +335,14 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="rounded-xl border border-neutral-200 py-3 text-center text-sm font-medium text-neutral-700 dark:border-neutral-600 dark:text-neutral-200"
                     >
-                      Giriş
+                      {t("login")}
                     </Link>
                     <Link
                       href="/register"
                       onClick={() => setMobileOpen(false)}
                       className="rounded-xl bg-primary-500 py-3 text-center text-sm font-semibold text-white shadow-soft"
                     >
-                      Ücretsiz Başla
+                      {t("startFree")}
                     </Link>
                   </>
                 )}

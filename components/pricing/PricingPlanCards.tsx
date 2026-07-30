@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/navigation';
 import {
   Bell,
   Calendar,
@@ -14,13 +15,10 @@ import {
   Video,
   Zap,
 } from 'lucide-react';
-import { PLAN_FEATURES } from '@/lib/subscriptionTrial';
 import {
   formatTry,
   isCheckoutPlan,
   monthlyEquivalent,
-  planBadge,
-  planDescription,
   savingsPercent,
   type PublicPlan,
 } from '@/lib/pricing';
@@ -60,7 +58,32 @@ export function PricingPlanCards({
   compact = false,
   showcase = false,
 }: PricingPlanCardsProps) {
+  const t = useTranslations('pricing');
+  const tc = useTranslations('common');
+  const tf = useTranslations('features');
   const showFeatures = !compact && !showcase;
+
+  const featureList = [
+    tf('unlimitedReservations'),
+    tf('unlimitedStaff'),
+    tf('whatsapp'),
+    tf('services'),
+    tf('visibility'),
+    tf('discoverVideo'),
+    tf('support'),
+  ];
+
+  const planDesc = (plan: PublicPlan) => {
+    if (plan.billingPeriod === 'yearly') return t('planYearly');
+    if (plan.billingPeriod === 'quarterly') return t('planQuarterly');
+    return t('planMonthly');
+  };
+
+  const planBadgeLabel = (plan: PublicPlan) => {
+    if (plan.billingPeriod === 'quarterly') return t('badgeBest');
+    if (plan.billingPeriod === 'yearly') return t('badgeYearly');
+    return null;
+  };
 
   return (
     <div
@@ -71,7 +94,7 @@ export function PricingPlanCards({
       }
     >
       {plans.map((plan) => {
-        const badge = planBadge(plan);
+        const badge = planBadgeLabel(plan);
         const highlighted = plan.billingPeriod === 'quarterly';
         const equiv = monthlyEquivalent(plan);
         const savings = savingsPercent(plan);
@@ -153,7 +176,7 @@ export function PricingPlanCards({
                           : 'text-neutral-500 dark:text-neutral-400'
                       }`}
                     >
-                      {planDescription(plan)}
+                      {planDesc(plan)}
                     </p>
                   </div>
                 </div>
@@ -185,21 +208,21 @@ export function PricingPlanCards({
                         : 'bg-primary-50 text-primary-700 dark:bg-primary-950/40 dark:text-primary-300'
                     }`}
                   >
-                    Aylık ~{formatTry(equiv)} · %{savings} tasarruf
+                    {t('savings', { amount: formatTry(equiv), percent: savings })}
                   </p>
                 )}
 
                 {trialActive && (
                   <p className="mt-3 inline-flex items-center gap-1.5 text-sm font-medium text-primary-400">
                     <Sparkles className="h-3.5 w-3.5" aria-hidden />
-                    Deneme süresince ücretsiz
+                    {t('trialFree')}
                   </p>
                 )}
               </div>
 
               {showFeatures && (
                 <ul className="mb-6 flex-1 space-y-2.5 border-t border-neutral-100 pt-5 text-sm text-neutral-700 dark:border-neutral-800 dark:text-neutral-200">
-                  {PLAN_FEATURES.map((f) => (
+                  {featureList.map((f) => (
                     <li key={f} className="flex items-start gap-2">
                       <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden />
                       {f}
@@ -217,9 +240,8 @@ export function PricingPlanCards({
                       ? 'bg-white/10 text-neutral-400'
                       : 'border border-neutral-200 bg-neutral-100 text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400'
                   }`}
-                  title="Deneme süresince satın alma kapalı"
                 >
-                  Deneme süresinde
+                  {t('duringTrial')}
                 </p>
               ) : canCheckout ? (
                 <button
@@ -228,21 +250,21 @@ export function PricingPlanCards({
                   onClick={() => onCheckout(plan.priceId)}
                   className={`mt-auto w-full rounded-full py-3.5 text-sm font-semibold transition disabled:opacity-60 ${ctaClass}`}
                 >
-                  {checkoutLoadingPriceId === plan.priceId ? 'Yönlendiriliyor…' : 'Aboneliği başlat'}
+                  {checkoutLoadingPriceId === plan.priceId ? t('redirecting') : t('startSubscription')}
                 </button>
               ) : isOwner ? (
                 <Link
                   href="/dashboard/business/subscription"
                   className={`mt-auto block w-full rounded-full py-3.5 text-center text-sm font-semibold transition ${ctaClass}`}
                 >
-                  Aboneliğe git
+                  {t('goToSubscription')}
                 </Link>
               ) : (
                 <Link
                   href="/register?type=business_owner&from=/pricing"
                   className={`mt-auto block w-full rounded-full py-3.5 text-center text-sm font-semibold transition ${ctaClass}`}
                 >
-                  Ücretsiz başla
+                  {tc('startFree')}
                 </Link>
               )}
             </div>
@@ -254,16 +276,19 @@ export function PricingPlanCards({
 }
 
 const FEATURE_META = [
-  { icon: Zap, label: 'Sınırsız randevu' },
-  { icon: Users, label: 'Sınırsız personel' },
-  { icon: MessageCircle, label: 'WhatsApp bildirimleri' },
-  { icon: Calendar, label: 'Takvim yönetimi' },
-  { icon: Video, label: 'Keşfet videosu' },
-  { icon: Bell, label: 'Otomatik hatırlatmalar' },
-  { icon: Headphones, label: 'Öncelikli destek' },
+  { icon: Zap, key: 'unlimitedReservations' as const },
+  { icon: Users, key: 'unlimitedStaff' as const },
+  { icon: MessageCircle, key: 'whatsapp' as const },
+  { icon: Calendar, key: 'calendar' as const },
+  { icon: Video, key: 'discoverVideo' as const },
+  { icon: Bell, key: 'reminders' as const },
+  { icon: Headphones, key: 'support' as const },
 ] as const;
 
 export function PricingFeaturesBento() {
+  const t = useTranslations('pricing');
+  const tf = useTranslations('features');
+
   return (
     <div className="relative overflow-hidden rounded-[2rem] border border-neutral-200/80 bg-neutral-50 p-6 dark:border-neutral-800 dark:bg-neutral-900/50 sm:p-10">
       <div
@@ -277,26 +302,26 @@ export function PricingFeaturesBento() {
 
       <div className="relative text-center">
         <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-400">
-          Dahil olanlar
+          {t('featuresEyebrow')}
         </p>
         <h3 className="mt-2 text-2xl font-bold tracking-tight text-neutral-900 dark:text-neutral-50 sm:text-3xl">
-          Her pakette aynı güçlü özellik seti
+          {t('featuresTitle')}
         </h3>
         <p className="mx-auto mt-2 max-w-lg text-sm text-neutral-600 dark:text-neutral-400">
-          Ödeme periyodunu siz seçin; özelliklerde hiçbir kısıtlama yok.
+          {t('featuresDesc')}
         </p>
       </div>
 
       <div className="relative mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        {FEATURE_META.map(({ icon: Icon, label }) => (
+        {FEATURE_META.map(({ icon: Icon, key }) => (
           <div
-            key={label}
+            key={key}
             className="group flex items-center gap-3 rounded-2xl border border-white/80 bg-white px-4 py-4 shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-md dark:border-neutral-700/80 dark:bg-neutral-800/80"
           >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary-50 text-primary-600 transition group-hover:bg-primary-500 group-hover:text-white dark:bg-primary-950/50 dark:text-primary-300">
               <Icon className="h-5 w-5" strokeWidth={2} aria-hidden />
             </span>
-            <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{label}</span>
+            <span className="text-sm font-semibold text-neutral-800 dark:text-neutral-100">{tf(key)}</span>
           </div>
         ))}
       </div>

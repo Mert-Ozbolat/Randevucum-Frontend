@@ -1,21 +1,23 @@
 'use client';
 
-import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { HomeSectionHeader } from '@/components/home/HomeSectionHeader';
 import { PricingPlanCards } from '@/components/pricing/PricingPlanCards';
 import { usePricingPlans } from '@/hooks/usePricingPlans';
+import { Link } from '@/i18n/navigation';
 
 export function HomePricing() {
+  const t = useTranslations('home');
   const { plans, trialDays, loading } = usePricingPlans();
 
   return (
     <AnimateIn as="section" animation="slide-up" aria-labelledby="home-pricing-title">
       <HomeSectionHeader
-        eyebrow="Paketler"
-        title="İşletmeniz için şeffaf fiyatlandırma"
-        description={`${trialDays} gün ücretsiz deneyin. Aylık, 3 aylık veya yıllık — hepsi aynı özellikler.`}
+        eyebrow={t('pricingEyebrow')}
+        title={t('pricingTitle')}
+        description={t('pricingDescription', { days: trialDays })}
         align="center"
         titleSize="large"
         titleId="home-pricing-title"
@@ -36,7 +38,7 @@ export function HomePricing() {
           href="/pricing"
           className="inline-flex items-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-sm font-semibold text-primary-700 shadow-sm transition hover:border-primary-300 hover:bg-primary-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-primary-300"
         >
-          Tüm detayları gör
+          {t('pricingDetails')}
           <ArrowRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
         </Link>
       </div>

@@ -1,29 +1,11 @@
 "use client";
 
-import Link from 'next/link';
 import { ArrowRight, Calendar, Heart, Shield, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { Logo } from "@/components/brand/Logo";
 import { AnimateIn } from "@/components/ui/AnimateIn";
 import { LEGAL_LINKS } from "@/lib/legal/constants";
-
-const EXPLORE_LINKS = [
-  { href: "/", label: "Ana Sayfa" },
-  { href: "/business", label: "İşletmeler" },
-  { href: "/pricing", label: "Fiyatlar" },
-] as const;
-
-const CUSTOMER_LINKS = [
-  { href: "/login", label: "Giriş yap" },
-  { href: "/register", label: "Kayıt ol" },
-  { href: "/dashboard/customer/reservations", label: "Randevularım" },
-  { href: "/dashboard/customer/favorites", label: "Favorilerim" },
-] as const;
-
-const BUSINESS_LINKS = [
-  { href: "/register", label: "İşletme kaydı" },
-  { href: "/pricing", label: "Paketler" },
-  { href: "/dashboard/business", label: "İşletme paneli" },
-] as const;
+import { Link } from '@/i18n/navigation';
 
 function FooterLinkGroup({
   title,
@@ -54,7 +36,28 @@ function FooterLinkGroup({
 }
 
 export function Footer() {
+  const t = useTranslations('footer');
+  const tn = useTranslations('nav');
   const year = new Date().getFullYear();
+
+  const EXPLORE_LINKS = [
+    { href: "/", label: tn("home") },
+    { href: "/business", label: tn("businesses") },
+    { href: "/pricing", label: tn("pricing") },
+  ] as const;
+
+  const CUSTOMER_LINKS = [
+    { href: "/login", label: t("login") },
+    { href: "/register", label: t("register") },
+    { href: "/dashboard/customer/reservations", label: t("myReservations") },
+    { href: "/dashboard/customer/favorites", label: tn("favorites") },
+  ] as const;
+
+  const BUSINESS_LINKS = [
+    { href: "/register", label: t("businessRegister") },
+    { href: "/pricing", label: t("packages") },
+    { href: "/dashboard/business", label: t("businessPanel") },
+  ] as const;
 
   return (
     <footer className="relative border-t border-neutral-800 bg-neutral-900">
@@ -69,14 +72,13 @@ export function Footer() {
             <div className="max-w-sm">
               <Logo size="sm" href="/" />
               <p className="mt-4 text-sm leading-relaxed text-neutral-400">
-                Kuaförden kliniğe — müsait saatleri görün, dakikalar içinde
-                randevunuzu oluşturun.
+                {t("tagline")}
               </p>
               <div className="mt-5 flex flex-wrap gap-2">
                 {[
-                  { Icon: Calendar, label: "Hızlı randevu" },
-                  { Icon: Heart, label: "Favoriler" },
-                  { Icon: Shield, label: "Güvenli" },
+                  { Icon: Calendar, label: t("quickBooking") },
+                  { Icon: Heart, label: t("favorites") },
+                  { Icon: Shield, label: t("secure") },
                 ].map(({ Icon, label }) => (
                   <span
                     key={label}
@@ -95,20 +97,20 @@ export function Footer() {
                 href="/business"
                 className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-primary-400 transition hover:text-primary-300"
               >
-                İşletmeleri keşfet
+                {t("exploreBusinesses")}
                 <ArrowRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
               </Link>
             </div>
 
-            <FooterLinkGroup title="Keşfet" links={EXPLORE_LINKS} />
-            <FooterLinkGroup title="Müşteriler" links={CUSTOMER_LINKS} />
-            <FooterLinkGroup title="İşletmeler" links={BUSINESS_LINKS} />
-            <FooterLinkGroup title="Yasal" links={LEGAL_LINKS} />
+            <FooterLinkGroup title={t("explore")} links={EXPLORE_LINKS} />
+            <FooterLinkGroup title={t("customers")} links={CUSTOMER_LINKS} />
+            <FooterLinkGroup title={t("businesses")} links={BUSINESS_LINKS} />
+            <FooterLinkGroup title={t("legal")} links={LEGAL_LINKS} />
           </div>
 
           <div className="mt-12 flex flex-col gap-4 border-t border-neutral-800 pt-8 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-xs text-neutral-500">
-              © {year} Randevucum. Tüm hakları saklıdır.
+              © {year} Randevucum. {t("rights")}
             </p>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               {LEGAL_LINKS.slice(0, 3).map((link) => (
@@ -125,7 +127,7 @@ export function Footer() {
                   className="h-3.5 w-3.5 text-primary-400"
                   aria-hidden
                 />
-                Online randevu platformu
+                {t("onlinePlatform")}
               </span>
             </div>
           </div>

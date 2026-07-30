@@ -1,37 +1,43 @@
-# Dil desteği (i18n) — hazırlık
+# Dil desteği (i18n) — next-intl
 
-Bu klasör ve `messages/` altındaki dosyalar iskelet olarak oluşturuldu.  
-Uygulamaya bağlama (Next.js, hook, dil değiştirici vb.) henüz yapılmadı.
+## Diller
+
+| Kod | Dil | URL örneği |
+|-----|-----|------------|
+| `tr` | Türkçe (varsayılan) | `/pricing` |
+| `en` | English | `/en/pricing` |
+| `ru` | Русский | `/ru/pricing` |
+
+Varsayılan dil (`tr`) URL prefix kullanmaz (`localePrefix: as-needed`).
 
 ## Dosyalar
 
 | Dosya | Açıklama |
 |-------|----------|
-| `i18n/config.json` | Varsayılan dil (`tr`), desteklenen diller (`tr`, `en`) |
-| `messages/tr.json` | Türkçe çeviriler (namespace’lere göre) |
+| `i18n/routing.ts` | Locale listesi ve routing |
+| `i18n/request.ts` | next-intl sunucu yapılandırması |
+| `i18n/navigation.ts` | `Link`, `useRouter`, `usePathname` (locale-aware) |
+| `messages/tr.json` | Türkçe çeviriler |
 | `messages/en.json` | İngilizce çeviriler |
+| `messages/ru.json` | Rusça çeviriler |
+| `middleware.ts` | Dil yönlendirme + dashboard auth |
+| `components/layout/LanguageSwitcher.tsx` | Navbar dil seçici |
 
-## Namespace’ler
+## Çevrilen bölümler (ilk faz)
 
-- `common` — genel butonlar, yükleme, evet/hayır
-- `nav` — navbar
-- `footer` — footer linkleri
-- `home` — ana sayfa
-- `pricing` — paketler / fiyatlar
-- `auth` — giriş, kayıt
-- `business` — işletme sayfaları, keşfet
-- `dashboard` — işletme / müşteri / personel paneli
-- `reservation` — randevu akışı
-- `subscription` — abonelik
-- `legal` — KVKK, sözleşmeler
-- `errors` — hata mesajları
+- Navbar + Footer
+- Ana sayfa hero + paketler bandı
+- Fiyatlar sayfası + paket kartları
+- Dil değiştirici (TR / EN / RU)
 
-## Sonraki adım (bekleniyor)
+## Yeni metin eklemek
 
-Entegrasyon için karar verilecekler:
+1. Üç JSON dosyasına aynı anahtarı ekleyin (`messages/tr.json`, `en.json`, `ru.json`)
+2. Bileşende: `const t = useTranslations('namespace');` → `t('key')`
+3. Linkler için `next/link` yerine `@/i18n/navigation` içindeki `Link` kullanın
 
-1. Kütüphane: `next-intl`, `react-i18next`, veya hafif özel çözüm
-2. URL yapısı: `/tr/...`, `/en/...` mi yoksa cookie/localStorage ile mi?
-3. Hangi sayfalardan başlanacak (ör. ana sayfa + navbar önce)
+## Sonraki adımlar
 
-Talimatınız gelince devam edilir.
+- Dashboard sayfaları
+- Yasal metinler (`legal/content.ts`)
+- Backend API hata mesajları (`Accept-Language`)

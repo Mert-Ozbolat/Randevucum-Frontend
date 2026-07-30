@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowRight,
   ChevronDown,
@@ -12,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { Outfit } from 'next/font/google';
+import { useTranslations } from 'next-intl';
 import { AnimateIn } from '@/components/ui/AnimateIn';
 import { PricingFeaturesBento, PricingPlanCards } from '@/components/pricing/PricingPlanCards';
 import { usePricingPlans } from '@/hooks/usePricingPlans';
@@ -20,6 +20,7 @@ import { fetchMyBusinesses } from '@/lib/businessApi';
 import { useAuthStore } from '@/store/authStore';
 import { isBusinessOwner } from '@/lib/auth';
 import { isTrialBlockingPurchase } from '@/lib/subscriptionTrial';
+import { Link } from '@/i18n/navigation';
 
 const display = Outfit({
   subsets: ['latin', 'latin-ext'],
@@ -36,43 +37,13 @@ type SubStatus = {
 };
 
 const TRUST_ICONS = [
-  { Icon: Sparkles, key: 'trial' as const },
-  { Icon: RefreshCw, key: 'cancel' as const },
-  { Icon: ShieldCheck, key: 'pci' as const },
-  { Icon: CreditCard, key: 'stripe' as const },
+  { Icon: Sparkles, key: 'trustTrial' as const },
+  { Icon: RefreshCw, key: 'trustCancel' as const },
+  { Icon: ShieldCheck, key: 'trustPci' as const },
+  { Icon: CreditCard, key: 'trustStripe' as const },
 ] as const;
 
-function trustLabel(key: (typeof TRUST_ICONS)[number]['key'], trialDays: number) {
-  switch (key) {
-    case 'trial':
-      return `${trialDays} gün ücretsiz deneme`;
-    case 'cancel':
-      return 'Dönem sonunda iptal';
-    case 'pci':
-      return 'PCI uyumlu ödeme';
-    case 'stripe':
-      return 'Stripe güvenli tahsilat';
-  }
-}
-
-const FAQ = [
-  {
-    q: 'Paketler arasında özellik farkı var mı?',
-    a: 'Hayır. Aylık, 3 aylık ve yıllık paketlerin tamamı aynı özellikleri içerir; yalnızca ödeme periyodu ve tutar değişir.',
-  },
-  {
-    q: 'Ücretsiz deneme nasıl çalışır?',
-    a: 'Yeni işletme hesapları belirtilen süre boyunca tüm özellikleri ücretsiz dener. Deneme bitene kadar ücretli abonelik başlatılamaz.',
-  },
-  {
-    q: 'İstediğim zaman iptal edebilir miyim?',
-    a: 'Evet. Aboneliğinizi dönem sonunda iptal edebilirsiniz; bu tarihe kadar erişiminiz devam eder.',
-  },
-  {
-    q: 'Hangi ödeme yöntemleri kabul ediliyor?',
-    a: 'Kredi ve banka kartları Stripe altyapısı üzerinden güvenle işlenir. Kart bilgileriniz platformumuzda saklanmaz.',
-  },
-] as const;
+const FAQ_KEYS = ['faq1', 'faq2', 'faq3', 'faq4'] as const;
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
@@ -110,6 +81,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 export default function PricingPage() {
+  const t = useTranslations('pricing');
   const user = useAuthStore((s) => s.user);
   const token = useAuthStore((s) => s.token);
   const isOwner = Boolean(token && isBusinessOwner(user));
@@ -117,6 +89,15 @@ export default function PricingPage() {
 
   const { plans, trialDays, loading } = usePricingPlans();
   const [sub, setSub] = useState<SubStatus | null>(null);
+
+  const faqItems = useMemo(
+    () =>
+      FAQ_KEYS.map((key) => ({
+        q: t(`${key}q` as 'faq1q'),
+        a: t(`${key}a` as 'faq1a'),
+      })),
+    [t]
+  );
 
   useEffect(() => {
     if (!token || !isBusinessOwner(user)) return;
@@ -141,7 +122,7 @@ export default function PricingPage() {
   const trialActive = isTrialBlockingPurchase(sub);
   const trialEndLabel =
     sub?.endDate && trialActive
-      ? new Date(sub.endDate).toLocaleDateString('tr-TR', {
+      ? new Date(sub.endDate).toLocaleDateString(undefined, {
           day: 'numeric',
           month: 'long',
           year: 'numeric',
@@ -150,7 +131,6 @@ export default function PricingPage() {
 
   return (
     <div className="overflow-x-hidden bg-neutral-50 dark:bg-neutral-950">
-      {/* Hero */}
       <section className="relative flex min-h-[min(88svh,720px)] items-center overflow-hidden bg-neutral-900">
         <div className="pointer-events-none absolute inset-0" aria-hidden>
           <div className="absolute -left-24 top-1/4 h-[28rem] w-[28rem] rounded-full bg-primary-500/25 blur-3xl" />
@@ -161,7 +141,7 @@ export default function PricingPage() {
         <div className="relative z-10 mx-auto w-full max-w-5xl px-4 py-20 text-center sm:px-6 lg:py-28">
           <AnimateIn immediate animation="fade-in">
             <p className="inline-flex rounded-full bg-primary-500/15 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary-300 ring-1 ring-primary-400/25 backdrop-blur-sm">
-              İşletme paketleri
+              {t('eyebrow')}
             </p>
           </AnimateIn>
 
@@ -169,16 +149,19 @@ export default function PricingPage() {
             <h1
               className={`${display.className} mt-6 text-balance text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl`}
             >
-              Basit fiyat,
-              <span className="mt-1 block text-primary-400">maksimum değer</span>
+              {t('heroTitle1')}
+              <span className="mt-1 block text-primary-400">{t('heroTitle2')}</span>
             </h1>
           </AnimateIn>
 
           <AnimateIn immediate animation="slide-up" delay={120}>
             <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-neutral-300 sm:text-lg">
-              <strong className="font-semibold text-white">{trialDays} gün</strong> ücretsiz deneyin. Sonra aylık{' '}
-              <strong className="text-white">₺999</strong>, 3 aylık <strong className="text-white">₺2.700</strong> veya
-              yıllık <strong className="text-white">₺9.600</strong> — hepsi aynı özelliklerle.
+              {t('heroDescription', {
+                days: trialDays,
+                monthly: '₺999',
+                quarterly: '₺2.700',
+                yearly: '₺9.600',
+              })}
             </p>
           </AnimateIn>
 
@@ -186,11 +169,11 @@ export default function PricingPage() {
             <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/register?type=business_owner&from=/pricing"
-                className="group inline-flex items-center rounded-full bg-primary-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 sm:text-base"
+                className="group inline-flex items-center gap-2 rounded-full bg-primary-500 px-7 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-400 sm:text-base"
               >
-                Ücretsiz denemeyi başlat
+                {t('startTrial')}
                 <ArrowRight
-                  className="ml-2 h-4 w-4 transition group-hover:translate-x-0.5"
+                  className="h-4 w-4 transition group-hover:translate-x-0.5"
                   strokeWidth={2.25}
                   aria-hidden
                 />
@@ -199,7 +182,7 @@ export default function PricingPage() {
                 href="#plans"
                 className="inline-flex items-center rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/10 sm:text-base"
               >
-                Paketleri incele
+                {t('viewPlans')}
               </a>
             </div>
           </AnimateIn>
@@ -212,7 +195,7 @@ export default function PricingPage() {
                   className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-3 text-xs font-medium text-neutral-200 backdrop-blur-sm sm:text-sm"
                 >
                   <Icon className="h-4 w-4 shrink-0 text-primary-400" strokeWidth={2} aria-hidden />
-                  {trustLabel(key, trialDays)}
+                  {t(key, { days: trialDays })}
                 </li>
               ))}
             </ul>
@@ -220,20 +203,19 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Plans */}
       <section id="plans" className="relative -mt-8 scroll-mt-24 px-4 pb-8 sm:px-6 lg:pb-12">
         <div className="mx-auto max-w-6xl">
           {trialActive && (
             <div className="mb-8 rounded-2xl border border-primary-200/80 bg-white p-5 shadow-lg dark:border-primary-900/50 dark:bg-neutral-900">
               <p className="flex items-center justify-center gap-2 font-semibold text-primary-800 dark:text-primary-200">
                 <Sparkles className="h-4 w-4" aria-hidden />
-                Ücretsiz denemeniz aktif
+                {t('trialActive')}
               </p>
               <p className="mt-2 text-center text-sm text-primary-700/90 dark:text-primary-100/80">
                 {trialEndLabel
-                  ? `${trialEndLabel} tarihine kadar tüm özellikleri ücretsiz kullanıyorsunuz.`
-                  : `${trialDays} günlük denemeniz devam ediyor.`}{' '}
-                Deneme bitince aşağıdan abonelik başlatabilirsiniz.
+                  ? t('trialUntil', { date: trialEndLabel })
+                  : t('trialOngoing', { days: trialDays })}{' '}
+                {t('trialActiveDesc')}
               </p>
             </div>
           )}
@@ -241,17 +223,17 @@ export default function PricingPage() {
           {isLoggedInCustomer && (
             <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 p-5 dark:border-amber-900/50 dark:bg-amber-950/30">
               <p className="text-center font-semibold text-amber-900 dark:text-amber-100">
-                İşletme paketi için işletme hesabı gerekir
+                {t('businessAccountRequired')}
               </p>
               <p className="mt-1 text-center text-sm text-amber-800/90 dark:text-amber-200/90">
-                Paket satın almak için işletme hesabı oluşturmalısınız.
+                {t('businessAccountDesc')}
               </p>
               <div className="mt-4 flex justify-center">
                 <Link
                   href="/register?type=business_owner&from=/pricing"
                   className="rounded-full bg-amber-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-700"
                 >
-                  İşletme hesabı oluştur
+                  {t('createBusinessAccount')}
                 </Link>
               </div>
             </div>
@@ -266,25 +248,19 @@ export default function PricingPage() {
               <div className="rounded-[2rem] border border-neutral-200/60 bg-white/80 p-6 shadow-2xl shadow-neutral-900/5 backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80 sm:p-8 lg:p-10">
                 <div className="mb-8 text-center">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-400">
-                    Planınızı seçin
+                    {t('choosePlan')}
                   </p>
                   <h2 className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50 sm:text-3xl">
-                    Esnek ödeme, tek platform
+                    {t('flexibleBilling')}
                   </h2>
                 </div>
-                <PricingPlanCards
-                  plans={plans}
-                  trialActive={trialActive}
-                  isOwner={isOwner}
-                  showcase
-                />
+                <PricingPlanCards plans={plans} trialActive={trialActive} isOwner={isOwner} showcase />
               </div>
             </AnimateIn>
           )}
         </div>
       </section>
 
-      {/* Features */}
       <section className="px-4 py-12 sm:px-6 lg:py-16">
         <div className="mx-auto max-w-6xl">
           <AnimateIn animation="slide-up">
@@ -293,20 +269,19 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* FAQ */}
       <section className="px-4 py-12 sm:px-6 lg:py-16">
         <div className="mx-auto max-w-3xl">
           <AnimateIn animation="slide-up">
             <div className="text-center">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-400">
-                SSS
+                {t('faqEyebrow')}
               </p>
               <h2 className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50 sm:text-3xl">
-                Merak edilenler
+                {t('faqTitle')}
               </h2>
             </div>
             <div className="mt-8 space-y-3">
-              {FAQ.map(({ q, a }) => (
+              {faqItems.map(({ q, a }) => (
                 <FaqItem key={q} q={q} a={a} />
               ))}
             </div>
@@ -314,7 +289,6 @@ export default function PricingPage() {
         </div>
       </section>
 
-      {/* Bottom CTA */}
       <section className="px-4 pb-16 sm:px-6 lg:pb-24">
         <AnimateIn animation="scale-in">
           <div className="relative mx-auto max-w-5xl overflow-hidden rounded-[2rem] bg-neutral-900 px-6 py-14 text-center sm:px-12">
@@ -324,16 +298,16 @@ export default function PricingPage() {
             />
             <div className="relative">
               <h2 className={`${display.className} text-3xl font-bold text-white sm:text-4xl`}>
-                Bugün başlayın
+                {t('ctaTitle')}
               </h2>
               <p className="mx-auto mt-3 max-w-md text-neutral-300">
-                {trialDays} gün boyunca tüm özellikleri risksiz deneyin. Kredi kartı gerekmez.
+                {t('ctaDesc', { days: trialDays })}
               </p>
               <Link
                 href="/register?type=business_owner&from=/pricing"
                 className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary-500 px-8 py-3.5 text-sm font-semibold text-white shadow-lg shadow-primary-500/30 transition hover:bg-primary-400"
               >
-                Ücretsiz hesap oluştur
+                {t('ctaButton')}
                 <ArrowRight className="h-4 w-4" aria-hidden />
               </Link>
             </div>
@@ -341,19 +315,23 @@ export default function PricingPage() {
         </AnimateIn>
 
         <p className="mx-auto mt-10 max-w-2xl text-center text-xs leading-relaxed text-neutral-500 dark:text-neutral-400">
-          Abonelik satın alarak{' '}
-          <Link href="/distance-sales" className="text-primary-600 hover:underline dark:text-primary-400">
-            Mesafeli Satış Sözleşmesi
-          </Link>
-          ,{' '}
-          <Link href="/refund-policy" className="text-primary-600 hover:underline dark:text-primary-400">
-            İptal ve İade Politikası
-          </Link>{' '}
-          ve{' '}
-          <Link href="/terms" className="text-primary-600 hover:underline dark:text-primary-400">
-            Kullanım Koşulları
-          </Link>
-          ’nı kabul etmiş olursunuz.
+          {t.rich('legalNotice', {
+            distanceSales: (chunks) => (
+              <Link href="/distance-sales" className="text-primary-600 hover:underline dark:text-primary-400">
+                {chunks}
+              </Link>
+            ),
+            refundPolicy: (chunks) => (
+              <Link href="/refund-policy" className="text-primary-600 hover:underline dark:text-primary-400">
+                {chunks}
+              </Link>
+            ),
+            terms: (chunks) => (
+              <Link href="/terms" className="text-primary-600 hover:underline dark:text-primary-400">
+                {chunks}
+              </Link>
+            ),
+          })}
         </p>
       </section>
     </div>
