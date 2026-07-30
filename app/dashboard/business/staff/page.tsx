@@ -303,7 +303,7 @@ export default function StaffPage() {
           title={
             canAddStaff
               ? undefined
-              : 'Standart pakette en fazla 1 personel ekleyebilirsiniz. Pro pakete geçin.'
+              : 'Personel eklemek için aktif abonelik gerekir.'
           }
         >
           Yeni Personel
@@ -313,13 +313,13 @@ export default function StaffPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
           <p className="font-medium">Personel limitine ulaştınız</p>
           <p className="mt-1 text-amber-800/90 dark:text-amber-200/90">
-            Standart pakette yalnızca 1 personel tanımlayabilirsiniz. Sınırsız personel için Pro pakete geçin.
+            Aktif aboneliğiniz olmadığı için personel ekleyemezsiniz. Aboneliğinizi yenileyin.
           </p>
           <Link
             href="/dashboard/business/subscription"
             className="mt-2 inline-block font-semibold text-primary-700 underline dark:text-primary-300"
           >
-            Abonelik / paket yükseltme →
+            Aboneliği yenile →
           </Link>
         </div>
       )}

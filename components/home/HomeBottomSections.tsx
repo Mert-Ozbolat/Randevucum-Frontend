@@ -60,7 +60,7 @@ const FAQ = [
   },
   {
     q: "WhatsApp bildirimleri nasıl çalışır?",
-    a: "Randevunuz oluşturulduğunda ve randevu yaklaştığında telefonunuza otomatik hatırlatma gidebilir (PRO paket).",
+    a: "Randevunuz oluşturulduğunda ve randevu yaklaştığında telefonunuza otomatik hatırlatma gidebilir (işletme aboneliği).",
   },
 ] as const;
 

@@ -14,6 +14,7 @@ import { HomeHowItWorks } from "@/components/home/HomeHowItWorks";
 import { HomeWhatWeOffer } from "@/components/home/HomeWhatWeOffer";
 import { HomeNewestBusinesses } from "@/components/home/HomeNewestBusinesses";
 import { HomeTestimonials } from "@/components/home/HomeTestimonials";
+import { HomePricing } from "@/components/home/HomePricing";
 import { HomeBusinessOwnerCta } from "@/components/home/HomeBusinessOwnerCta";
 
 export default function HomePage() {
@@ -61,6 +62,7 @@ export default function HomePage() {
           <HomeWhatWeOffer />
           <HomeNewestBusinesses businesses={businesses} loading={loading} />
           <HomeTestimonials />
+          <HomePricing />
         </div>
       </div>
 

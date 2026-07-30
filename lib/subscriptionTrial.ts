@@ -10,21 +10,17 @@ export function isTrialBlockingPurchase(sub?: {
   );
 }
 
-export const PLAN_FEATURES = {
-  standard: [
-    'Ayda 30 randevu',
-    'En fazla 1 personel',
-    'Hizmet yönetimi',
-    'Müşteri paneli',
-    'İşletme sayfası ve görünürlük',
-  ],
-  pro: [
-    'Başlangıç paketindeki her şey',
-    'Sınırsız randevu',
-    'Sınırsız personel',
-    'WhatsApp bildirimleri (müşteri + işletme)',
-    'Öncelikli destek',
-    'Keşfet’e video paylaşma',
-    'Gelişmiş raporlama (yakında)',
-  ],
+export const PLAN_FEATURES = [
+  'Sınırsız randevu',
+  'Sınırsız personel',
+  'WhatsApp bildirimleri (müşteri + işletme)',
+  'Hizmet ve takvim yönetimi',
+  'İşletme sayfası ve Keşfet görünürlüğü',
+  'Keşfet’e video paylaşma',
+  'Öncelikli destek',
+] as const;
+
+/** @deprecated Tek paket — geriye dönük uyumluluk */
+export const PLAN_FEATURES_LEGACY = {
+  pro: [...PLAN_FEATURES],
 } as const;

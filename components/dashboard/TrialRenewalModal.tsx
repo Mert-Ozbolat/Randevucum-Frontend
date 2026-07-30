@@ -76,16 +76,16 @@ export function TrialRenewalModal({
         </button>
         <div className="flex items-center gap-2 text-primary-600 dark:text-primary-400">
           <Sparkles className="h-5 w-5" aria-hidden />
-          <span className="text-sm font-semibold uppercase tracking-wide">PRO deneme süresi</span>
+          <span className="text-sm font-semibold uppercase tracking-wide">Ücretsiz deneme</span>
         </div>
         <h2 id="trial-renewal-title" className="mt-2 text-xl font-bold text-neutral-900 dark:text-neutral-50">
           Deneme süreniz sona erdi
         </h2>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
           {endLabel
-            ? `${endLabel} tarihinde ücretsiz PRO denemeniz bitti.`
-            : 'Ücretsiz PRO denemeniz bitti.'}{' '}
-          Randevu almaya ve PRO özelliklerine devam etmek için aylık abonelik başlatmanız gerekir. Abonelik her ay
+            ? `${endLabel} tarihinde ücretsiz denemeniz bitti.`
+            : 'Ücretsiz denemeniz bitti.'}{' '}
+          Randevu almaya ve tüm özelliklere devam etmek için abonelik başlatmanız gerekir. Abonelik seçtiğiniz periyotta
           otomatik yenilenir; istediğiniz zaman dönem sonunda iptal edebilirsiniz.
         </p>
         {error && (

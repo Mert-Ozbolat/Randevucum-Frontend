@@ -8,8 +8,10 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/Toast';
 import { SUBSCRIPTION_STATUS } from '@/lib/constants';
-import { isTrialBlockingPurchase, PLAN_FEATURES } from '@/lib/subscriptionTrial';
-import { Check, CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
+import { isTrialBlockingPurchase } from '@/lib/subscriptionTrial';
+import { PricingPlanCards } from '@/components/pricing/PricingPlanCards';
+import type { PublicPlan } from '@/lib/pricing';
+import { CreditCard, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface SubStatus {
   _id?: string;
@@ -41,10 +43,11 @@ interface SubStatus {
 interface StripePlan {
   priceId: string;
   label: string;
-  planKey?: 'standard' | 'pro';
+  planKey?: 'pro';
   displayPrice?: string;
   displayAmount?: number;
   intervalLabel?: string;
+  billingPeriod?: 'monthly' | 'quarterly' | 'yearly' | 'custom';
 }
 
 interface StripeConfig {
@@ -52,6 +55,18 @@ interface StripeConfig {
   publishableKey?: string;
   plans?: StripePlan[];
   trialDays?: number;
+}
+
+function toPublicPlans(plans?: StripePlan[]): PublicPlan[] {
+  return (plans || []).map((p) => ({
+    priceId: p.priceId,
+    label: p.label,
+    planKey: 'pro' as const,
+    displayAmount: p.displayAmount ?? 0,
+    displayPrice: p.displayPrice ?? '—',
+    intervalLabel: p.intervalLabel,
+    billingPeriod: p.billingPeriod,
+  }));
 }
 
 export default function SubscriptionPage() {
@@ -166,7 +181,7 @@ export default function SubscriptionPage() {
 
   const cancelAtPeriodEnd = async () => {
     if (!subscription?._id) return;
-    if (!window.confirm('Abonelik dönem sonunda iptal edilecek. Bu tarihe kadar PRO erişiminiz devam eder. Onaylıyor musunuz?')) {
+    if (!window.confirm('Abonelik dönem sonunda iptal edilecek. Bu tarihe kadar erişiminiz devam eder. Onaylıyor musunuz?')) {
       return;
     }
     setCancelLoading(true);
@@ -234,8 +249,8 @@ export default function SubscriptionPage() {
         <p className="text-sm font-medium text-primary-100">Faturalandırma</p>
         <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">Abonelik</h1>
         <p className="mt-2 max-w-2xl text-sm text-primary-100">
-          Yeni işletmelere 30 gün ücretsiz PRO deneme verilir. Deneme sonrası aylık abonelik otomatik yenilenir;
-          istediğiniz zaman dönem sonunda iptal edebilirsiniz.
+          Yeni işletmelere 30 gün ücretsiz deneme verilir. Deneme sonrası aylık, 3 aylık veya yıllık abonelik
+          seçebilirsiniz; otomatik yenilenir, istediğiniz zaman dönem sonunda iptal edebilirsiniz.
         </p>
         <div className="mt-4 flex flex-wrap gap-3 text-xs text-primary-100">
           <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
@@ -257,34 +272,23 @@ export default function SubscriptionPage() {
         <div className="rounded-2xl border border-primary-200 bg-primary-50/80 p-4 dark:border-primary-900/50 dark:bg-primary-950/30">
           <p className="flex items-center gap-2 text-sm font-semibold text-primary-900 dark:text-primary-100">
             <Sparkles className="h-4 w-4" aria-hidden />
-            Ücretsiz PRO deneme aktif
+            Ücretsiz deneme aktif
           </p>
           <p className="mt-1 text-sm text-primary-800/90 dark:text-primary-100/80">
             {subscription?.endDate &&
-              `${new Date(subscription.endDate).toLocaleDateString('tr-TR')} tarihine kadar tüm PRO özelliklerini ücretsiz kullanıyorsunuz. `}
+              `${new Date(subscription.endDate).toLocaleDateString('tr-TR')} tarihine kadar tüm özellikleri ücretsiz kullanıyorsunuz. `}
             Deneme bitene kadar paket satın alma kapalıdır; aşağıda güncel liste fiyatlarını görebilirsiniz.
           </p>
         </div>
       )}
 
       {trialBlocksPurchase && (stripeConfig?.plans?.length ?? 0) > 0 && (
-        <div className="grid gap-4 md:grid-cols-2">
-          {(stripeConfig?.plans || []).map((p) => (
-            <Card key={p.priceId} className="p-5 opacity-95">
-              <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
-              <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50">
-                {p.displayPrice || '—'}
-                <span className="text-sm font-normal text-neutral-500">/{p.intervalLabel || 'ay'}</span>
-              </p>
-              <ul className="mt-3 space-y-1 text-sm text-neutral-600 dark:text-neutral-400">
-                {(PLAN_FEATURES[p.planKey || 'standard'] || []).slice(0, 4).map((x) => (
-                  <li key={x}>• {x}</li>
-                ))}
-              </ul>
-              <p className="mt-4 text-xs font-medium text-neutral-500">Deneme süresince satın alınamaz</p>
-            </Card>
-          ))}
-        </div>
+        <PricingPlanCards
+          plans={toPublicPlans(stripeConfig?.plans)}
+          trialActive
+          isOwner
+          compact
+        />
       )}
 
       {subscription?.billingSuspended && (
@@ -340,7 +344,7 @@ export default function SubscriptionPage() {
                   ? 'Askıda'
                   : subscription.canAcceptBookings
                     ? subscription.isTrial
-                      ? 'PRO deneme'
+                      ? 'Deneme'
                       : 'Aktif'
                     : SUBSCRIPTION_STATUS[subscription.status || ''] || subscription.status || 'Yok'}
               </span>
@@ -354,7 +358,7 @@ export default function SubscriptionPage() {
             {subscription.inGracePeriod && subscription.gracePeriodEndsAt && (
               <p className="text-sm text-amber-800 dark:text-amber-200">
                 Ödeme grace süresi: {new Date(subscription.gracePeriodEndsAt).toLocaleDateString('tr-TR')} tarihine
-                kadar PRO devam eder.
+                kadar erişiminiz devam eder.
               </p>
             )}
             {subscription.cancelAtPeriodEnd && (
@@ -366,7 +370,7 @@ export default function SubscriptionPage() {
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
                 Paket:{' '}
                 <span className="font-medium text-neutral-800 dark:text-neutral-200">
-                  {subscription.planKey === 'pro' ? 'Pro' : 'Standart'}
+                  {subscription.isTrial ? 'Deneme' : 'Randevucum'}
                 </span>
               </p>
             )}
@@ -376,7 +380,7 @@ export default function SubscriptionPage() {
               </p>
             )}
             {subscription.staffLimit == null && subscription.hasProAccess && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Personel: sınırsız (Pro)</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Personel: sınırsız</p>
             )}
             {subscription.reservationLimit != null && (
               <p className="text-sm text-neutral-600 dark:text-neutral-400">
@@ -394,7 +398,7 @@ export default function SubscriptionPage() {
               </p>
             )}
             {subscription.reservationLimit == null && subscription.hasProAccess && (
-              <p className="text-sm text-neutral-600 dark:text-neutral-400">Randevu: sınırsız (Pro)</p>
+              <p className="text-sm text-neutral-600 dark:text-neutral-400">Randevu: sınırsız</p>
             )}
 
             <div className="mt-4 flex flex-wrap gap-2">
@@ -423,48 +427,23 @@ export default function SubscriptionPage() {
           <div className="border-t border-neutral-200 px-6 py-6 dark:border-neutral-800">
             <p className="text-sm text-neutral-600 dark:text-neutral-400">
               {subscription?.trialExpired
-                ? 'Deneme süreniz bitti. PRO ve randevu almaya devam etmek için abonelik başlatın.'
+                ? 'Deneme süreniz bitti. Randevu almaya devam etmek için abonelik başlatın.'
                 : 'Randevu alabilmek için geçerli bir abonelik gerekir.'}
             </p>
             {stripeConfig?.checkoutEnabled && (stripeConfig.plans?.length ?? 0) > 0 ? (
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                {(stripeConfig.plans || []).map((p) => (
-                  <div
-                    key={p.priceId}
-                    className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-card dark:border-neutral-800 dark:bg-neutral-950/40"
-                  >
-                    <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">{p.label}</p>
-                    <p className="mt-2 text-2xl font-bold text-neutral-900 dark:text-neutral-50">
-                      {p.displayPrice || '—'}
-                      <span className="text-sm font-normal text-neutral-500">/{p.intervalLabel || 'ay'}</span>
-                    </p>
-                    <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
-                      Aylık • Otomatik yenileme • İstediğiniz zaman iptal
-                    </p>
-                    <ul className="mt-4 space-y-2 text-sm text-neutral-700 dark:text-neutral-200">
-                      {(PLAN_FEATURES[p.planKey || 'standard'] || PLAN_FEATURES.pro).map((x) => (
-                        <li key={x} className="flex items-center gap-2">
-                          <Check className="h-4 w-4 shrink-0 text-primary-500" strokeWidth={2.5} aria-hidden /> {x}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button
-                      type="button"
-                      className="mt-5 w-full"
-                      loading={checkoutLoadingPriceId === p.priceId}
-                      disabled={Boolean(checkoutLoadingPriceId)}
-                      onClick={() => void startStripeCheckout(p.priceId)}
-                    >
-                      Aboneliği başlat
-                    </Button>
-                  </div>
-                ))}
+              <div className="mt-4">
+                <PricingPlanCards
+                  plans={toPublicPlans(stripeConfig.plans)}
+                  isOwner
+                  checkoutLoadingPriceId={checkoutLoadingPriceId}
+                  onCheckout={(priceId) => void startStripeCheckout(priceId)}
+                />
               </div>
             ) : (
               <div className="mt-4 space-y-2">
                 <p className="text-xs text-neutral-500">Stripe yapılandırması gerekli (geliştirme: demo abonelik).</p>
                 <Button type="button" variant="outline" loading={demoLoading} onClick={() => void startDemoSubscription()}>
-                  Demo: 30 gün PRO
+                  Demo: 30 gün abonelik
                 </Button>
               </div>
             )}

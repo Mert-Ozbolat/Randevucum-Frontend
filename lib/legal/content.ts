@@ -53,7 +53,7 @@ export const privacyPolicy: LegalPageContent = {
             ['Hesap', 'Şifre (şifrelenmiş), Google hesap kimliği, kullanıcı rolü'],
             ['Randevu', 'İşletme, hizmet, tarih, saat, personel, notlar, durum'],
             ['İşletme', 'İşletme adı, adres, çalışma saatleri, hizmet ve personel bilgileri'],
-            ['Ödeme (işletmeler)', 'Abonelik planı, fatura bilgileri — kart verisi Stripe’da tutulur'],
+            ['Ödeme (işletmeler)', 'Abonelik dönemi, faturalama bilgileri — kart verisi Stripe’da tutulur'],
             ['Teknik', 'Oturum çerezi, IP adresi, tarayıcı türü, hata logları'],
             ['Kullanım', 'Favori işletmeler, katılım puanı, randevu geçmişi'],
           ],
@@ -493,7 +493,7 @@ export const distanceSales: LegalPageContent = {
           rows: [
             ['Satıcı / Hizmet sağlayıcı', `${LEGAL.dataController} — ${LEGAL.supportEmail}`],
             ['Alıcı', 'Platform üzerinden abonelik satın alan işletme sahibi'],
-            ['Ürün / Hizmet', 'Dijital abonelik paketi (Standart / Pro)'],
+            ['Ürün / Hizmet', 'Dijital işletme aboneliği (aylık, 3 aylık veya yıllık faturalama; tüm dönemlerde aynı özellik seti)'],
           ],
         },
       ],
@@ -515,8 +515,8 @@ export const distanceSales: LegalPageContent = {
         {
           type: 'ul',
           items: [
-            'Abonelik ücretleri Fiyatlar sayfasında belirtilen tutarlardır.',
-            'Ücretler aylık veya yıllık periyotlarla tahsil edilebilir.',
+            'Abonelik ücretleri Fiyatlar sayfasında güncel olarak belirtilen tutarlardır (aylık, 3 aylık ve yıllık seçenekler).',
+            'Ücretler seçilen periyoda göre (aylık, 3 aylık veya yıllık) tahsil edilir; abonelik dönem sonunda kayıtlı ödeme yönteminden otomatik yenilenebilir.',
             'Vergiler fiyatlara dahil veya ayrıca belirtilir.',
             'Ödeme başarısız olursa hizmet askıya alınabilir.',
           ],
@@ -529,7 +529,7 @@ export const distanceSales: LegalPageContent = {
       blocks: [
         {
           type: 'p',
-          text: 'Dijital hizmet, ödeme onayından hemen sonra hesabınıza tanımlanır. Deneme süresi varsa bu süre boyunca belirtilen özellikler kullanılabilir.',
+          text: 'Dijital hizmet, ödeme onayından hemen sonra hesabınıza tanımlanır. Yeni işletme hesaplarına sunulan ücretsiz deneme süresi boyunca belirtilen özellikler kullanılabilir; deneme bitiminde ücretli abonelik başlatılmadıysa hizmet sonlandırılabilir.',
         },
       ],
     },
@@ -574,9 +574,9 @@ export const refundPolicy: LegalPageContent = {
           type: 'ul',
           items: [
             'İşletme aboneliğinizi panel üzerinden veya Stripe müşteri portalından iptal edebilirsiniz.',
-            'İptal, mevcut fatura döneminin sonunda geçerli olur; dönem sonuna kadar hizmet devam eder.',
+            'İptal, mevcut fatura döneminin sonunda geçerli olur; dönem sonuna kadar hizmet devam eder (aylık, 3 aylık veya yıllık dönem fark etmeksizin).',
             'Kullanılmayan süre için oransal iade, yasal zorunluluklar dışında genel kural olarak yapılmaz.',
-            'Deneme süresi bitmeden iptal ederseniz ücret tahsil edilmez.',
+            'Ücretsiz deneme süresi bitmeden iptal ederseniz veya deneme süresinde paket satın almazsanız ücret tahsil edilmez.',
           ],
         },
       ],

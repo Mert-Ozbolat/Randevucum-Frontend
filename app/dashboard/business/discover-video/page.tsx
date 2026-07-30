@@ -180,21 +180,21 @@ export default function DiscoverVideoPage() {
             <div>
               <h3 className="flex items-center justify-center gap-2 text-lg font-semibold text-neutral-900 dark:text-neutral-50">
                 <Lock className="h-4 w-4 text-neutral-400" aria-hidden />
-                Bu özellik Pro pakete özeldir
+                Bu özellik aktif abonelik gerektirir
               </h3>
               <p className="mt-2 max-w-md text-sm text-neutral-600 dark:text-neutral-300">
-                Keşfet’e video paylaşmak Pro paket ayrıcalığıdır. Pro pakete geçerek ana sayfa
+                Keşfet’e video paylaşmak aktif abonelik ile kullanılabilir. Aboneliğinizi başlatarak ana sayfa
                 slider reklamı yerine Keşfet’te video yayınlayabilirsiniz.
               </p>
             </div>
             <Link href="/dashboard/business/subscription">
-              <Button>Pro pakete geç</Button>
+              <Button>Aboneliğe git</Button>
             </Link>
           </div>
         </Card>
 
         <Card className="p-5 text-sm text-neutral-600 dark:text-neutral-400">
-          <p className="font-medium text-neutral-800 dark:text-neutral-200">Pro pakette Keşfet videosu</p>
+          <p className="font-medium text-neutral-800 dark:text-neutral-200">Aktif abonelikle Keşfet videosu</p>
           <ul className="mt-2 list-inside list-disc space-y-1">
             <li>Dikey (9:16) kısa tanıtım videosu yükleyin</li>
             <li>Müşteriler Keşfet ve ana sayfada videonuzu izler</li>
@@ -217,7 +217,7 @@ export default function DiscoverVideoPage() {
         </h2>
         <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-950/40 dark:text-primary-200">
           <Crown className="h-3.5 w-3.5" aria-hidden />
-          Pro paket özelliği
+          Abonelik özelliği
         </p>
         <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
           Kısa bir tanıtım videosu yükleyin. Müşteriler{' '}
@@ -370,7 +370,7 @@ export default function DiscoverVideoPage() {
           <li>15–60 saniyelik dikey video en iyi sonucu verir</li>
           <li>MP4 formatı, en fazla 30 MB</li>
           <li>Video kaydedildikten sonra Keşfet ve ana sayfada görünür</li>
-          <li>Keşfet videosu Pro paket ayrıcalığıdır</li>
+          <li>Keşfet videosu aktif abonelik ile kullanılabilir</li>
         </ul>
       </Card>
     </div>
