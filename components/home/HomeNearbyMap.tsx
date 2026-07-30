@@ -141,19 +141,9 @@ export function HomeNearbyMap({
           icon,
         });
         marker.addListener('click', () => {
-          const current = businessesRef.current.find((x) => x._id === b._id);
+          const current = businessesRef.current.find((x) => x._id === b._id) || b;
           onSelectRef.current?.(b._id);
-          const dist =
-            current && typeof current.distanceKm === 'number' && Number.isFinite(current.distanceKm)
-              ? `<p style="margin:4px 0 0;font-size:12px;color:#737373">${current.distanceKm.toFixed(1)} km</p>`
-              : '';
-          infoRef.current?.setContent(
-            `<div style="padding:4px 2px;max-width:200px;font-family:system-ui,sans-serif">
-              <strong style="font-size:14px;color:#171717">${escapeHtml(current?.name || b.name)}</strong>
-              ${dist}
-              <a href="/business/${b._id}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:${colors.primary[600]}">Detay →</a>
-            </div>`
-          );
+          infoRef.current?.setContent(buildInfoWindowHtml(current));
           infoRef.current?.open({ map, anchor: marker });
         });
         markersRef.current.set(b._id, marker);
@@ -294,4 +284,45 @@ function escapeHtml(s: string) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+const PLACEHOLDER_IMAGES: Record<string, string> = {
+  hair_salon: 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400',
+  barber: 'https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=400',
+  dental_clinic: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=400',
+  beauty_center: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=400',
+  restaurant: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400',
+  other: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400',
+};
+
+function getBusinessCoverImage(b: MapBusiness): string {
+  const url = b.imageUrl?.trim();
+  if (url) return url;
+  return PLACEHOLDER_IMAGES[b.businessType] || PLACEHOLDER_IMAGES.other;
+}
+
+function buildInfoWindowHtml(b: MapBusiness): string {
+  const cover = escapeHtml(getBusinessCoverImage(b));
+  const name = escapeHtml(b.name);
+  const location = [b.address?.district, b.address?.city].filter(Boolean).join(', ');
+  const locationHtml = location
+    ? `<p style="margin:4px 0 0;font-size:12px;color:#737373">${escapeHtml(location)}</p>`
+    : '';
+  const dist =
+    typeof b.distanceKm === 'number' && Number.isFinite(b.distanceKm)
+      ? `<p style="margin:4px 0 0;font-size:12px;color:#737373">${b.distanceKm.toFixed(1)} km</p>`
+      : '';
+
+  return `<div style="padding:4px 2px;max-width:220px;font-family:system-ui,sans-serif">
+    <img
+      src="${cover}"
+      alt="${name}"
+      style="display:block;width:100%;height:112px;object-fit:cover;border-radius:10px;margin-bottom:8px;background:#f5f5f5"
+      loading="lazy"
+    />
+    <strong style="display:block;font-size:14px;line-height:1.3;color:#171717">${name}</strong>
+    ${locationHtml}
+    ${dist}
+    <a href="/business/${escapeHtml(b._id)}" style="display:inline-block;margin-top:8px;font-size:12px;font-weight:600;color:${colors.primary[600]}">Detay →</a>
+  </div>`;
 }
